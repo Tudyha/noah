@@ -66,18 +66,18 @@
               <i class="el-icon-more" />
             </el-button>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item @click.native="handleFile(row)">
-                <i class="el-icon-document" /> 文件管理
-              </el-dropdown-item>
+<!--              <el-dropdown-item @click.native="handleFile(row)">-->
+<!--                <i class="el-icon-document" /> 文件管理-->
+<!--              </el-dropdown-item>-->
               <el-dropdown-item @click.native="handleCmd(row)">
                 <i class="el-icon-s-promotion" /> 执行命令
               </el-dropdown-item>
               <el-dropdown-item @click.native="handlePtyShell(row)">
-                <i class="el-icon-setting" /> PTY Shell
+                <i class="el-icon-setting" /> Shell
               </el-dropdown-item>
-              <el-dropdown-item @click.native="handleSshShell(row)">
-                <i class="el-icon-edit" /> SSH Shell
-              </el-dropdown-item>
+<!--              <el-dropdown-item @click.native="handleSshShell(row)">-->
+<!--                <i class="el-icon-edit" /> SSH Shell-->
+<!--              </el-dropdown-item>-->
             </el-dropdown-menu>
           </el-dropdown>
         </template>
