@@ -25,6 +25,8 @@ npm install
 ```text
 # 服务端地址
 VUE_APP_BASE_API = 'http://127.0.0.1:8080'
+
+VUE_APP_WS_ADDR = 'ws://127.0.0.1:8080'
 ```
 打包
 ```shell
