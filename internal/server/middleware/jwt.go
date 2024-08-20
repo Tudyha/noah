@@ -9,9 +9,15 @@ import (
 )
 
 var (
-	Realm       = "noah"
-	IdentityKey = "userId"
+	realm         = "noah"
+	identityKey   = "userId"
+	secretKey     = "secret key"
+	adminPassword = ""
 )
+
+func SetAdminPassword(password string) {
+	adminPassword = password
+}
 
 func RegisterJwtMiddleWare() (*jwt.GinJWTMiddleware, error) {
 	authMiddleware, err := jwt.New(initParams())
@@ -24,11 +30,11 @@ func RegisterJwtMiddleWare() (*jwt.GinJWTMiddleware, error) {
 
 func initParams() *jwt.GinJWTMiddleware {
 	return &jwt.GinJWTMiddleware{
-		Realm:       Realm,
-		Key:         []byte("secret key"),
+		Realm:       realm,
+		Key:         []byte(secretKey),
 		Timeout:     time.Hour,
 		MaxRefresh:  time.Hour,
-		IdentityKey: IdentityKey,
+		IdentityKey: identityKey,
 		PayloadFunc: payloadFunc(),
 
 		IdentityHandler: identityHandler(),
@@ -73,7 +79,7 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 		username := loginVals.Username
 		password := loginVals.Password
 
-		if (username == "admin" && password == "123456") || (username == "test" && password == "test") {
+		if username == "admin" && password == adminPassword {
 			return &dto.UserInfo{
 				UserID:   1,
 				Username: username,

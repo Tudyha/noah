@@ -3,6 +3,7 @@ package server
 import (
 	"noah/internal/server/dao"
 	"noah/internal/server/environment"
+	"noah/internal/server/middleware"
 	"noah/internal/server/routes"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,8 @@ func NewServer() *Server {
 	if err != nil {
 		panic(err)
 	}
+
+	middleware.SetAdminPassword(env.Admin.Password)
 
 	//init db
 	dbError := dao.InitDb(env.Database)

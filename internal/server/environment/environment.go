@@ -8,6 +8,7 @@ import (
 type Environment struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
+	Admin    AdminConfig    `yaml:"admin"`
 }
 
 type ServerConfig struct {
@@ -20,6 +21,10 @@ type DatabaseConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	DBName   string `yaml:"dbname"`
+}
+
+type AdminConfig struct {
+	Password string `yaml:"password"`
 }
 
 func LoadEnvironment() (Environment, error) {
