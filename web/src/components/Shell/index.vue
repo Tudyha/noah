@@ -1,0 +1,88 @@
+<template>
+  <div id="terminal" ref="terminal" />
+</template>
+
+<script>
+import { Terminal } from 'xterm'
+import { AttachAddon } from 'xterm-addon-attach'
+import { FitAddon } from 'xterm-addon-fit'
+import 'xterm/css/xterm.css'
+
+export default {
+  name: 'Shell',
+  props: {
+    id: {
+      type: Number,
+      default: null
+    },
+    shellType: {
+      type: Number,
+      default: 1
+    }
+  },
+  data() {
+    return {
+      terminal: null,
+      webSocket: null
+    }
+  },
+  mounted() {
+    this.initXterm()
+  },
+  methods: {
+    initXterm() {
+      var options = {
+        cursorBlink: true,
+        theme: {
+          background: '#000',
+          foreground: '#fff'
+        },
+        rows: 40
+      }
+
+      this.terminal = new Terminal(options)
+      const fitAddon = new FitAddon()
+      this.terminal.loadAddon(fitAddon)
+      this.terminal.open(document.getElementById('terminal'))
+      fitAddon.fit()
+
+      if (this.shellType === 1) {
+        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/shell/ws/' + this.id)
+      }
+      if (this.shellType === 2) {
+        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/pty/ws/' + this.id)
+      }
+
+      const sendSize = () => {
+        const windowSize = { high: this.terminal.rows, width: this.terminal.cols }
+        const blob = new Blob([JSON.stringify(windowSize)], { type: 'application/json' })
+        this.webSocket.send(blob)
+      }
+
+      this.webSocket.onopen = sendSize
+
+      const resizeScreen = () => {
+        fitAddon.fit()
+        sendSize()
+      }
+      window.addEventListener('resize', resizeScreen, false)
+
+      const attachAddon = new AttachAddon(this.webSocket)
+      this.terminal.loadAddon(attachAddon)
+    },
+    close() {
+      if (this.webSocket !== null) {
+        this.webSocket.close()
+      }
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+html,
+body,
+#app {
+    height: 100%;
+}
+</style>

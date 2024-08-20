@@ -1,0 +1,11 @@
+.idea
+
+.DS_Store
+
+.vscode
+
+
+data
+
+temp
+/web/node_modules
