@@ -1,12 +1,10 @@
 package device
 
 import (
+	"github.com/jinzhu/copier"
 	"noah/internal/server/dao"
 	"noah/internal/server/dto"
 	"noah/internal/server/service"
-	"time"
-
-	"github.com/jinzhu/copier"
 )
 
 type deviceService struct{}
@@ -49,12 +47,17 @@ func (ds *deviceService) GetDevice(query dto.DeviceListQueryDto) (total int64, d
 	}
 
 	copier.Copy(&deviceDtos, &devices)
-	for idx := range deviceDtos {
-		deviceDto := &deviceDtos[idx]
-		// 如果上次在线时间距离当前时间超过10分钟，则认为该设备已离线
-		if deviceDto.LastOnlineTime.Add(10 * 60 * time.Second).Before(time.Now()) {
-			deviceDto.Status = 0
-		}
-	}
+	//for idx := range deviceDtos {
+	//deviceDto := &deviceDtos[idx]
+	// 如果上次在线时间距离当前时间超过10分钟，则认为该设备已离线
+	//if deviceDto.LastOnlineTime.Add(10 * 60 * time.Second).Before(time.Now()) {
+	//	deviceDto.Status = enum.DEVICE_OFFLINE
+	//}
+	//}
 	return total, deviceDtos
+}
+
+func (ds *deviceService) ScheduleUpdateStatus() error {
+	dao.DeviceDa.ScheduleUpdateStatus()
+	return nil
 }

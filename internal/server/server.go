@@ -38,6 +38,9 @@ func NewServer() *Server {
 	r := routes.NewRouter(g)
 	r.LoadRoutes()
 
+	//cron
+	middleware.LoadCron()
+
 	return &Server{
 		G:   g,
 		Env: env,

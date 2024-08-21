@@ -6,9 +6,17 @@
           <el-input
             v-model="listQuery.hostname"
             style="width: 320px"
-            placeholder="请输入主机名称"
+            placeholder="主机名称"
             class="input-with-select round"
           />
+          <el-select v-model="listQuery.status" clearable placeholder="在线状态">
+            <el-option
+              v-for="item in map.statusOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="+item.value"
+            />
+          </el-select>
           <el-button
             class="margin-left-10"
             type="primary"
@@ -38,9 +46,9 @@
           {{ scope.row.os_name }}
         </template>
       </el-table-column>
-      <el-table-column label="ip:port" align="center">
+      <el-table-column label="ip" align="center">
         <template slot-scope="scope">
-          {{ scope.row.ip_address }}:{{ scope.row.port }}
+          {{ scope.row.ip_address }}
         </template>
       </el-table-column>
       <!-- <el-table-column label="端口号" align="center">
@@ -56,7 +64,7 @@
       <el-table-column align="center" prop="created_at" label="上次在线时间">
         <template slot-scope="scope">
           <i class="el-icon-time" />
-          <span>{{ scope.row.last_online_time }}</span>
+          <span>{{ parseTime(scope.row.last_online_time) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
@@ -106,6 +114,8 @@ import Pagination from '@/components/Pagination'
 import CollapseFilter from '@/components/CollapseFilter/index.vue'
 import Cmd from './components/cmd.vue'
 import formMixin from '@/mixins/form-father'
+import * as map from '@/map/device'
+import { parseTime } from '@/utils'
 
 export default {
   name: 'Device',
@@ -114,15 +124,15 @@ export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        0: '离线',
-        1: '在线'
+        1: '离线',
+        2: '在线'
       }
       return statusMap[status]
     },
     statusTagTypeFilter(status) {
       const statusMap = {
-        0: 'info',
-        1: 'success'
+        1: 'info',
+        2: 'success'
       }
       return statusMap[status]
     }
@@ -130,6 +140,7 @@ export default {
   mixins: [formMixin],
   data() {
     return {
+      map,
       list: null,
       listLoading: true,
       selectedRow: {},
@@ -138,7 +149,8 @@ export default {
       listQuery: {
         page: 1,
         size: 20,
-        hostname: ''
+        hostname: '',
+        status: 2
       },
       total: 0,
       cmdDialogShow: false,
@@ -149,6 +161,7 @@ export default {
     this.fetchData()
   },
   methods: {
+    parseTime,
     fetchData() {
       this.listLoading = true
       fetchList(this.listQuery).then(response => {

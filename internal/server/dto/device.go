@@ -30,4 +30,5 @@ type DeviceDto struct {
 type DeviceListQueryDto struct {
 	PageQuery
 	Hostname string `form:"hostname"`
+	Status   int8   `form:"status"`
 }

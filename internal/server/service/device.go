@@ -18,4 +18,5 @@ type IDeviceService interface {
 	Save(body dto.DevicePostDto) (id uint, err error)
 	UpdateStatus(id uint, status int8)
 	GetDevice(query dto.DeviceListQueryDto) (total int64, deviceDtos []dto.DeviceDto)
+	ScheduleUpdateStatus() error
 }

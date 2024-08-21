@@ -1,6 +1,7 @@
 package enum
 
 const (
-	DEVICE_OFFLINE = iota
+	DEVICE_UNKNOWN = iota
+	DEVICE_OFFLINE
 	DEVICE_ONLINE
 )

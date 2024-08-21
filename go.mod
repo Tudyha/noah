@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	github.com/appleboy/gin-jwt/v2 v2.9.2
 	github.com/gin-gonic/gin v1.10.0
+	github.com/robfig/cron/v3 v3.0.1
 	gorm.io/driver/sqlite v1.5.6
 )
 

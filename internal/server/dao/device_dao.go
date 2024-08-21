@@ -59,8 +59,20 @@ func (d *DeviceDao) UpdateStatus(id uint, status int8) {
 	d.Db.Model(&Device{}).Where("id = ?", id).Updates(Device{Status: status, LastOnlineTime: time.Now()})
 }
 
+func (d *DeviceDao) ScheduleUpdateStatus() {
+	d.Db.Model(&Device{}).Where("last_online_time < ?", time.Now().Add(-10*time.Minute)).Updates(Device{Status: enum.DEVICE_OFFLINE})
+}
+
 func (d *DeviceDao) Page(query dto.DeviceListQueryDto) (total int64, devices []Device) {
-	d.Db.Scopes(dto.Paginate(&query.PageQuery)).Find(&devices).Count(&total)
+	qw := d.Db.Where("1 = 1")
+	if query.Hostname != "" {
+		qw.Where("hostname LIKE ?", "%"+query.Hostname+"%")
+	}
+	if query.Status != 0 {
+		qw.Where("status = ?", query.Status)
+	}
+
+	qw.Scopes(dto.Paginate(&query.PageQuery)).Find(&devices).Count(&total)
 	return total, devices
 }
 
