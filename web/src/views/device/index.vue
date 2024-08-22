@@ -74,9 +74,9 @@
               <i class="el-icon-more" />
             </el-button>
             <el-dropdown-menu slot="dropdown">
-<!--              <el-dropdown-item @click.native="handleFile(row)">-->
-<!--                <i class="el-icon-document" /> 文件管理-->
-<!--              </el-dropdown-item>-->
+              <el-dropdown-item @click.native="handleFile(row)">
+                <i class="el-icon-document" /> 文件管理
+              </el-dropdown-item>
               <el-dropdown-item @click.native="handleCmd(row)">
                 <i class="el-icon-s-promotion" /> 执行命令
               </el-dropdown-item>
@@ -103,6 +103,15 @@
       <shell :id="selectedRow.id" ref="shell" :shell-type="shellType" />
     </el-dialog>
 
+    <el-dialog
+      v-if="fileDialogShow"
+      :title="dialogTitle"
+      :visible.sync="fileDialogShow"
+      top="10vh"
+      @close="fileDialogShow = false">
+      <file-manager :id="selectedRow.id" ref="file" />
+    </el-dialog>
+
     <cmd :v-show="cmdDialogShow" :client-id="selectedRow.id" :visible="cmdDialogShow" :title="dialogTitle" @hide="cmdDialogShow = false" />
   </div>
 </template>
@@ -116,11 +125,12 @@ import Cmd from './components/cmd.vue'
 import formMixin from '@/mixins/form-father'
 import * as map from '@/map/device'
 import { parseTime } from '@/utils'
+import FileManager from "@/components/FileManager/index.vue";
 
 export default {
   name: 'Device',
 
-  components: { CollapseFilter, Shell, Pagination, Cmd },
+  components: { CollapseFilter, Shell, Pagination, Cmd, FileManager },
   filters: {
     statusFilter(status) {
       const statusMap = {
@@ -154,6 +164,7 @@ export default {
       },
       total: 0,
       cmdDialogShow: false,
+      fileDialogShow: false,
       dialogTitle: ''
     }
   },
@@ -171,6 +182,9 @@ export default {
       })
     },
     handleFile(row) {
+      this.selectedRow = row
+      this.setDialogTitle()
+      this.fileDialogShow = true
     },
     handlePtyShell(row) {
       this.selectedRow = row

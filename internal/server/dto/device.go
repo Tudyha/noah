@@ -32,3 +32,9 @@ type DeviceListQueryDto struct {
 	Hostname string `form:"hostname"`
 	Status   int8   `form:"status"`
 }
+
+type DeviceFileDto struct {
+	Name string `json:"name" binding:"required"`
+	Path string `json:"path" binding:"required"`
+	Type int8   `json:"type" binding:"required"`
+}

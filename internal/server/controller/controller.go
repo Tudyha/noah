@@ -14,6 +14,7 @@ type Controller struct {
 	shellController  *ShellController
 	ptyController    *PtyController
 	userController   *UserController
+	fileController   *FileController
 }
 
 func NewController() *Controller {
@@ -23,6 +24,7 @@ func NewController() *Controller {
 		shellController:  NewShellController(),
 		ptyController:    NewPtyController(),
 		userController:   NewUserController(),
+		fileController:   NewFileController(),
 	}
 }
 
@@ -44,6 +46,10 @@ func (c *Controller) GetPtyController() *PtyController {
 
 func (c *Controller) GetUserController() *UserController {
 	return c.userController
+}
+
+func (c *Controller) GetFileController() *FileController {
+	return c.fileController
 }
 
 func (h *Controller) Health(c *gin.Context) {

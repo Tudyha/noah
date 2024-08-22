@@ -55,6 +55,7 @@ func (r *Router) LoadRoutes() {
 	clientController := handlers.GetClientController()
 	//shellController := handlers.GetShellController()
 	ptyController := handlers.GetPtyController()
+	fileController := handlers.GetFileController()
 
 	{
 		//免登录接口
@@ -103,6 +104,12 @@ func (r *Router) LoadRoutes() {
 				},
 			})
 		})
+
+		fileGroup := adminGroup.Group("/client/:id/file")
+		fileGroup.GET("", fileController.GetFileList)
+		fileGroup.GET("/content", fileController.GetFileContent)
+		fileGroup.POST("/rename", fileController.RenameFile)
+		fileGroup.DELETE("", fileController.DeleteFile)
 	}
 
 	router.Use(gin.Recovery())
