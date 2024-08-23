@@ -1,9 +1,15 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/google/uuid"
+	"io"
 	"net/http"
 	"noah/internal/server/dto"
 	"noah/internal/server/service"
+	"noah/internal/server/utils"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,7 +31,9 @@ func (d *FileController) GetFileList(c *gin.Context) {
 		return
 	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "ls -l "+path, "")
+	cmd := "ls -l " + path
+
+	result, err := service.GetClientService().SendCommand(uint(id), cmd, "")
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -77,7 +85,7 @@ func (d *FileController) GetFileContent(c *gin.Context) {
 		return
 	}
 	if result == "No content." {
-		Fail(c, http.StatusBadRequest, "No content.")
+		Success(c, "")
 		return
 	}
 
@@ -152,8 +160,11 @@ func parseLsL(line string) (string, int8, error) {
 	re := regexp.MustCompile(`^([d-])`)
 	matches := re.FindStringSubmatch(line)
 	if len(matches) == 0 {
-		//软连接
-		return name + strings.Fields(line)[9] + strings.Fields(line)[10], 3, nil
+		if len(strings.Fields(line)) < 11 {
+			return name, 3, nil
+		} else if len(strings.Fields(line)) >= 11 {
+			return name + strings.Fields(line)[9] + strings.Fields(line)[10], 3, nil
+		}
 	}
 
 	isDir := strings.HasPrefix(matches[1], "d")
@@ -161,4 +172,84 @@ func parseLsL(line string) (string, int8, error) {
 		return name, 2, nil
 	}
 	return name, 1, nil
+}
+
+type FileContentPostVo struct {
+	Content string `json:"content" binding:"required"`
+	Path    string `json:"path" binding:"required"`
+}
+
+func (d *FileController) UpdateFileContent(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var body FileContentPostVo
+	err := c.BindJSON(&body)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	_, err = service.GetClientService().SendCommand(uint(id), fmt.Sprintf("echo %s > %s", body.Content, body.Path), "")
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, "success")
+}
+
+func (d *FileController) UploadFile(c *gin.Context) {
+	id, _ := strconv.Atoi(c.PostForm("id"))
+	path := c.PostForm("path")
+	if path == "" {
+		Fail(c, http.StatusBadRequest, "path is required")
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		Fail(c, http.StatusBadRequest, fmt.Sprintf("Error uploading file: %s", err.Error()))
+		return
+	}
+
+	localFilename := uuid.New().String()
+	saveFilePath := "temp/" + localFilename
+
+	out, err := os.Create(saveFilePath)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, fmt.Sprintf("Error creating file: %s", err.Error()))
+		return
+	}
+	defer out.Close()
+
+	src, err := file.Open()
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, fmt.Sprintf("Error opening file: %s", err.Error()))
+		return
+	}
+	defer src.Close()
+
+	_, err = io.Copy(out, src)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, fmt.Sprintf("Error saving file: %s", err.Error()))
+		return
+	}
+
+	m := make(map[string]string)
+	m["path"] = path + "/" + file.Filename
+	m["filename"] = localFilename
+	//map转json字符串
+	jsonStr, err := json.Marshal(m)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	//发送命令，让客户端来上传文件
+	_, err = service.GetClientService().SendCommand(uint(id), "download", utils.ByteToString(jsonStr))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, "success")
 }

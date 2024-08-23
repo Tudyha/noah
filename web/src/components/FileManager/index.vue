@@ -8,9 +8,9 @@
       </el-breadcrumb>
     </div>
     <div class="file-list" style="height: 500px;overflow: auto">
-      <div v-for="(item, index) in items" :key="index" class="file-item" @click="fileClick(item)">
-        <img v-if="item.type === 2" src="./文件夹.png" alt="" />
-        <img v-else src="./文件.png" alt="" />
+      <div v-for="(item, index) in items" :key="index" class="file-item">
+        <img v-if="item.type === 2" src="./文件夹.png" alt="" @click="selectItem(item)" />
+        <img v-else src="./文件.png" alt="" @click="fileClick(item)" />
         <div class="file-name" @mouseover="showTooltip = true" @mouseout="showTooltip = false">
           {{ item.name }}
           <el-tooltip v-if="showTooltip" effect="dark" :content="item.name" placement="top-start">
@@ -22,7 +22,17 @@
             <el-button class="action-button" icon="el-icon-edit" type="primary" v-if="item.type === 1 || item.type === 2" size="mini" @click.stop="renameItem(item)"></el-button>
           </el-tooltip>
           <el-tooltip effect="dark" content="上传" placement="top">
-            <el-button class="action-button" icon="el-icon-upload" type="primary" v-if="item.type === 2" @click.stop="uploadFile(item)"></el-button>
+<!--            文件上传-->
+            <el-upload ref="upload"
+                       class="upload"
+                       action
+                       :data="item"
+                       :http-request="handleUpload"
+                       :headers="{'Authorization': 'Bearer ' + getToken()}"
+                       :on-success="handleFileUploadSuccess"
+                       :show-file-list="false">
+              <el-button class="action-button" icon="el-icon-upload" type="primary" v-if="item.type === 2"></el-button>
+            </el-upload>
           </el-tooltip>
           <el-tooltip effect="dark" content="删除" placement="top">
             <el-button class="action-button" icon="el-icon-delete" type="danger" v-if="item.type === 1 || item.type === 2" size="mini" @click.stop="deleteItem(item)"></el-button>
@@ -36,8 +46,9 @@
 </template>
 
 <script>
-import { fetchList, renameFile, deleteFile } from '@/api/file'
+import { fetchList, renameFile, deleteFile, uploadFile } from '@/api/file'
 import FilePreview from './FilePreview.vue'
+import {getToken} from "@/utils/auth";
 
 export default {
   props: {
@@ -57,17 +68,15 @@ export default {
       breadcrumbItems: [],
       showTooltip: false,
       filePreviewDialogVisible: false,
-      selectedItem: {}
+      selectedItem: {},
+      uploadUrl: ''
     };
   },
   methods: {
+    getToken,
     fileClick(item) {
-      if (item.type === 1) {
         this.selectedItem = item
         this.filePreviewDialogVisible = true
-      } else if (item.type === 2) {
-        this.selectItem(item)
-      }
     },
     selectItem(item) {
       this.currentPath = item.path;
@@ -141,9 +150,20 @@ export default {
 
       });
     },
-    uploadFile(folder) {
-      // Upload file to folder logic
-      console.log(`Uploading file to ${folder.name}`);
+    handleFileUploadSuccess(response, file, fileList) {
+    },
+    handleUpload(data) {
+      const formData = new FormData()
+      formData.append('file', data.file)
+      formData.append('path', data.data.path)
+      formData.append('id', this.id)
+      uploadFile(formData).then((res) => {
+        if (res.code === 0) {
+          this.$message.success('上传成功')
+        } else {
+          this.$message.error(res.msg)
+        }
+      })
     }
   },
   mounted() {

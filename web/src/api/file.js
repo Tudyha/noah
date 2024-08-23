@@ -31,3 +31,22 @@ export function deleteFile(data) {
     data
   })
 }
+
+export function saveFile(data) {
+  return request({
+    url: `/client/${data.id}/file/content`,
+    method: 'put',
+    data
+  })
+}
+
+export function uploadFile(data) {
+  return request({
+    url: `/client/${data.get('id')}/file`,
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}

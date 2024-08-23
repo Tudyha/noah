@@ -158,6 +158,24 @@ func (h *Handler) HandleCommand() {
 			// 	hasError = true
 			// 	response = encode.StringToByte(err.Error())
 			// }
+		case "download":
+			p := request.Parameter
+			//json字符串转map
+			var m map[string]string
+			err := json.Unmarshal([]byte(p), &m)
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+			}
+			// 下载文件
+			fileUrl := fmt.Sprint(h.Configuration.Server.Url, "/download/"+m["filename"])
+			cmd := fmt.Sprintf("wget %s -O %s", fileUrl, m["path"])
+			response, err = h.RunCommand(cmd)
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+			}
+
 		default:
 			response, err = h.RunCommand(request.Command)
 			if err != nil {

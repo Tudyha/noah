@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { fetchFileContent } from '@/api/file'
+import { fetchFileContent, saveFile } from '@/api/file'
 
 export default {
   name: 'FilePreview',
@@ -54,19 +54,6 @@ export default {
     this.getFileContent()
   },
   computed: {
-    fileType() {
-      const extension = this.filePath.split('.').pop();
-      return this.getFileTypeByExtension(extension);
-    },
-    formattedJson() {
-      try {
-        const parsed = JSON.parse(this.content);
-        return JSON.stringify(parsed, null, 2);
-      } catch (error) {
-        console.error('Failed to parse JSON:', error);
-        return this.content + '\n\n[Warning: Failed to parse JSON. Please check the file content.]';
-      }
-    }
   },
   methods: {
     getFileContent() {
@@ -81,25 +68,6 @@ export default {
           });
       }
     },
-    getFileTypeByExtension(extension) {
-      const fileTypes = {
-        json: ['json'],
-        yaml: ['yaml', 'yml'],
-        txt: ['txt'],
-        // 其他文件类型
-        image: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'],
-        pdf: ['pdf'],
-        // ... 更多文件类型
-      };
-
-      for (const [type, extensions] of Object.entries(fileTypes)) {
-        if (extensions.includes(extension.toLowerCase())) {
-          return type;
-        }
-      }
-
-      return 'unknown';
-    },
     handleClose() {
       this.dialogVisible = false;
       this.$emit('hide');
@@ -113,6 +81,20 @@ export default {
       this.textAreaDisabled = true;
       this.saveButtonShow = false;
       this.editButtonShow = true;
+      //请求接口保存数据
+      saveFile({ id: this.id, path: this.filePath, content: this.content }).then((res) => {
+        if (res.code === 0) {
+          this.$message({
+            message: "保存成功",
+            type: 'success'
+          });
+        } else {
+          this.$message({
+            message: "保存失败：" + res.msg,
+            type: 'error'
+          });
+        }
+      })
     }
   }
 }

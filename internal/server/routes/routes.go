@@ -110,6 +110,8 @@ func (r *Router) LoadRoutes() {
 		fileGroup.GET("/content", fileController.GetFileContent)
 		fileGroup.POST("/rename", fileController.RenameFile)
 		fileGroup.DELETE("", fileController.DeleteFile)
+		fileGroup.PUT("/content", fileController.UpdateFileContent)
+		fileGroup.POST("", fileController.UploadFile)
 	}
 
 	router.Use(gin.Recovery())
