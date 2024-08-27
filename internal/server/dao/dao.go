@@ -39,5 +39,5 @@ func openMysqlDb(connectStr string) (*gorm.DB, error) {
 }
 
 func openSqlLiteDb() (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open("data/gorm.db"), &gorm.Config{})
+	return gorm.Open(sqlite.Open("data/noah.db"), &gorm.Config{})
 }
