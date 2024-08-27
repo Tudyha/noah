@@ -32,5 +32,5 @@ type Pty interface {
 }
 
 type Download interface {
-	DownloadFile(filename string, filepath string) ([]byte, error)
+	DownloadFile(filename string, filepath string) error
 }

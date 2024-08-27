@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"noah/client/app/environment"
 	"noah/client/app/gateway"
+	"time"
 )
 
 type Gateway struct {
@@ -54,15 +55,21 @@ func (c Gateway) NewRequest(method string, url string, body []byte) (*gateway.Ht
 }
 
 func (c Gateway) NewFileDownloadRequest(method string, url string, body []byte) ([]byte, error) {
+	if method == "" || url == "" {
+		return nil, fmt.Errorf("method or URL cannot be empty")
+	}
 	req, err := http.NewRequest(method, fmt.Sprint(c.Configuration.Server.Url, url), bytes.NewBuffer(body))
 	if err != nil {
+		fmt.Printf("Error creating request: %v\n", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Cookie", c.Configuration.Connection.Token)
+
+	c.HttpClient.Timeout = 60 * time.Second
 
 	res, err := c.HttpClient.Do(req)
 	if err != nil {
+		fmt.Printf("Error executing request: %v\n", err)
 		return nil, err
 	}
 	defer res.Body.Close()
@@ -70,9 +77,16 @@ func (c Gateway) NewFileDownloadRequest(method string, url string, body []byte) 
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("failed with status code %d", res.StatusCode)
 	}
-	bodyBytes, err := io.ReadAll(res.Body)
+	// 使用较大的缓冲区来提高读取速度
+	const bufferSize = 4096 // 可以根据实际情况调整这个值
+	buffer := make([]byte, bufferSize)
+	bodyBytes := &bytes.Buffer{}
+
+	_, err = io.CopyBuffer(bodyBytes, res.Body, buffer)
 	if err != nil {
+		fmt.Printf("Error reading response body: %v\n", err)
 		return nil, err
 	}
-	return bodyBytes, nil
+
+	return bodyBytes.Bytes(), nil
 }

@@ -164,7 +164,7 @@ func (h *Handler) HandleCommand() {
 				response = encode.StringToByte(err.Error())
 			}
 			// 下载文件
-			_, err = h.Services.Download.DownloadFile(m["filename"], m["path"])
+			err = h.Services.Download.DownloadFile(m["filename"], m["path"])
 
 			if err != nil {
 				hasError = true
@@ -175,7 +175,7 @@ func (h *Handler) HandleCommand() {
 
 			// 下载文件
 			filepath := "/tmp/" + filename
-			_, err = h.Services.Download.DownloadFile(filename, filepath)
+			err = h.Services.Download.DownloadFile(filename, filepath)
 
 			if err != nil {
 				hasError = true
