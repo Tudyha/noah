@@ -2,27 +2,28 @@ package pty
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"noah/client/app/service"
 	"os"
 	"os/exec"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
 )
 
-type Service struct {
-}
+type Service struct{}
 
 type ptyClient struct {
-	conn      *websocket.Conn
-	pty       *os.File
-	closeSig  chan struct{}
-	readDone  chan struct{}
-	writeDone chan struct{}
+	conn     *websocket.Conn
+	pty      *os.File
+	closeSig chan struct{}
+	mu       sync.Mutex // 添加互斥锁
 }
 
 type windowSize struct {
@@ -52,21 +53,21 @@ func (t *Service) Run(wsc *websocket.Conn) error {
 		return service.ErrUnsupportedPlatform
 	}
 
-	//打开pty
+	// 打开 pty
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
 		return fmt.Errorf("failed to start PTY: %w", err)
 	}
 
 	ptyClient := &ptyClient{
-		conn:      wsc,
-		pty:       ptmx,
-		closeSig:  make(chan struct{}, 1),
-		readDone:  make(chan struct{}),
-		writeDone: make(chan struct{}),
+		conn:     wsc,
+		pty:      ptmx,
+		closeSig: make(chan struct{}),
 	}
 	defer func() {
-		ptyClient.Close()
+		if err := ptyClient.close(); err != nil {
+			ptyClient.Log("[!] Error closing ptyClient: ", err)
+		}
 		close(ptyClient.closeSig)
 	}()
 
@@ -74,14 +75,12 @@ func (t *Service) Run(wsc *websocket.Conn) error {
 		err := ptyClient.read()
 		if err != nil {
 			ptyClient.Log("[!] Error ptyClient read: ", err.Error())
-			close(ptyClient.readDone)
 		}
 	}()
 	go func() {
 		err := ptyClient.write()
 		if err != nil {
 			ptyClient.Log("[!] Error ptyClient write: ", err.Error())
-			close(ptyClient.writeDone)
 		}
 	}()
 
@@ -91,35 +90,42 @@ func (t *Service) Run(wsc *websocket.Conn) error {
 }
 
 func (c *ptyClient) Log(v ...any) {
-	fmt.Println(v...)
+	log.Println(v...)
 }
 
 func (c *ptyClient) write() error {
 	defer func() {
+		if err := c.close(); err != nil {
+			c.Log("[!] Error closing ptyClient: ", err)
+		}
 		c.closeSig <- struct{}{}
 	}()
 
 	data := make([]byte, maxMessageSize)
 
 	for {
-		//time.Sleep(10 * time.Millisecond)
 		n, readErr := c.pty.Read(data)
 		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				break
+			}
 			return readErr
 		}
-		//if n == 0 {
-		//	break
-		//}
+
 		if n > 0 {
 			if err := c.conn.WriteMessage(websocket.TextMessage, data[:n]); err != nil {
 				return err
 			}
 		}
 	}
+	return nil
 }
 
 func (c *ptyClient) read() error {
 	defer func() {
+		if err := c.close(); err != nil {
+			c.Log("[!] Error closing ptyClient: ", err)
+		}
 		c.closeSig <- struct{}{}
 	}()
 
@@ -129,6 +135,9 @@ func (c *ptyClient) read() error {
 	for {
 		msgType, connReader, err := c.conn.NextReader()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return err
 		}
 		if msgType != websocket.BinaryMessage {
@@ -156,9 +165,13 @@ func (c *ptyClient) read() error {
 			return err
 		}
 	}
+	return nil
 }
 
-func (c *ptyClient) Close() error {
+func (c *ptyClient) close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.conn != nil {
 		if err := c.conn.Close(); err != nil {
 			return err
@@ -172,5 +185,6 @@ func (c *ptyClient) Close() error {
 		}
 		c.pty = nil
 	}
+
 	return nil
 }
