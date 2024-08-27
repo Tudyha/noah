@@ -129,16 +129,14 @@ func (h *ClientController) Update(c *gin.Context) {
 		return
 	}
 
-	req.Filename = "update"
-
-	_, err := generate(req)
+	filename, err := generate(req)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	//发送命令让客户端升级
-	_, err = service.GetClientService().SendCommand(uint(id), "update", req.Filename)
+	_, err = service.GetClientService().SendCommand(uint(id), "update", filename)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
