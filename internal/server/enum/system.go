@@ -28,8 +28,11 @@ var OSTargetIntMap = map[int]OSType{
 }
 
 // DetectOS return an int which represent an OS type
-func DetectOS() OSType {
-	switch runtime.GOOS {
+func DetectOS(osName string) OSType {
+	if osName == "" {
+		osName = runtime.GOOS
+	}
+	switch osName {
 	case `windows`:
 		return Windows
 	case `linux`:

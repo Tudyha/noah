@@ -7,10 +7,6 @@ import (
 	"noah/client/app/utils"
 )
 
-var (
-	Version = "dev"
-)
-
 //go:embed config.json
 var configFile []byte
 

@@ -15,3 +15,11 @@ export function cmd(data) {
     data
   })
 }
+
+export function update(data) {
+  return request({
+    url: `/client/${data.id}/update`,
+    method: 'post',
+    data
+  })
+}

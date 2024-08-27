@@ -1,4 +1,6 @@
 {
+    "version": "1.0",
+    "version_code": 1,
     "server_address": "127.0.0.1",
     "server_port": "8080"
 }

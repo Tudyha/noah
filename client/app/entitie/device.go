@@ -3,11 +3,11 @@ package entitie
 type Device struct {
 	Hostname    string `json:"hostname"`
 	Username    string `json:"username"`
-	UserID      string `json:"user_id"`
-	OSName      string `json:"os_name"`
-	OSArch      string `json:"os_arch"`
-	MacAddress  string `json:"mac_address"`
-	IPAddress   string `json:"ip_address"`
+	UserID      string `json:"userId"`
+	OSName      string `json:"osName"`
+	OSArch      string `json:"osArch"`
+	MacAddress  string `json:"macAddress"`
+	IPAddress   string `json:"ipAddress"`
 	Port        string `json:"port"`
-	FetchedUnix int64  `json:"fetched_unix"`
+	FetchedUnix int64  `json:"fetchedUnix"`
 }

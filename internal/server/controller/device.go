@@ -16,14 +16,15 @@ func NewDeviceController() *DeviceController {
 }
 
 type DevicePostVo struct {
-	Hostname   string `json:"hostname" binding:"required"`
-	Username   string `json:"username" binding:"required"`
-	UserID     string `json:"user_id" binding:"required"`
-	OSName     string `json:"os_name" binding:"required"`
-	OSArch     string `json:"os_arch" binding:"required"`
-	MacAddress string `json:"mac_address" binding:"required"`
-	IPAddress  string `json:"ip_address"`
-	Port       string `json:"port"`
+	Hostname    string `json:"hostname"`
+	Username    string `json:"username"`
+	UserID      string `json:"userId"`
+	OSName      string `json:"osName"`
+	OSArch      string `json:"osArch"`
+	MacAddress  string `json:"macAddress"`
+	IPAddress   string `json:"ipAddress"`
+	Port        string `json:"port"`
+	FetchedUnix int64  `json:"fetchedUnix"`
 }
 
 func (d *DeviceController) CreateDevice(c *gin.Context) {

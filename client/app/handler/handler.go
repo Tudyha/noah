@@ -8,6 +8,8 @@ import (
 	"noah/client/app/environment"
 	"noah/client/app/service"
 	"noah/client/app/utils/encode"
+	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -40,7 +42,7 @@ func NewHandler(
 	}
 }
 
-// heart-beat
+// KeepConnection heart-beat
 func (h *Handler) KeepConnection() {
 	sleepTime := 30 * time.Second
 
@@ -65,7 +67,7 @@ func (h *Handler) Log(v ...any) {
 	fmt.Println(v...)
 }
 
-// Report device information
+// SendDeviceSpecs Report device information
 func (h *Handler) SendDeviceSpecs() (id uint, err error) {
 	deviceSpecs, err := h.Services.Information.LoadDeviceSpecs()
 	if err != nil {
@@ -75,8 +77,7 @@ func (h *Handler) SendDeviceSpecs() (id uint, err error) {
 	if err != nil {
 		return 0, err
 	}
-	url := fmt.Sprint(h.Configuration.Server.Url, "/client/device")
-	res, err := h.Gateway.NewRequest(http.MethodPost, url, body)
+	res, err := h.Gateway.NewRequest(http.MethodPost, "/client/device", body)
 	if err != nil {
 		return 0, err
 	}
@@ -87,8 +88,7 @@ func (h *Handler) SendDeviceSpecs() (id uint, err error) {
 }
 
 func (h *Handler) ServerIsAvailable() error {
-	url := fmt.Sprint(h.Configuration.Server.Url, "/client/health/"+strconv.FormatUint(uint64(h.ClientID), 10))
-	res, err := h.Gateway.NewRequest(http.MethodGet, url, nil)
+	res, err := h.Gateway.NewRequest(http.MethodGet, "/client/health/"+strconv.FormatUint(uint64(h.ClientID), 10), nil)
 	if err != nil {
 		return err
 	}
@@ -154,10 +154,6 @@ func (h *Handler) HandleCommand() {
 				response = encode.StringToByte(err.Error())
 			}
 			go h.Services.Pty.Run(conn)
-			// if err != nil {
-			// 	hasError = true
-			// 	response = encode.StringToByte(err.Error())
-			// }
 		case "download":
 			p := request.Parameter
 			//json字符串转map
@@ -168,13 +164,51 @@ func (h *Handler) HandleCommand() {
 				response = encode.StringToByte(err.Error())
 			}
 			// 下载文件
-			fileUrl := fmt.Sprint(h.Configuration.Server.Url, "/download/"+m["filename"])
-			cmd := fmt.Sprintf("wget %s -O %s", fileUrl, m["path"])
-			response, err = h.RunCommand(cmd)
+			_, err = h.Services.Download.DownloadFile(m["filename"], m["path"])
+
 			if err != nil {
 				hasError = true
 				response = encode.StringToByte(err.Error())
 			}
+		case "update":
+			filename := request.Parameter
+
+			// 下载文件
+			filepath := "/tmp/" + filename
+			_, err = h.Services.Download.DownloadFile(filename, filepath)
+
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+				break
+			}
+
+			// 设置新版本文件的执行权限
+			err = os.Chmod(filepath, 0755)
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+				break
+			}
+			// 使用 nohup 命令启动新进程
+			cmd := exec.Command("nohup", filepath, "&")
+
+			// 重定向标准输出和错误输出到 /dev/null
+			//cmd.Stdout = os.DevNull
+			//cmd.Stderr = os.DevNull
+
+			err = cmd.Start()
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+				return
+			}
+
+			// 等待一段时间以确保新进程已经启动
+			time.Sleep(1 * time.Second)
+
+			// 确保新进程已经启动后再退出当前进程
+			os.Exit(0)
 
 		default:
 			response, err = h.RunCommand(request.Command)

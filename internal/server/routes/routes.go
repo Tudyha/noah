@@ -85,6 +85,7 @@ func (r *Router) LoadRoutes() {
 		adminClientGroup := adminGroup.Group("client")
 		adminClientGroup.POST("/cmd", clientController.SendCommandHandler)
 		adminClientGroup.POST("/generate", clientController.Generate)
+		adminClientGroup.POST("/:id/update", clientController.Update)
 
 		userGroup := adminGroup.Group("user")
 		//userGroup.POST("login", func(ctx *gin.Context) {

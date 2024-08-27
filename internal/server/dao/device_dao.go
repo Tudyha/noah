@@ -14,16 +14,17 @@ type DeviceDao struct {
 
 type Device struct {
 	gorm.Model
-	Hostname       string    `gorm:"comment:主机名"`
-	Username       string    `gorm:"comment:用户名"`
-	UserID         string    `gorm:"comment:用户id"`
-	OSName         string    `gorm:"comment:系统名称"`
-	OSArch         string    `gorm:"comment:系统发行版本"`
-	MacAddress     string    `gorm:"unique;comment:mac地址"`
-	IPAddress      string    `gorm:"comment:ip地址"`
-	Port           string    `gorm:"comment:端口号"`
-	Status         int8      `gorm:"default:0;comment:设备状态 0-offline,1-online"`
-	LastOnlineTime time.Time `gorm:"comment:最后上线时间"`
+	Hostname       string      `gorm:"comment:主机名"`
+	Username       string      `gorm:"comment:用户名"`
+	UserID         string      `gorm:"comment:用户id"`
+	OsType         enum.OSType `gorm:"comment:操作系统类型"`
+	OSName         string      `gorm:"comment:系统名称"`
+	OSArch         string      `gorm:"comment:系统发行版本"`
+	MacAddress     string      `gorm:"unique;comment:mac地址"`
+	IPAddress      string      `gorm:"comment:ip地址"`
+	Port           string      `gorm:"comment:端口号"`
+	Status         int8        `gorm:"default:0;comment:设备状态 0-offline,1-online"`
+	LastOnlineTime time.Time   `gorm:"comment:最后上线时间"`
 }
 
 func (Device) TableName() string {

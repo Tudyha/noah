@@ -8,4 +8,5 @@ type HttpResponse struct {
 
 type Gateway interface {
 	NewRequest(method string, url string, body []byte) (*HttpResponse, error)
+	NewFileDownloadRequest(method string, url string, body []byte) ([]byte, error)
 }

@@ -15,7 +15,7 @@ func NewService() service.Terminal {
 }
 
 func (t Service) Run(command string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 
 	var cmd *exec.Cmd

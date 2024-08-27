@@ -4,6 +4,7 @@ import (
 	"github.com/jinzhu/copier"
 	"noah/internal/server/dao"
 	"noah/internal/server/dto"
+	"noah/internal/server/enum"
 	"noah/internal/server/service"
 )
 
@@ -16,6 +17,7 @@ func init() {
 func (ds *deviceService) Save(body dto.DevicePostDto) (id uint, err error) {
 	var device dao.Device
 	copier.Copy(&device, &body)
+	device.OsType = enum.DetectOS(device.OSName)
 
 	old := dao.DeviceDa.GetByMacAddress(device.MacAddress)
 	if old.ID != 0 {
@@ -47,13 +49,6 @@ func (ds *deviceService) GetDevice(query dto.DeviceListQueryDto) (total int64, d
 	}
 
 	copier.Copy(&deviceDtos, &devices)
-	//for idx := range deviceDtos {
-	//deviceDto := &deviceDtos[idx]
-	// 如果上次在线时间距离当前时间超过10分钟，则认为该设备已离线
-	//if deviceDto.LastOnlineTime.Add(10 * 60 * time.Second).Before(time.Now()) {
-	//	deviceDto.Status = enum.DEVICE_OFFLINE
-	//}
-	//}
 	return total, deviceDtos
 }
 

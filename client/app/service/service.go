@@ -16,6 +16,7 @@ type Services struct {
 	Information
 	Terminal
 	Pty
+	Download
 }
 
 type Information interface {
@@ -28,4 +29,8 @@ type Terminal interface {
 
 type Pty interface {
 	Run(wsc *websocket.Conn) error
+}
+
+type Download interface {
+	DownloadFile(filename string, filepath string) ([]byte, error)
 }

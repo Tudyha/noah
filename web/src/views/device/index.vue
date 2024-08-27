@@ -43,12 +43,12 @@
       </el-table-column>
       <el-table-column label="主机类型" align="center">
         <template slot-scope="scope">
-          {{ scope.row.os_name }}
+          {{ scope.row.osName }}
         </template>
       </el-table-column>
       <el-table-column label="ip" align="center">
         <template slot-scope="scope">
-          {{ scope.row.ip_address }}
+          {{ scope.row.ipAddress }}
         </template>
       </el-table-column>
       <!-- <el-table-column label="端口号" align="center">
@@ -64,7 +64,7 @@
       <el-table-column align="center" prop="created_at" label="上次在线时间">
         <template slot-scope="scope">
           <i class="el-icon-time" />
-          <span>{{ parseTime(scope.row.last_online_time) }}</span>
+          <span>{{ parseTime(scope.row.lastOnlineTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
@@ -82,6 +82,9 @@
               </el-dropdown-item>
               <el-dropdown-item @click.native="handlePtyShell(row)">
                 <i class="el-icon-setting" /> Shell
+              </el-dropdown-item>
+              <el-dropdown-item @click.native="handleUpdateClient(row)">
+                <i class="el-icon-s-tools" /> 更新客户端
               </el-dropdown-item>
 <!--              <el-dropdown-item @click.native="handleSshShell(row)">-->
 <!--                <i class="el-icon-edit" /> SSH Shell-->
@@ -113,6 +116,7 @@
     </el-dialog>
 
     <cmd :v-show="cmdDialogShow" :client-id="selectedRow.id" :visible="cmdDialogShow" :title="dialogTitle" @hide="cmdDialogShow = false" />
+    <update-client :v-show="updateDialogShow" :client-id="selectedRow.id" :visible="updateDialogShow" :os-type="selectedRow.osType" @hide="updateDialogShow = false" />
   </div>
 </template>
 
@@ -125,12 +129,13 @@ import Cmd from './components/cmd.vue'
 import formMixin from '@/mixins/form-father'
 import * as map from '@/map/device'
 import { parseTime } from '@/utils'
-import FileManager from "@/components/FileManager/index.vue";
+import FileManager from '@/components/FileManager/index.vue'
+import UpdateClient from './components/update-client.vue'
 
 export default {
   name: 'Device',
 
-  components: { CollapseFilter, Shell, Pagination, Cmd, FileManager },
+  components: { CollapseFilter, Shell, Pagination, Cmd, FileManager, UpdateClient },
   filters: {
     statusFilter(status) {
       const statusMap = {
@@ -165,7 +170,8 @@ export default {
       total: 0,
       cmdDialogShow: false,
       fileDialogShow: false,
-      dialogTitle: ''
+      dialogTitle: '',
+      updateDialogShow: false
     }
   },
   created() {
@@ -205,10 +211,14 @@ export default {
     },
     setDialogTitle() {
       const d = this.selectedRow
-      this.dialogTitle = `IP: ${d.ip_address} Hostname: ${d.hostname} Username: ${d.username}`
+      this.dialogTitle = `IP: ${d.ipAddress} Hostname: ${d.hostname} Username: ${d.username}`
     },
     closeShellDialog() {
       this.$refs.shell.close()
+    },
+    handleUpdateClient(row) {
+      this.selectedRow = row
+      this.updateDialogShow = true
     }
   }
 }

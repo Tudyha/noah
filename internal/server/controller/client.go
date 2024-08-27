@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/service"
@@ -76,7 +77,7 @@ func (h *ClientController) SendCommandHandler(c *gin.Context) {
 type ClientGenerateReq struct {
 	ServerAddr string `json:"serverAddr" binding:"required"`
 	Port       string `json:"port" binding:"required"`
-	OsType     int8   `json:"osType" binding:"required"`
+	OsType     int8   `json:"osType"`
 	Filename   string `json:"filename"`
 }
 
@@ -87,27 +88,58 @@ func (h *ClientController) Generate(c *gin.Context) {
 		return
 	}
 
-	if len(strings.TrimSpace(req.ServerAddr)) == 0 {
-		Fail(c, http.StatusBadRequest, "serverAddr is empty")
-		return
-	}
-
-	if len(strings.TrimSpace(req.Port)) == 0 {
-		Fail(c, http.StatusBadRequest, "port is empty")
-		return
-	}
-
-	filename, err := service.GetClientService().Generate(req.ServerAddr, req.Port, req.OsType, req.Filename)
+	filename, err := generate(req)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	Success(c, filename)
 }
 
+func generate(req ClientGenerateReq) (string, error) {
+	if len(strings.TrimSpace(req.ServerAddr)) == 0 {
+		return "", errors.New("serverAddr is empty")
+	}
+
+	if len(strings.TrimSpace(req.Port)) == 0 {
+		return "", errors.New("port is empty")
+	}
+
+	filename, err := service.GetClientService().Generate(req.ServerAddr, req.Port, req.OsType, req.Filename)
+	if err != nil {
+		return "", err
+	}
+	return filename, nil
+}
+
 func (h *ClientController) Download(c *gin.Context) {
 	filename := c.Param("filename")
 
 	c.File("temp/" + filename)
+}
+
+func (h *ClientController) Update(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	//先生成最新客户端
+	var req ClientGenerateReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	filename, err := generate(req)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	//发送命令让客户端升级
+	_, err = service.GetClientService().SendCommand(uint(id), "update", filename)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	Success(c, "success")
 }

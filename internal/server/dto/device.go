@@ -1,30 +1,34 @@
 package dto
 
-import "time"
+import (
+	"noah/internal/server/enum"
+	"time"
+)
 
 type DevicePostDto struct {
 	Hostname   string `json:"hostname" binding:"required"`
 	Username   string `json:"username" binding:"required"`
-	UserID     string `json:"user_id" binding:"required"`
-	OSName     string `json:"os_name" binding:"required"`
-	OSArch     string `json:"os_arch" binding:"required"`
-	MacAddress string `json:"mac_address" binding:"required"`
-	IPAddress  string `json:"ip_address"`
+	UserID     string `json:"userId" binding:"required"`
+	OSName     string `json:"osName" binding:"required"`
+	OSArch     string `json:"osArch" binding:"required"`
+	MacAddress string `json:"macAddress" binding:"required"`
+	IPAddress  string `json:"ipAddress"`
 	Port       string `json:"port"`
 }
 
 type DeviceDto struct {
-	ID             uint      `json:"id" binding:"required"`
-	Hostname       string    `json:"hostname" binding:"required"`
-	Username       string    `json:"username" binding:"required"`
-	UserID         string    `json:"user_id" binding:"required"`
-	OSName         string    `json:"os_name" binding:"required"`
-	OSArch         string    `json:"os_arch" binding:"required"`
-	MacAddress     string    `json:"mac_address" binding:"required"`
-	IPAddress      string    `json:"ip_address"`
-	Port           string    `json:"port"`
-	Status         int8      `json:"status" comment:"0-offline 1-online"`
-	LastOnlineTime time.Time `json:"last_online_time" comment:"最后上线时间"`
+	ID             uint        `json:"id" binding:"required"`
+	Hostname       string      `json:"hostname" binding:"required"`
+	Username       string      `json:"username" binding:"required"`
+	UserID         string      `json:"userId" binding:"required"`
+	OsType         enum.OSType `json:"osType"`
+	OSName         string      `json:"osName" binding:"required"`
+	OSArch         string      `json:"osArch" binding:"required"`
+	MacAddress     string      `json:"macAddress" binding:"required"`
+	IPAddress      string      `json:"ipAddress"`
+	Port           string      `json:"port"`
+	Status         int8        `json:"status" comment:"0-offline 1-online"`
+	LastOnlineTime time.Time   `json:"lastOnlineTime" comment:"最后上线时间"`
 }
 
 type DeviceListQueryDto struct {
