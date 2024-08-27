@@ -5,6 +5,7 @@
       :model="form"
       :rules="rules"
     >
+      <el-loading :is-full-page="false" :visible.sync="loading"></el-loading>
       <el-form-item label="服务器地址：" prop="serverAddr">
         <el-input v-model="form.serverAddr" placeholder="" style="width: 300px" />
       </el-form-item>
@@ -50,7 +51,8 @@ export default {
       rules: {
         serverAddr: [{ required: true, message: '必填', trigger: 'change' }],
         port: [{ required: true, message: '必填', trigger: 'change' }]
-      }
+      },
+      loading: false
     }
   },
   mounted() {
@@ -59,12 +61,15 @@ export default {
   methods: {
     handleSubmit() {
       this.form.osType = this.osType
+      this.loading = true
       this.$refs.form.validate(async(valid) => {
         if (!valid) {
+          this.loading = false
           return
         }
         this.form.id = this.clientId
         update(this.form).then(res => {
+          this.loading = false
           if (res.code === 0) {
             this.$message({
               message: '更新成功',
@@ -77,6 +82,8 @@ export default {
               type: 'error'
             })
           }
+        }).catch(() => {
+          this.loading = false
         })
       })
 
