@@ -183,6 +183,9 @@ func (h *Handler) HandleCommand() {
 				break
 			}
 
+			//删除服务器文件
+			h.Gateway.NewRequest(http.MethodDelete, "/file/"+filename, nil)
+
 			// 设置新版本文件的执行权限
 			err = os.Chmod(filepath, 0755)
 			if err != nil {
@@ -208,6 +211,8 @@ func (h *Handler) HandleCommand() {
 			time.Sleep(1 * time.Second)
 
 			// 确保新进程已经启动后再退出当前进程
+			os.Exit(0)
+		case "exit":
 			os.Exit(0)
 
 		default:

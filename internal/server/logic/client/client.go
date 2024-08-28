@@ -57,12 +57,18 @@ func (c *clientService) getConnection(clientID uint) (*websocket.Conn, bool) {
 	return conn, found
 }
 
-// func (c *clientService) removeConnection(clientID uint) error {
-// 	c.mu.Lock()
-// 	delete(c.clients, clientID)
-// 	c.mu.Unlock()
-// 	return nil
-// }
+func (c *clientService) removeConnection(clientID uint) error {
+	c.mu.Lock()
+	if conn, found := c.clients[clientID]; !found {
+	} else {
+		err := conn.Close()
+		if err != nil {
+		}
+	}
+	delete(c.clients, clientID)
+	c.mu.Unlock()
+	return nil
+}
 
 // SendCommand 执行命令
 func (c *clientService) SendCommand(id uint, commandStr string, parameter string) (string, error) {
@@ -153,14 +159,14 @@ func (c *clientService) Generate(serverAddr string, port string, osType int8, fi
 	return filename, nil
 }
 
-func (c clientService) BuildClientConfiguration(serverAddr string, port string) (clientConfig *ClientConfig, err error) {
+func (c *clientService) BuildClientConfiguration(serverAddr string, port string) (clientConfig *ClientConfig, err error) {
 	return &ClientConfig{
 		ServerAddress: serverAddr,
 		ServerPort:    port,
 	}, err
 }
 
-func (c clientService) WriteClientConfigurationFile(clientConfig *ClientConfig, buildPath string) error {
+func (c *clientService) WriteClientConfigurationFile(clientConfig *ClientConfig, buildPath string) error {
 	configurationJson, err := json.Marshal(clientConfig)
 	if err != nil {
 		return err
@@ -227,4 +233,12 @@ func buildFilename(os enum.OSType, filename string) string {
 	default:
 		return filename
 	}
+}
+
+// Exit 关闭连接
+func (c *clientService) Exit(id uint) error {
+	if err := c.removeConnection(id); err != nil {
+		return err
+	}
+	return nil
 }

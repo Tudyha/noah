@@ -86,6 +86,9 @@
               <el-dropdown-item @click.native="handleUpdateClient(row)">
                 <i class="el-icon-s-tools" /> 更新客户端
               </el-dropdown-item>
+              <el-dropdown-item @click.native="handleDelete(row)">
+                <i class="el-icon-delete" /> 删除
+              </el-dropdown-item>
 <!--              <el-dropdown-item @click.native="handleSshShell(row)">-->
 <!--                <i class="el-icon-edit" /> SSH Shell-->
 <!--              </el-dropdown-item>-->
@@ -121,7 +124,7 @@
 </template>
 
 <script>
-import { fetchList } from '@/api/device'
+import { fetchList, deleteDevice } from '@/api/device'
 import Shell from '@/components/Shell'
 import Pagination from '@/components/Pagination'
 import CollapseFilter from '@/components/CollapseFilter/index.vue'
@@ -219,6 +222,24 @@ export default {
     handleUpdateClient(row) {
       this.selectedRow = row
       this.updateDialogShow = true
+    },
+    handleDelete(row) {
+      this.$confirm('是否确认删除：' + row.hostname, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }).then(() => {
+        deleteDevice(row.id).then((res) => {
+          if (res.code === 0) {
+            this.$message.success('删除成功')
+            this.fetchData()
+          } else {
+            this.$message.error(res.msg)
+          }
+        })
+      }).catch(() => {
+
+      });
     }
   }
 }

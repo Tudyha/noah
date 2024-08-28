@@ -16,26 +16,9 @@ export function cmd(data) {
   })
 }
 
-export function fetchFiles(params) {
+export function deleteDevice(id) {
   return request({
-    url: `/device/${params.id}/files`,
-    method: 'get',
-    params: {path: params.path}
-  })
-}
-
-export function fetchFileContent(params) {
-  return request({
-    url: `/device/${params.id}/files/content`,
-    method: 'get',
-    params: {path: params.path}
-  })
-}
-
-export function renameFile(data) {
-  return request({
-    url: `/device/${data.id}/files/rename`,
-    method: 'post',
-    data
+    url: `/device/${id}`,
+    method: 'delete'
   })
 }

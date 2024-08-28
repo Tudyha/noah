@@ -68,7 +68,7 @@ export default {
           return
         }
         await generate(this.form).then((res) => {
-          window.open(process.env.VUE_APP_BASE_API + '/download/' + res.data + '?token=' + store.getters.token, '_self')
+          window.open(process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + store.getters.token, '_self')
         })
       })
     }

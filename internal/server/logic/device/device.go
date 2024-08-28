@@ -56,3 +56,7 @@ func (ds *deviceService) ScheduleUpdateStatus() error {
 	dao.DeviceDa.ScheduleUpdateStatus()
 	return nil
 }
+
+func (ds *deviceService) Delete(id uint) error {
+	return dao.DeviceDa.Delete(id)
+}

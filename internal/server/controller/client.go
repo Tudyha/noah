@@ -113,12 +113,6 @@ func generate(req ClientGenerateReq) (string, error) {
 	return filename, nil
 }
 
-func (h *ClientController) Download(c *gin.Context) {
-	filename := c.Param("filename")
-
-	c.File("temp/" + filename)
-}
-
 func (h *ClientController) Update(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 

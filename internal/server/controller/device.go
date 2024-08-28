@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"noah/internal/server/dto"
 	"noah/internal/server/service"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
@@ -67,5 +68,24 @@ func (d *DeviceController) GetDevice(c *gin.Context) {
 }
 
 func (d *DeviceController) DeleteDevice(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	_, err := service.GetClientService().SendCommand(uint(id), "exit", "")
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = service.GetClientService().Exit(uint(id))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = service.GetDeviceService().Delete(uint(id))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	Success(c, nil)
 }

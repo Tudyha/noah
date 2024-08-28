@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"noah/internal/server/controller"
 	"noah/internal/server/middleware"
+	"noah/internal/server/utils"
 )
 
 type Router struct {
@@ -68,7 +69,14 @@ func (r *Router) LoadRoutes() {
 		ptyGroup.GET("/ws/:id", ptyController.WebSocket)
 		ptyGroup.GET("/client/ws/:channelId", clientController.NewPtyClient)
 
-		router.GET("/download/:filename", clientController.Download)
+		router.GET("/file/download/:filename", func(c *gin.Context) {
+			filename := c.Param("filename")
+			c.File("temp/" + filename)
+		})
+		router.DELETE("/file/:filename", func(c *gin.Context) {
+			filename := c.Param("filename")
+			utils.RemoveFile("temp/" + filename)
+		})
 
 	}
 
@@ -77,7 +85,7 @@ func (r *Router) LoadRoutes() {
 		//需要登录接口
 		deviceGroup := adminGroup.Group("device")
 		deviceGroup.GET("", deviceController.GetDevice)
-		deviceGroup.DELETE("", deviceController.DeleteDevice)
+		deviceGroup.DELETE("/:id", deviceController.DeleteDevice)
 
 		//shellGroup := router.Group("shell")
 		//shellGroup.GET("/ws/:id", shellController.WebSocket)

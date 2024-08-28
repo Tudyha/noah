@@ -81,3 +81,8 @@ func (d *DeviceDao) GetById(id uint) (device Device) {
 	d.Db.Where("id = ?", id).First(&device)
 	return device
 }
+
+func (d *DeviceDao) Delete(id uint) error {
+	d.Db.Unscoped().Delete(&Device{}, id)
+	return nil
+}

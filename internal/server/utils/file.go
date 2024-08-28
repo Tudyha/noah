@@ -12,3 +12,7 @@ func WriteFile(filepath string, s []byte) error {
 	_, err = f.Write(s)
 	return err
 }
+
+func RemoveFile(filePath string) error {
+	return os.Remove(filePath)
+}

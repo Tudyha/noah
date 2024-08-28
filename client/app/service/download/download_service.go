@@ -19,7 +19,7 @@ func NewService(gateway gateway.Gateway) service.Download {
 }
 
 func (d Service) DownloadFile(filename string, filepath string) error {
-	url := fmt.Sprintf("/download/%s", filename)
+	url := fmt.Sprintf("/file/download/%s", filename)
 
 	res, err := d.Gateway.NewFileDownloadRequest(http.MethodGet, url, nil)
 	if err != nil {

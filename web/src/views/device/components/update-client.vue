@@ -5,7 +5,6 @@
       :model="form"
       :rules="rules"
     >
-      <el-loading :is-full-page="false" :visible.sync="loading"></el-loading>
       <el-form-item label="服务器地址：" prop="serverAddr">
         <el-input v-model="form.serverAddr" placeholder="" style="width: 300px" />
       </el-form-item>
@@ -14,7 +13,7 @@
       </el-form-item>
     </el-form>
     <div slot="footer" class="dialog-footer">
-      <el-button type="primary" @click="handleSubmit()">确 定</el-button>
+      <el-button type="primary" :loading="loading" @click="handleSubmit()">确 定</el-button>
     </div>
   </el-dialog>
 </template>
