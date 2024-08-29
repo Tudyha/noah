@@ -3,18 +3,16 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"noah/internal/server/dto"
 	"noah/internal/server/service"
 	"noah/internal/server/utils"
+	"noah/internal/server/vo"
 	"os"
-	"regexp"
 	"strconv"
-	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 type FileController struct{}
@@ -31,44 +29,30 @@ func (d *FileController) GetFileList(c *gin.Context) {
 		return
 	}
 
-	cmd := "ls -l " + path
-
-	result, err := service.GetClientService().SendCommand(uint(id), cmd, "")
+	query := &dto.FileExplorerQueryDto{
+		Op:   "list",
+		Path: path,
+	}
+	jsonStr, err := json.Marshal(query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if result == "No content." {
-		Fail(c, http.StatusBadRequest, "No content.")
+
+	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	var data []dto.DeviceFileDto
-	for i, line := range strings.Split(result, "\n") {
-		if i == 0 {
-			continue
-		}
-		if line == "" {
-			continue
-		}
-		name, fType, err := parseLsL(line)
-		if err != nil {
-			Fail(c, http.StatusBadRequest, err.Error())
-			return
-		}
-		var pPath string
-		if path == "/" {
-			pPath = path
-		} else {
-			pPath = path + "/"
-		}
-		data = append(data, dto.DeviceFileDto{
-			Type: fType,
-			Name: name,
-			Path: pPath + name,
-		})
+	var fileList []dto.FileExplorer
+	err = json.Unmarshal([]byte(result), &fileList)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	Success(c, data)
+	Success(c, fileList)
 }
 
 func (d *FileController) GetFileContent(c *gin.Context) {
@@ -79,122 +63,109 @@ func (d *FileController) GetFileContent(c *gin.Context) {
 		return
 	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "cat "+path, "")
+	query := &dto.FileExplorerQueryDto{
+		Op:   "cat",
+		Path: path,
+	}
+	jsonStr, err := json.Marshal(query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if result == "No content." {
-		Success(c, "")
+
+	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	Success(c, result)
-}
-
-type FileRenamePostVo struct {
-	Name string `json:"name" binding:"required"`
-	Path string `json:"path" binding:"required"`
 }
 
 func (d *FileController) RenameFile(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body FileRenamePostVo
+	var body vo.DeviceFileRenamePostVo
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	//去掉/分割的最后一个元素
-	pPath := strings.Join(strings.Split(body.Path, "/")[:len(strings.Split(body.Path, "/"))-1], "/")
-
-	result, err := service.GetClientService().SendCommand(uint(id), "mv "+body.Path+" "+pPath+"/"+body.Name, "")
+	query := &dto.FileExplorerQueryDto{
+		Op:       "rename",
+		Path:     body.Path,
+		Filename: body.Filename,
+	}
+	jsonStr, err := json.Marshal(query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if result == "No content." {
-		Success(c, "")
+
+	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	Success(c, result)
-}
-
-type FileDeletePostVo struct {
-	Path string `json:"path" binding:"required"`
-	Type int8   `json:"type" binding:"required"`
 }
 
 func (d *FileController) DeleteFile(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body FileDeletePostVo
+	var body vo.DeviceFileDeletePostVo
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	cmd := "rm -rf " + body.Path
-	if body.Type == 1 {
-		cmd = "rm -f " + body.Path
+	query := &dto.FileExplorerQueryDto{
+		Op:   "remove",
+		Path: body.Path,
 	}
-
-	result, err := service.GetClientService().SendCommand(uint(id), cmd, "")
+	jsonStr, err := json.Marshal(query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if result == "No content." {
-		Success(c, "")
+
+	result, err := service.GetClientService().SendCommand(uint(id), "explorer", string(jsonStr))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	Success(c, result)
 }
 
-func parseLsL(line string) (string, int8, error) {
-	name := strings.Fields(line)[8]
-
-	re := regexp.MustCompile(`^([d-])`)
-	matches := re.FindStringSubmatch(line)
-	if len(matches) == 0 {
-		if len(strings.Fields(line)) < 11 {
-			return name, 3, nil
-		} else if len(strings.Fields(line)) >= 11 {
-			return name + strings.Fields(line)[9] + strings.Fields(line)[10], 3, nil
-		}
-	}
-
-	isDir := strings.HasPrefix(matches[1], "d")
-	if isDir {
-		return name, 2, nil
-	}
-	return name, 1, nil
-}
-
-type FileContentPostVo struct {
-	Content string `json:"content" binding:"required"`
-	Path    string `json:"path" binding:"required"`
-}
-
 func (d *FileController) UpdateFileContent(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body FileContentPostVo
+	var body vo.DeviceFileContentPostVo
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	_, err = service.GetClientService().SendCommand(uint(id), fmt.Sprintf("echo %s > %s", body.Content, body.Path), "")
+	query := &dto.FileExplorerQueryDto{
+		Op:          "edit",
+		Path:        body.Path,
+		FileContent: body.Content,
+	}
+	jsonStr, err := json.Marshal(query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	Success(c, "success")
+	result, err := service.GetClientService().SendCommand(uint(id), "explorer", string(jsonStr))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, result)
 }
 
 func (d *FileController) UploadFile(c *gin.Context) {
@@ -252,4 +223,32 @@ func (d *FileController) UploadFile(c *gin.Context) {
 	}
 
 	Success(c, "success")
+}
+
+func (d *FileController) NewDir(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var body vo.DeviceFileNewDirPostVo
+	err := c.BindJSON(&body)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	query := &dto.FileExplorerQueryDto{
+		Op:   "mkdir",
+		Path: body.Path,
+	}
+	jsonStr, err := json.Marshal(query)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, result)
 }

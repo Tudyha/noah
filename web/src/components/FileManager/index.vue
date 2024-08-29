@@ -3,17 +3,17 @@
     <div class="path-bar">
       <el-breadcrumb separator-class="el-icon-arrow-right">
         <el-breadcrumb-item v-for="(item, index) in breadcrumbItems" :key="index">
-          <a href="#" @click.prevent="handlerPathClick(item.path)">{{ item.name }}</a>
+          <a href="#" @click.prevent="handlerPathClick(item.path)">{{ item.filename }}</a>
         </el-breadcrumb-item>
       </el-breadcrumb>
     </div>
     <div class="file-list" style="height: 500px;overflow: auto">
       <div v-for="(item, index) in items" :key="index" class="file-item">
-        <img v-if="item.type === 2" src="./文件夹.png" alt="" @click="selectItem(item)" />
-        <img v-else src="./文件.png" alt="" @click="fileClick(item)" />
+        <img v-if="item.type === 1" src="./文件.png" alt="" @click="fileClick(item)" />
+        <img v-else src="./文件夹.png" alt="" @click="selectItem(item)" />
         <div class="file-name" @mouseover="showTooltip = true" @mouseout="showTooltip = false">
-          {{ item.name }}
-          <el-tooltip v-if="showTooltip" effect="dark" :content="item.name" placement="top-start">
+          {{ item.filename }}
+          <el-tooltip v-if="showTooltip" effect="dark" :content="item.filename" placement="top-start">
             <div></div>
           </el-tooltip>
         </div>
@@ -34,6 +34,9 @@
               <el-button class="action-button" icon="el-icon-upload" type="primary" v-if="item.type === 2"></el-button>
             </el-upload>
           </el-tooltip>
+          <el-tooltip effect="dark" content="新建文件夹" placement="top">
+            <el-button class="action-button" icon="el-icon-folder-add" type="primary" v-if="item.type === 2" size="mini" @click.stop="newDir(item)"></el-button>
+          </el-tooltip>
           <el-tooltip effect="dark" content="删除" placement="top">
             <el-button class="action-button" icon="el-icon-delete" type="danger" v-if="item.type === 1 || item.type === 2" size="mini" @click.stop="deleteItem(item)"></el-button>
           </el-tooltip>
@@ -46,7 +49,7 @@
 </template>
 
 <script>
-import { fetchList, renameFile, deleteFile, uploadFile } from '@/api/file'
+import { fetchList, renameFile, deleteFile, uploadFile, newDir } from '@/api/file'
 import FilePreview from './FilePreview.vue'
 import {getToken} from "@/utils/auth";
 
@@ -81,7 +84,7 @@ export default {
     selectItem(item) {
       this.currentPath = item.path;
       this.freshBreadcrumb()
-      if (item.type === 2) {
+      if (item.type !== 1) {
         this.loadItems();
       }
     },
@@ -97,28 +100,23 @@ export default {
     },
     freshBreadcrumb() {
       this.breadcrumbItems = []
-      this.breadcrumbItems.push({name: '/', path: '/'})
+      this.breadcrumbItems.push({filename: '/', path: '/'})
       const paths = this.currentPath.split('/').filter((path) => path !== '')
       if (paths.length > 0) {
         for (let i = 0; i < paths.length; i++) {
-          this.breadcrumbItems.push({name: paths[i], path: `${this.breadcrumbItems[i].path}${paths[i]}/`})
+          this.breadcrumbItems.push({filename: paths[i], path: `${this.breadcrumbItems[i].path}${paths[i]}/`})
         }
       }
     },
     renameItem(item) {
       this.$prompt('', '重命名', {
-        inputValue: item.name,
+        inputValue: item.filename,
         confirmButtonText: '确定',
         cancelButtonText: '取消',
       }).then(({ value }) => {
-        console.log(item);
-        renameFile({id: this.id, path: item.path, name: value}).then((res) => {
+        renameFile({id: this.id, path: item.path, filename: value}).then((res) => {
           if (res.code === 0) {
-            if (res.data === '') {
-              this.$message.success('重命名成功')
-            } else {
-              this.$message.info(res.data)
-            }
+            this.$message.success('重命名成功')
             this.loadItems();
           } else {
             this.$message.error(res.msg)
@@ -128,8 +126,24 @@ export default {
 
       });
     },
+    newDir(item) {
+      this.$prompt('', '新建文件夹', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+      }).then(({ value }) => {
+        newDir({id: this.id, path: item.path + '/' + value}).then((res) => {
+          if (res.code === 0) {
+              this.$message.success('新建文件夹成功')
+          } else {
+            this.$message.error(res.msg)
+          }
+        })
+      }).catch(() => {
+
+      });
+    },
     deleteItem(item) {
-      this.$confirm('是否确认删除：' + item.name, '提示', {
+      this.$confirm('是否确认删除：' + item.filename, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning',

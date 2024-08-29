@@ -114,9 +114,9 @@ func (c *clientService) SendCommand(id uint, commandStr string, parameter string
 	if command.HasError {
 		return "", fmt.Errorf(res)
 	}
-	if len(strings.TrimSpace(res)) == 0 {
-		return `No content.`, nil
-	}
+	//if len(strings.TrimSpace(res)) == 0 {
+	//	return `No content.`, nil
+	//}
 	return res, nil
 }
 

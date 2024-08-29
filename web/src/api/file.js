@@ -50,3 +50,11 @@ export function uploadFile(data) {
     }
   })
 }
+
+export function newDir(data) {
+  return request({
+    url: `/client/${data.id}/file/dir`,
+    method: 'post',
+    data
+  })
+}
