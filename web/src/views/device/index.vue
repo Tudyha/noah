@@ -165,7 +165,7 @@ export default {
       shellDialogShow: false,
       shellType: 2,
       listQuery: {
-        page: 1,
+        page: 2,
         size: 10,
         hostname: '',
         status: 2
