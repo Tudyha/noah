@@ -89,7 +89,7 @@ func (d *DeviceDao) Page(query dto.DeviceListQueryDto) (total int64, devices []D
 	}
 
 	// 计算总数
-	qw.Count(&total)
+	qw.Model(&Device{}).Count(&total)
 
 	return total, devices
 }

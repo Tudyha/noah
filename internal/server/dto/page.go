@@ -19,7 +19,6 @@ func Paginate(p *PageQuery) func(db *gorm.DB) *gorm.DB {
 		}
 
 		offset := (p.Page - 1) * p.Size
-		// fixme 去掉Debug()
-		return db.Debug().Offset(offset).Limit(p.Size)
+		return db.Offset(offset).Limit(p.Size)
 	}
 }
