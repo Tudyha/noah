@@ -40,5 +40,13 @@ func LoadEnvironment() (Environment, error) {
 		return env, err
 	}
 
+	//如果环境变量设置了配置，则覆盖配置文件
+	if os.Getenv("SERVER_PORT") != "" {
+		env.Server.Port = os.Getenv("SERVER_PORT")
+	}
+	if os.Getenv("ADMIN_PASSWORD") != "" {
+		env.Database.Host = os.Getenv("ADMIN_PASSWORD")
+	}
+
 	return env, nil
 }

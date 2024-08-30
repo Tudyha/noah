@@ -78,6 +78,13 @@ func (r *Router) LoadRoutes() {
 			utils.RemoveFile("temp/" + filename)
 		})
 
+		//静态资源文件
+		// 设置静态文件服务
+		router.Static("/static", "web/dist/static") // 假设前端的静态资源在 /dist/assets 下
+		router.GET("/", func(c *gin.Context) {
+			c.File("web/dist/index.html")
+		})
+
 	}
 
 	adminGroup := router.Group("", authMiddleware.MiddlewareFunc())
