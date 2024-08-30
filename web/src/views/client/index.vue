@@ -27,10 +27,17 @@
       </el-select>
     </el-form-item>
     <el-form-item>
+      点击下载:
+      <a :href="downloadUrl" download>
+        {{ downloadUrl }}
+      </a>
+    </el-form-item>
+    <el-form-item>
       <div class="margin-top-20">
-        <el-button type="primary" @click="handleGenerate()">立即生成</el-button>
+        <el-button type="primary" :loading="loading" @click="handleGenerate()">立即生成</el-button>
       </div>
     </el-form-item>
+
   </el-form>
 </template>
 <script>
@@ -55,7 +62,9 @@ export default {
         serverAddr: [{ required: true, message: '必填', trigger: 'change' }],
         port: [{ required: true, message: '必填', trigger: 'change' }],
         osType: [{ required: true, message: '必填', trigger: 'change' }]
-      }
+      },
+      downloadUrl: "",
+      loading: false
     }
   },
   watch: {},
@@ -67,8 +76,15 @@ export default {
         if (!valid) {
           return
         }
+        this.loading = true
         await generate(this.form).then((res) => {
-          window.open(process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + store.getters.token, '_self')
+          this.loading = false
+          if (res.code === 0) {
+            // window.open(process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + store.getters.token, '_self')
+            this.downloadUrl = process.env.VUE_APP_BASE_API + '/file/download/' + res.data
+          } else {
+            this.$message.error(res.msg)
+          }
         })
       })
     }
