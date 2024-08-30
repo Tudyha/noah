@@ -166,7 +166,7 @@ export default {
       shellType: 2,
       listQuery: {
         page: 1,
-        size: 20,
+        size: 10,
         hostname: '',
         status: 2
       },
