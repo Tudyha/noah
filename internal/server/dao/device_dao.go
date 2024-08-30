@@ -1,8 +1,10 @@
 package dao
 
 import (
+	"fmt"
 	"noah/internal/server/dto"
 	"noah/internal/server/enum"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -65,15 +67,30 @@ func (d *DeviceDao) ScheduleUpdateStatus() {
 }
 
 func (d *DeviceDao) Page(query dto.DeviceListQueryDto) (total int64, devices []Device) {
-	qw := d.Db.Where("1 = 1")
+	qw := d.Db
+
+	// 处理 hostname 查询条件
 	if query.Hostname != "" {
-		qw.Where("hostname LIKE ?", "%"+query.Hostname+"%")
-	}
-	if query.Status != 0 {
-		qw.Where("status = ?", query.Status)
+		hostnameCond := fmt.Sprintf("hostname LIKE '%%%s%%'", strings.ReplaceAll(query.Hostname, "'", "''"))
+		qw = qw.Where(hostnameCond)
 	}
 
-	qw.Scopes(dto.Paginate(&query.PageQuery)).Find(&devices).Count(&total)
+	// 处理 status 查询条件
+	if query.Status != 0 {
+		qw = qw.Where("status = ?", query.Status)
+	}
+
+	// 分页查询
+	err := qw.Scopes(dto.Paginate(&query.PageQuery)).Find(&devices).Error
+	if err != nil {
+		// 处理数据库操作错误
+		fmt.Println("Database error:", err)
+		return 0, nil
+	}
+
+	// 计算总数
+	qw.Count(&total)
+
 	return total, devices
 }
 

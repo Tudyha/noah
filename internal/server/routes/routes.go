@@ -8,6 +8,8 @@ import (
 	"noah/internal/server/controller"
 	"noah/internal/server/middleware"
 	"noah/internal/server/utils"
+	"os"
+	"path/filepath"
 )
 
 type Router struct {
@@ -69,21 +71,56 @@ func (r *Router) LoadRoutes() {
 		ptyGroup.GET("/ws/:id", ptyController.WebSocket)
 		ptyGroup.GET("/client/ws/:channelId", clientController.NewPtyClient)
 
+		// 下载文件
 		router.GET("/file/download/:filename", func(c *gin.Context) {
 			filename := c.Param("filename")
-			c.File("temp/" + filename)
-		})
-		router.DELETE("/file/:filename", func(c *gin.Context) {
-			filename := c.Param("filename")
-			utils.RemoveFile("temp/" + filename)
+			sanitizedFilename := filepath.Base(filename)
+			filePath := "temp/" + sanitizedFilename
+
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				c.AbortWithStatus(http.StatusNotFound)
+				log.Printf("File not found: %v", err)
+				return
+			} else if err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				log.Printf("Error while accessing file: %v", err)
+				return
+			}
+
+			c.File(filePath)
 		})
 
-		//静态资源文件
-		// 设置静态文件服务
-		router.Static("/static", "web/dist/static") // 假设前端的静态资源在 /dist/assets 下
-		router.GET("/", func(c *gin.Context) {
-			c.File("web/dist/index.html")
+		// 删除文件
+		router.DELETE("/file/:filename", func(c *gin.Context) {
+			filename := c.Param("filename")
+			sanitizedFilename := filepath.Base(filename)
+			filePath := "temp/" + sanitizedFilename
+
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				c.AbortWithStatus(http.StatusNotFound)
+				log.Printf("File not found: %v", err)
+				return
+			} else if err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				log.Printf("Error while accessing file: %v", err)
+				return
+			}
+
+			if err := utils.RemoveFile(filePath); err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				log.Printf("Error while removing file: %v", err)
+				return
+			}
+
+			c.Status(http.StatusOK)
 		})
+
+		////静态资源文件
+		//// 设置静态文件服务
+		//router.Static("/static", "web/dist/static") // 假设前端的静态资源在 /dist/assets 下
+		//router.GET("/", func(c *gin.Context) {
+		//	c.File("web/dist/index.html")
+		//})
 
 	}
 
