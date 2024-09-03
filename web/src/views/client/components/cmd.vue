@@ -1,19 +1,23 @@
 <template>
-  <el-dialog :title="title" :visible="visible" width="60%" @close="handleClose()">
+  <common-dialog :title="title" :visible="visible" width="60%" @closed="handleClose()">
     <el-input v-model="result" type="textarea" :rows="15" disabled placeholder="执行结果" />
     <el-input v-model="cmd" placeholder="请输入命令">
       <el-button slot="append" icon="el-icon-position" @click="handleCmd()" />
     </el-input>
-  </el-dialog>
+  </common-dialog>
 </template>
 
 <script>
 import { cmd } from '@/api/client'
 import formMixin from '@/mixins/form-children'
+import CommonDialog from '@/components/CommonDialog/index.vue'
 
 export default {
   name: 'Cmd',
   mixins: [formMixin],
+  components: {
+    CommonDialog
+  },
   props: {
     clientId: {
       type: Number,

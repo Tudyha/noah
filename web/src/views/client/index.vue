@@ -99,24 +99,21 @@
     </el-table>
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.size" @pagination="fetchData" />
-    <el-dialog
+    <common-dialog
       v-if="shellDialogShow"
       :title="dialogTitle"
       :visible.sync="shellDialogShow"
-      width="60%"
-      top="10vh"
-      @close="closeShellDialog()">
+      @closed="closeShellDialog()">
       <shell :id="selectedRow.id" ref="shell" :shell-type="shellType" />
-    </el-dialog>
+    </common-dialog>
 
-    <el-dialog
+    <common-dialog
       v-if="fileDialogShow"
       :title="dialogTitle"
       :visible.sync="fileDialogShow"
-      top="10vh"
-      @close="fileDialogShow = false">
+      @closed="fileDialogShow = false">
       <file-manager :id="selectedRow.id" ref="file" />
-    </el-dialog>
+    </common-dialog>
 
     <cmd :v-show="cmdDialogShow" :client-id="selectedRow.id" :visible="cmdDialogShow" :title="dialogTitle" @hide="cmdDialogShow = false" />
     <update-client :v-show="updateDialogShow" :client-id="selectedRow.id" :visible="updateDialogShow" :os-type="selectedRow.osType" @hide="updateDialogShow = false" />
@@ -134,11 +131,12 @@ import * as map from '@/map/client'
 import { parseTime } from '@/utils'
 import FileManager from '@/components/FileManager/index.vue'
 import UpdateClient from './components/update-client.vue'
+import CommonDialog from '@/components/CommonDialog/index.vue'
 
 export default {
   name: 'Client',
 
-  components: { CollapseFilter, Shell, Pagination, Cmd, FileManager, UpdateClient },
+  components: { CollapseFilter, Shell, Pagination, Cmd, FileManager, UpdateClient, CommonDialog },
   filters: {
     statusFilter(status) {
       const statusMap = {
