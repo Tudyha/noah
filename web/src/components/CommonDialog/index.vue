@@ -4,7 +4,6 @@
     :visible.sync="isVisible"
     width="60%"
     @close="onClose"
-    center
     custom-class="common-dialog"
   >
     <div class="dialog-content">
