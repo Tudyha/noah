@@ -1,6 +1,6 @@
 package entitie
 
-type Device struct {
+type Client struct {
 	Hostname    string `json:"hostname"`
 	Username    string `json:"username"`
 	UserID      string `json:"userId"`

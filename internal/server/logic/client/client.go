@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jinzhu/copier"
+	"noah/internal/server/dao"
 	"noah/internal/server/enum"
 	"noah/internal/server/service"
+	"noah/internal/server/vo"
 	"os/exec"
 	"strings"
 	"sync"
@@ -43,22 +46,34 @@ var (
 	ErrInvalidServerPort        = errors.New("the server port provided is invalid")
 )
 
-func (c *clientService) AddConnection(id uint, connection *websocket.Conn) error {
+// AddConnection 新增ws连接
+func (c clientService) AddConnection(id uint, connection *websocket.Conn) error {
+	// 验证连接是否有效
+	if connection == nil || connection.RemoteAddr() == nil {
+		return errors.New("invalid connection")
+	}
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// 更新或添加新连接
 	c.clients[id] = connection
-	c.mu.Unlock()
 	return nil
 }
 
-func (c *clientService) getConnection(clientID uint) (*websocket.Conn, bool) {
+// getConnection 获取连接
+func (c clientService) getConnection(clientID uint) (*websocket.Conn, bool) {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	conn, found := c.clients[clientID]
-	c.mu.Unlock()
 	return conn, found
 }
 
-func (c *clientService) removeConnection(clientID uint) error {
+// removeConnection 删除连接
+func (c clientService) removeConnection(clientID uint) error {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if conn, found := c.clients[clientID]; !found {
 	} else {
 		err := conn.Close()
@@ -66,12 +81,11 @@ func (c *clientService) removeConnection(clientID uint) error {
 		}
 	}
 	delete(c.clients, clientID)
-	c.mu.Unlock()
 	return nil
 }
 
 // SendCommand 执行命令
-func (c *clientService) SendCommand(id uint, commandStr string, parameter string) (string, error) {
+func (c clientService) SendCommand(id uint, commandStr string, parameter string) (string, error) {
 	client, found := c.getConnection(id)
 	if !found {
 		return ErrClientConnectionNotFound.Error(), nil
@@ -140,7 +154,7 @@ type ClientConfig struct {
 	ServerPort    string `json:"server_port"`
 }
 
-func (c *clientService) Generate(serverAddr string, port string, osType int8, filename string) (string, error) {
+func (c clientService) Generate(serverAddr string, port string, osType int8, filename string) (string, error) {
 	buildPath, err := c.PrepareBuildSession(serverAddr, port, osType)
 	if err != nil {
 		return "", err
@@ -159,14 +173,14 @@ func (c *clientService) Generate(serverAddr string, port string, osType int8, fi
 	return filename, nil
 }
 
-func (c *clientService) BuildClientConfiguration(serverAddr string, port string) (clientConfig *ClientConfig, err error) {
+func (c clientService) BuildClientConfiguration(serverAddr string, port string) (clientConfig *ClientConfig, err error) {
 	return &ClientConfig{
 		ServerAddress: serverAddr,
 		ServerPort:    port,
 	}, err
 }
 
-func (c *clientService) WriteClientConfigurationFile(clientConfig *ClientConfig, buildPath string) error {
+func (c clientService) WriteClientConfigurationFile(clientConfig *ClientConfig, buildPath string) error {
 	configurationJson, err := json.Marshal(clientConfig)
 	if err != nil {
 		return err
@@ -175,7 +189,7 @@ func (c *clientService) WriteClientConfigurationFile(clientConfig *ClientConfig,
 	return utils.WriteFile(buildPath+configFileName, configurationJson)
 }
 
-func (c *clientService) PrepareBuildSession(serverAddr string, port string, osType int8) (string, error) {
+func (c clientService) PrepareBuildSession(serverAddr string, port string, osType int8) (string, error) {
 	sessionID := uuid.New().String()
 	buildPath := fmt.Sprint(buildBaseDir, sessionID, "/")
 
@@ -236,9 +250,56 @@ func buildFilename(os enum.OSType, filename string) string {
 }
 
 // Exit 关闭连接
-func (c *clientService) Exit(id uint) error {
+func (c clientService) Exit(id uint) error {
 	if err := c.removeConnection(id); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (c clientService) Save(body dto.ClientPostDto) (id uint, err error) {
+	var Client dao.Client
+	copier.Copy(&Client, &body)
+	Client.OsType = enum.DetectOS(Client.OSName)
+
+	old := dao.GetClientDao().GetByMacAddress(Client.MacAddress)
+	if old.ID != 0 {
+		// 已存在，更新数据即可
+		Client.ID = old.ID
+		err = dao.GetClientDao().Update(Client)
+		if err != nil {
+			return 0, err
+		}
+		return old.ID, nil
+	}
+
+	id, err = dao.GetClientDao().Save(Client)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (c clientService) UpdateStatus(id uint, status int8) {
+	dao.GetClientDao().UpdateStatus(id, status)
+}
+
+func (c clientService) GetClient(query vo.ClientListQueryReq) (total int64, ClientDtos []dto.ClientDto) {
+	total, Clients := dao.GetClientDao().Page(query)
+
+	if total == 0 {
+		return 0, make([]dto.ClientDto, 0)
+	}
+
+	copier.Copy(&ClientDtos, &Clients)
+	return total, ClientDtos
+}
+
+func (c clientService) ScheduleUpdateStatus() error {
+	dao.GetClientDao().ScheduleUpdateStatus()
+	return nil
+}
+
+func (c clientService) Delete(id uint) error {
+	return dao.GetClientDao().Delete(id)
 }

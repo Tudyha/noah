@@ -5,7 +5,7 @@ import baseActionsGenerator from './base_actions'
 const autoGenModuleNames = [
   { name: 'permission-common-role', file: 'permission-role' },
   { name: 'permission-system-role', file: 'permission-role' }, 'sys-user', 'login-log',
-  'device',
+  'client',
   { name: 'records', file: 'transcation-records' }
 ]
 

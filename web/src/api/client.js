@@ -23,3 +23,18 @@ export function update(data) {
     data
   })
 }
+
+export function fetchList(params) {
+  return request({
+    url: '/client',
+    method: 'get',
+    params
+  })
+}
+
+export function deleteClient(id) {
+  return request({
+    url: `/client/${id}`,
+    method: 'delete'
+  })
+}

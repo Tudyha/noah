@@ -2,9 +2,13 @@ package controller
 
 import (
 	"errors"
+	"fmt"
+	"github.com/jinzhu/copier"
 	"net/http"
 	"noah/internal/server/config"
+	"noah/internal/server/dto"
 	"noah/internal/server/service"
+	"noah/internal/server/vo"
 	"strconv"
 	"strings"
 
@@ -17,50 +21,96 @@ func NewClientController() *ClientController {
 	return &ClientController{}
 }
 
-func (h *ClientController) NewClient(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	ws, err := config.Upgrader.Upgrade(c.Writer, c.Request, nil)
+// CreateClient 新增客户端
+func (c ClientController) CreateClient(ctx *gin.Context) {
+	var body vo.ClientPostReq
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var ClientPostDto dto.ClientPostDto
+	copier.Copy(&ClientPostDto, &body)
+
+	id, err := service.GetClientService().Save(ClientPostDto)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	Success(ctx, id)
+}
+
+// GetClient 获取客户端列表
+func (c ClientController) GetClient(ctx *gin.Context) {
+	var req vo.ClientListQueryReq
+	if err := ctx.BindQuery(&req); err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	total, Clients := service.GetClientService().GetClient(req)
+
+	Success(ctx, &dto.PageInfo{
+		List:  Clients,
+		Total: total,
+	})
+}
+
+// DeleteClient 删除客户端
+func (c ClientController) DeleteClient(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	//发送命令让客户端退出
+	_, err := service.GetClientService().SendCommand(uint(id), "exit", "")
+	if err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	//断开ws连接
+	err = service.GetClientService().Exit(uint(id))
+	if err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	//删除客户端
+	err = service.GetClientService().Delete(uint(id))
+	if err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(ctx, nil)
+}
+
+// NewWsClient 新建客户端ws连接
+func (c ClientController) NewWsClient(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		fmt.Println("upgrade:", err)
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	err = service.GetClientService().AddConnection(uint(id), ws)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-}
-
-func (h *ClientController) NewPtyClient(c *gin.Context) {
-	channelId := c.Param("channelId")
-	ws, err := config.Upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	err = service.GetPtyService().AddPtyConnection(channelId, ws)
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
+	//Success(ctx, nil)
 }
 
-type SendCommandRequestForm struct {
-	ID        uint   `json:"id" binding:"required"`
-	Command   string `json:"command" binding:"required"`
-	Parameter string `json:"parameter"`
-}
-
-func (h *ClientController) SendCommandHandler(c *gin.Context) {
-	var form SendCommandRequestForm
-	if err := c.ShouldBindJSON(&form); err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
+// SendCommandHandler 发送命令
+func (c ClientController) SendCommandHandler(ctx *gin.Context) {
+	var form vo.SendCommandReq
+	if err := ctx.ShouldBindJSON(&form); err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 	if len(strings.TrimSpace(form.Command)) == 0 {
-		Fail(c, http.StatusBadRequest, "command is empty")
+		Fail(ctx, http.StatusBadRequest, "command is empty")
 		return
 	}
 
@@ -68,36 +118,32 @@ func (h *ClientController) SendCommandHandler(c *gin.Context) {
 
 	res, err := service.GetClientService().SendCommand(id, form.Command, form.Parameter)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
-	Success(c, res)
+	Success(ctx, res)
 }
 
-type ClientGenerateReq struct {
-	ServerAddr string `json:"serverAddr" binding:"required"`
-	Port       string `json:"port" binding:"required"`
-	OsType     int8   `json:"osType"`
-	Filename   string `json:"filename"`
-}
-
-func (h *ClientController) Generate(c *gin.Context) {
-	var req ClientGenerateReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
+// Generate 生成客户端文件
+func (c ClientController) Generate(ctx *gin.Context) {
+	var req vo.ClientGenerateReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	filename, err := generate(req)
 	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
+		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	Success(c, filename)
+	Success(ctx, filename)
 }
 
-func generate(req ClientGenerateReq) (string, error) {
+// generate 生成客户端文件
+// return filename 客户端文件名
+func generate(req vo.ClientGenerateReq) (string, error) {
 	if len(strings.TrimSpace(req.ServerAddr)) == 0 {
 		return "", errors.New("serverAddr is empty")
 	}
@@ -113,27 +159,28 @@ func generate(req ClientGenerateReq) (string, error) {
 	return filename, nil
 }
 
-func (h *ClientController) Update(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+// Update 更新客户端
+func (c ClientController) Update(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
 
-	//先生成最新客户端
-	var req ClientGenerateReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
+	//生成最新客户端
+	var req vo.ClientGenerateReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	filename, err := generate(req)
 	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
+		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	//发送命令让客户端升级
 	_, err = service.GetClientService().SendCommand(uint(id), "update", filename)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
-	Success(c, "success")
+	Success(ctx, "success")
 }

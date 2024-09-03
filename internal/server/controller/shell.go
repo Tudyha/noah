@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"noah/internal/server/config"
-	"noah/internal/server/dao"
 	"noah/internal/server/service"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -245,25 +242,25 @@ func (c *sshClient) bridgeWSAndSSH() {
 // webSocket handles WebSocket requests for SSH from the clients.
 func (h *ShellController) WebSocket(c *gin.Context) {
 	// 获取路由参数clientId
-	id, _ := strconv.Atoi(c.Param("id"))
-	uintId := uint(id)
+	//id, _ := strconv.Atoi(c.Param("id"))
+	//uintId := uint(id)
 
 	// 获取WebSocket连接
-	conn, err := config.Upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Println("upgrader.Upgrade:", err)
-		return
-	}
+	//conn, err := config.Upgrader.Upgrade(c.Writer, c.Request, nil)
+	//if err != nil {
+	//	log.Println("upgrader.Upgrade:", err)
+	//	return
+	//}
 
-	device := dao.DeviceDa.GetById(uintId)
-
-	sshCli := &sshClient{
-		conn: conn,
-		// todo get port from sshd proses
-		addr:     device.IPAddress + ":22",
-		user:     device.Username,
-		closeSig: make(chan struct{}, 1),
-		clientId: uintId,
-	}
-	go sshCli.bridgeWSAndSSH()
+	//Client := dao.ClientDa.GetById(uintId)
+	//
+	//sshCli := &sshClient{
+	//	conn: conn,
+	//	// todo get port from sshd proses
+	//	addr:     Client.IPAddress + ":22",
+	//	user:     Client.Username,
+	//	closeSig: make(chan struct{}, 1),
+	//	clientId: uintId,
+	//}
+	//go sshCli.bridgeWSAndSSH()
 }

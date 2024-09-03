@@ -9,7 +9,7 @@ import (
 )
 
 type Controller struct {
-	deviceController *DeviceController
+	ClientController *ClientController
 	clientController *ClientController
 	shellController  *ShellController
 	ptyController    *PtyController
@@ -19,7 +19,6 @@ type Controller struct {
 
 func NewController() *Controller {
 	return &Controller{
-		deviceController: NewDeviceController(),
 		clientController: NewClientController(),
 		shellController:  NewShellController(),
 		ptyController:    NewPtyController(),
@@ -28,32 +27,29 @@ func NewController() *Controller {
 	}
 }
 
-func (c *Controller) GetDeviceController() *DeviceController {
-	return c.deviceController
-}
-
-func (c *Controller) GetClientController() *ClientController {
+func (c Controller) GetClientController() *ClientController {
 	return c.clientController
 }
 
-func (c *Controller) GetShellController() *ShellController {
+func (c Controller) GetShellController() *ShellController {
 	return c.shellController
 }
 
-func (c *Controller) GetPtyController() *PtyController {
+func (c Controller) GetPtyController() *PtyController {
 	return c.ptyController
 }
 
-func (c *Controller) GetUserController() *UserController {
+func (c Controller) GetUserController() *UserController {
 	return c.userController
 }
 
-func (c *Controller) GetFileController() *FileController {
+func (c Controller) GetFileController() *FileController {
 	return c.fileController
 }
 
-func (h *Controller) Health(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	service.GetDeviceService().UpdateStatus(uint(id), enum.DEVICE_ONLINE)
-	Success(c, nil)
+// Health 心跳检测
+func (c Controller) Health(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	service.GetClientService().UpdateStatus(uint(id), enum.DEVICE_ONLINE)
+	Success(ctx, nil)
 }

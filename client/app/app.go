@@ -39,7 +39,7 @@ func New(configuration *environment.Configuration) *App {
 }
 
 func (a *App) Run() {
-	id, err := a.Handler.SendDeviceSpecs()
+	id, err := a.Handler.SendClientSpecs()
 	a.Handler.ClientID = id
 	if err != nil {
 		log.Fatal("error running client: ", err)

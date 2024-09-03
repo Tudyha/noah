@@ -21,7 +21,7 @@ type Services struct {
 }
 
 type Information interface {
-	LoadDeviceSpecs() (*entitie.Device, error)
+	LoadClientSpecs() (*entitie.Client, error)
 }
 
 type Terminal interface {

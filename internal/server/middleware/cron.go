@@ -9,7 +9,7 @@ func LoadCron() error {
 	c := cron.New()
 
 	_, err := c.AddFunc("* * * * *", func() {
-		service.GetDeviceService().ScheduleUpdateStatus()
+		service.GetClientService().ScheduleUpdateStatus()
 	})
 
 	if err != nil {

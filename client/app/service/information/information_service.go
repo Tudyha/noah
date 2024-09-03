@@ -19,7 +19,7 @@ func NewService() service.Information {
 	return &Service{}
 }
 
-func (i Service) LoadDeviceSpecs() (*entitie.Device, error) {
+func (i Service) LoadClientSpecs() (*entitie.Client, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (i Service) LoadDeviceSpecs() (*entitie.Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &entitie.Device{
+	return &entitie.Client{
 		Hostname:    hostname,
 		Username:    username.Name,
 		UserID:      username.Username,

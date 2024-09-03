@@ -21,7 +21,7 @@ func NewFileController() *FileController {
 	return &FileController{}
 }
 
-func (d *FileController) GetFileList(c *gin.Context) {
+func (f FileController) GetFileList(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	path := c.Query("path")
 	if path == "" {
@@ -55,7 +55,7 @@ func (d *FileController) GetFileList(c *gin.Context) {
 	Success(c, fileList)
 }
 
-func (d *FileController) GetFileContent(c *gin.Context) {
+func (f FileController) GetFileContent(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	path := c.Query("path")
 	if path == "" {
@@ -82,9 +82,9 @@ func (d *FileController) GetFileContent(c *gin.Context) {
 	Success(c, result)
 }
 
-func (d *FileController) RenameFile(c *gin.Context) {
+func (f FileController) RenameFile(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.DeviceFileRenamePostVo
+	var body vo.ClientFileRenameReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -111,9 +111,9 @@ func (d *FileController) RenameFile(c *gin.Context) {
 	Success(c, result)
 }
 
-func (d *FileController) DeleteFile(c *gin.Context) {
+func (f FileController) DeleteFile(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.DeviceFileDeletePostVo
+	var body vo.ClientFileDeleteReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -139,9 +139,9 @@ func (d *FileController) DeleteFile(c *gin.Context) {
 	Success(c, result)
 }
 
-func (d *FileController) UpdateFileContent(c *gin.Context) {
+func (f FileController) UpdateFileContent(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.DeviceFileContentPostVo
+	var body vo.ClientFileContentReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -168,7 +168,7 @@ func (d *FileController) UpdateFileContent(c *gin.Context) {
 	Success(c, result)
 }
 
-func (d *FileController) UploadFile(c *gin.Context) {
+func (f FileController) UploadFile(c *gin.Context) {
 	id, _ := strconv.Atoi(c.PostForm("id"))
 	path := c.PostForm("path")
 	if path == "" {
@@ -225,9 +225,9 @@ func (d *FileController) UploadFile(c *gin.Context) {
 	Success(c, "success")
 }
 
-func (d *FileController) NewDir(c *gin.Context) {
+func (f FileController) NewDir(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.DeviceFileNewDirPostVo
+	var body vo.ClientFileNewDirReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())

@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "noah/internal/server/logic/client"
-	_ "noah/internal/server/logic/device"
 	_ "noah/internal/server/logic/pty"
 )
 
@@ -33,6 +32,8 @@ func NewServer() *Server {
 	}
 
 	g := gin.Default()
+	// panic recovery
+	//g.Use(gin.Recovery())
 
 	//init routes
 	r := routes.NewRouter(g)

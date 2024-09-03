@@ -6,7 +6,7 @@ type ErrorCode struct {
 }
 
 var (
-	ServerUnknowedError = ErrorCode{50000, "server unknowed error"}
+	ServerUnknownError = ErrorCode{50000, "server unknown error"}
 )
 
 func (e ErrorCode) Error() string {

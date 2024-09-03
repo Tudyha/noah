@@ -49,27 +49,24 @@ func (r *Router) LoadRoutes() {
 
 	auth := router.Group("/auth", authMiddleware.MiddlewareFunc())
 	auth.GET("/refresh_token", authMiddleware.RefreshHandler)
-
 	// -----  jwt  -----
 
 	handlers := r.handlers
 
-	deviceController := handlers.GetDeviceController()
 	clientController := handlers.GetClientController()
-	//shellController := handlers.GetShellController()
 	ptyController := handlers.GetPtyController()
 	fileController := handlers.GetFileController()
 
 	{
 		//免登录接口
 		clientGroup := router.Group("client")
-		clientGroup.GET("/health/:id", handlers.Health)
-		clientGroup.POST("/device", deviceController.CreateDevice)
-		clientGroup.GET("/ws/:id", clientController.NewClient)
+		clientGroup.GET("/:id/health", handlers.Health)
+		clientGroup.POST("", clientController.CreateClient)
+		clientGroup.GET("/:id/ws", clientController.NewWsClient)
 
 		ptyGroup := router.Group("pty")
 		ptyGroup.GET("/ws/:id", ptyController.WebSocket)
-		ptyGroup.GET("/client/ws/:channelId", clientController.NewPtyClient)
+		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
 
 		// 下载文件
 		router.GET("/file/download/:filename", func(c *gin.Context) {
@@ -114,38 +111,19 @@ func (r *Router) LoadRoutes() {
 
 			c.Status(http.StatusOK)
 		})
-
-		////静态资源文件
-		//// 设置静态文件服务
-		//router.Static("/static", "web/dist/static") // 假设前端的静态资源在 /dist/assets 下
-		//router.GET("/", func(c *gin.Context) {
-		//	c.File("web/dist/index.html")
-		//})
-
 	}
 
 	adminGroup := router.Group("", authMiddleware.MiddlewareFunc())
 	{
 		//需要登录接口
-		deviceGroup := adminGroup.Group("device")
-		deviceGroup.GET("", deviceController.GetDevice)
-		deviceGroup.DELETE("/:id", deviceController.DeleteDevice)
-
-		//shellGroup := router.Group("shell")
-		//shellGroup.GET("/ws/:id", shellController.WebSocket)
-
-		adminClientGroup := adminGroup.Group("client")
-		adminClientGroup.POST("/cmd", clientController.SendCommandHandler)
-		adminClientGroup.POST("/generate", clientController.Generate)
-		adminClientGroup.POST("/:id/update", clientController.Update)
+		clientGroup := adminGroup.Group("client")
+		clientGroup.GET("", clientController.GetClient)
+		clientGroup.DELETE("/:id", clientController.DeleteClient)
+		clientGroup.POST("/cmd", clientController.SendCommandHandler)
+		clientGroup.POST("/generate", clientController.Generate)
+		clientGroup.POST("/:id/update", clientController.Update)
 
 		userGroup := adminGroup.Group("user")
-		//userGroup.POST("login", func(ctx *gin.Context) {
-		//	ctx.JSON(http.StatusOK, gin.H{
-		//		"code": 0,
-		//		"data": "admin-token",
-		//	})
-		//})
 		userGroup.GET("info", func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{
 				"code": 0,
