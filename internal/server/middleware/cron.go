@@ -12,6 +12,11 @@ func LoadCron() error {
 		service.GetClientService().ScheduleUpdateStatus()
 	})
 
+	//每天0点执行一次
+	_, err = c.AddFunc("0 0 * * *", func() {
+		service.GetClientService().CleanSystemInfo()
+	})
+
 	if err != nil {
 		c.Stop()
 		return err

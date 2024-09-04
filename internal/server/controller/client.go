@@ -11,6 +11,7 @@ import (
 	"noah/internal/server/vo"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -183,4 +184,18 @@ func (c ClientController) Update(ctx *gin.Context) {
 		return
 	}
 	Success(ctx, "success")
+}
+
+func (c ClientController) GetClientInfo(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	//获取当前时间
+	now := time.Now()
+	//获取5分钟前时间
+	fiveMinutesAgo := now.Add(-5 * time.Minute)
+	clientInfoList, err := service.GetClientService().GetSystemInfo(uint(id), fiveMinutesAgo, now)
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	Success(ctx, clientInfoList)
 }

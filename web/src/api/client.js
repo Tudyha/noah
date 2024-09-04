@@ -38,3 +38,10 @@ export function deleteClient(id) {
     method: 'delete'
   })
 }
+
+export function systemInfo(id) {
+  return request({
+    url: `/client/${id}/systemInfo`,
+    method: 'get'
+  })
+}

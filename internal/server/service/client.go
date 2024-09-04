@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"noah/internal/server/dto"
 	"noah/internal/server/vo"
+	"time"
 )
 
 var (
@@ -28,4 +29,7 @@ type IClientService interface {
 	SendCommand(id uint, commandStr string, parameter string) (result string, err error)
 	Generate(serverAddr string, port string, osType int8, filename string) (string, error)
 	Exit(id uint) error
+	SaveSystemInfo(id uint, systemInfo dto.SystemInfoReq) error
+	GetSystemInfo(id uint, start time.Time, end time.Time) ([]dto.SystemInfoRes, error)
+	CleanSystemInfo() error
 }

@@ -60,7 +60,7 @@ func (r *Router) LoadRoutes() {
 	{
 		//免登录接口
 		clientGroup := router.Group("client")
-		clientGroup.GET("/:id/health", handlers.Health)
+		clientGroup.POST("/:id/health", handlers.Health)
 		clientGroup.POST("", clientController.CreateClient)
 		clientGroup.GET("/:id/ws", clientController.NewWsClient)
 
@@ -122,6 +122,7 @@ func (r *Router) LoadRoutes() {
 		clientGroup.POST("/cmd", clientController.SendCommandHandler)
 		clientGroup.POST("/generate", clientController.Generate)
 		clientGroup.POST("/:id/update", clientController.Update)
+		clientGroup.GET("/:id/systemInfo", clientController.GetClientInfo)
 
 		userGroup := adminGroup.Group("user")
 		userGroup.GET("info", func(ctx *gin.Context) {

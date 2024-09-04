@@ -74,6 +74,9 @@
               <i class="el-icon-more" />
             </el-button>
             <el-dropdown-menu slot="dropdown">
+              <el-dropdown-item @click.native="handleSystemInfo(row)">
+                <i class="el-icon-info" /> 系统信息
+              </el-dropdown-item>
               <el-dropdown-item @click.native="handleFile(row)">
                 <i class="el-icon-document" /> 文件管理
               </el-dropdown-item>
@@ -220,6 +223,9 @@ export default {
     handleUpdateClient(row) {
       this.selectedRow = row
       this.updateDialogShow = true
+    },
+    handleSystemInfo(row) {
+      this.$router.push({ path: '/client/system-info', query: { id: row.id }})
     },
     handleDelete(row) {
       this.$confirm('是否确认删除：' + row.hostname, '提示', {

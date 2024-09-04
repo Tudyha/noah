@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"noah/internal/server/dto"
 	"noah/internal/server/utils"
@@ -302,4 +303,26 @@ func (c clientService) ScheduleUpdateStatus() error {
 
 func (c clientService) Delete(id uint) error {
 	return dao.GetClientDao().Delete(id)
+}
+
+func (c clientService) SaveSystemInfo(id uint, systemInfo dto.SystemInfoReq) error {
+	var clientInfo dao.ClientInfo
+	copier.Copy(&clientInfo, systemInfo)
+	clientInfo.ClientID = id
+	return dao.GetClientInfoDao().Create(clientInfo)
+}
+
+func (c clientService) GetSystemInfo(id uint, start time.Time, end time.Time) ([]dto.SystemInfoRes, error) {
+	clientInfoList := dao.GetClientInfoDao().GetByClientId(id, start, end)
+	if len(clientInfoList) == 0 {
+		return make([]dto.SystemInfoRes, 0), nil
+	}
+	var result []dto.SystemInfoRes
+	copier.Copy(&result, clientInfoList)
+	return result, nil
+}
+
+func (c clientService) CleanSystemInfo() error {
+	dao.GetClientInfoDao().Clean()
+	return nil
 }

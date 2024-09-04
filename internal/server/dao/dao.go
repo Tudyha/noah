@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	db        *gorm.DB
-	clientDao *ClientDao
+	db            *gorm.DB
+	clientDao     *ClientDao
+	clientInfoDao *ClientInfoDao
 )
 
 func InitDb(dbConfig environment.DatabaseConfig) (err error) {
@@ -24,12 +25,11 @@ func InitDb(dbConfig environment.DatabaseConfig) (err error) {
 		panic(db.Error)
 	}
 
-	err = db.AutoMigrate(&Client{})
-	if err != nil {
-		//log error
-	}
+	_ = db.AutoMigrate(&Client{})
+	_ = db.AutoMigrate(&ClientInfo{})
 
 	clientDao = &ClientDao{db}
+	clientInfoDao = &ClientInfoDao{db}
 
 	return nil
 }
@@ -44,4 +44,8 @@ func openSqlLiteDb() (*gorm.DB, error) {
 
 func GetClientDao() *ClientDao {
 	return clientDao
+}
+
+func GetClientInfoDao() *ClientInfoDao {
+	return clientInfoDao
 }

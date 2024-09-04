@@ -87,7 +87,12 @@ func (h *Handler) SendClientSpecs() (id uint, err error) {
 }
 
 func (h *Handler) ServerIsAvailable() error {
-	res, err := h.Gateway.NewRequest(http.MethodGet, fmt.Sprintf("/client/%d/health", uint64(h.ClientID)), nil)
+	systemInfo, _ := h.Services.GetSystemInfo()
+	body, err := json.Marshal(systemInfo)
+	if err != nil {
+		return err
+	}
+	res, err := h.Gateway.NewRequest(http.MethodPost, fmt.Sprintf("/client/%d/health", uint64(h.ClientID)), body)
 	if err != nil {
 		return err
 	}
