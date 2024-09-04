@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"github.com/golang-module/carbon/v2"
 	"github.com/jinzhu/copier"
 	"net/http"
 	"noah/internal/server/config"
@@ -188,11 +189,21 @@ func (c ClientController) Update(ctx *gin.Context) {
 
 func (c ClientController) GetClientInfo(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	//获取当前时间
-	now := time.Now()
-	//获取5分钟前时间
-	fiveMinutesAgo := now.Add(-5 * time.Minute)
-	clientInfoList, err := service.GetClientService().GetSystemInfo(uint(id), fiveMinutesAgo, now)
+	start := ctx.Query("start")
+	end := ctx.Query("end")
+	var startTime, endTime time.Time
+	if start == "" || end == "" {
+		//获取当前时间
+		endTime = time.Now()
+		//获取5分钟前时间
+		startTime = endTime.Add(-5 * time.Minute)
+	} else {
+		//15:39:55 转time.Time
+		startTime = carbon.Parse(start).StdTime()
+		endTime = carbon.Parse(end).StdTime()
+	}
+
+	clientInfoList, err := service.GetClientService().GetSystemInfo(uint(id), startTime, endTime)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return

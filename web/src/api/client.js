@@ -39,9 +39,13 @@ export function deleteClient(id) {
   })
 }
 
-export function systemInfo(id) {
+export function systemInfo(params) {
   return request({
-    url: `/client/${id}/systemInfo`,
-    method: 'get'
+    url: `/client/${params.id}/systemInfo`,
+    method: 'get',
+    params: {
+      start: params.start,
+      end: params.end
+    }
   })
 }

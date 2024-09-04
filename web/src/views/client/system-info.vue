@@ -1,5 +1,17 @@
 <template>
   <div>
+    <el-row>
+      <el-col :span="24">
+        <el-time-picker
+          is-range
+          v-model="timeRange"
+          range-separator="至"
+          start-placeholder="开始时间"
+          end-placeholder="结束时间"
+          @change="onTimeRangeChange"
+        ></el-time-picker>
+      </el-col>
+    </el-row>
   <div class="dashboard-container">
     <div class="chart-container">
       <h4>CPU</h4>
@@ -26,12 +38,14 @@
 <script>
 import * as echarts from 'echarts'
 import { systemInfo } from '@/api/client'
+import { parseTime } from '@/utils'
 
 export default {
   name: 'ClientSystemInfo',
   data() {
     return {
       id: null,
+      timeRange: [],
       cpuChart: null,
       memoryChart: null,
       diskChart: null,
@@ -61,6 +75,8 @@ export default {
   created() {
     //query上获取id
     this.id = this.$route.query.id;
+    //时间组件默认5分钟
+    this.timeRange = [new Date(new Date().getTime() - 5 * 60 * 1000), new Date()];
   },
   mounted() {
     this.initCharts();
@@ -77,7 +93,7 @@ export default {
     },
     fetchData() {
       this.clearData()
-      systemInfo(this.id)
+      systemInfo({ id: this.id, start: parseTime(this.timeRange[0]), end: parseTime(this.timeRange[1]) })
         .then(response => {
           const data = response.data;
           data.forEach(item => {
@@ -150,7 +166,13 @@ export default {
         },
         series: so
       });
-    }
+    },
+    onTimeRangeChange(range) {
+      if (!range || !range.length || range[0] === '' || range[1] === '') {
+        return;
+      }
+      this.fetchData()
+    },
   },
   beforeDestroy() {
     if (this.cpuChart) {

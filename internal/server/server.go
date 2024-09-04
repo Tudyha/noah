@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/golang-module/carbon/v2"
 	"noah/internal/server/dao"
 	"noah/internal/server/environment"
 	"noah/internal/server/middleware"
@@ -41,6 +42,14 @@ func NewServer() *Server {
 
 	//cron
 	middleware.LoadCron()
+
+	//时间统一配置
+	carbon.SetDefault(carbon.Default{
+		Layout:       carbon.DateTimeLayout,
+		Timezone:     carbon.PRC,
+		WeekStartsAt: carbon.Sunday,
+		Locale:       "zh-CN",
+	})
 
 	return &Server{
 		G:   g,
