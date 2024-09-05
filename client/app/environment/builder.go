@@ -8,7 +8,7 @@ import (
 func Load(serverAddress, httpPort, token string) *Configuration {
 	return &Configuration{
 		Connection: Connection{
-			Token:           fmt.Sprint("jwt=", token),
+			Token:           fmt.Sprint("Bearer ", token),
 			ContextDeadline: 5,
 		},
 		Server: Server{

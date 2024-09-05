@@ -48,6 +48,7 @@ func Logger(logger *logrus.Logger) gin.HandlerFunc {
 		clientIP := c.ClientIP()
 		method := c.Request.Method
 		statusCode := c.Writer.Status()
+		//header := c.Request.Header
 		logger.WithFields(logrus.Fields{
 			"method":    method,
 			"path":      path,

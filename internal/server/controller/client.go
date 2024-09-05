@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/dto"
+	"noah/internal/server/middleware"
 	"noah/internal/server/service"
 	"noah/internal/server/vo"
 	"strconv"
@@ -150,7 +151,12 @@ func generate(req vo.ClientGenerateReq) (string, error) {
 		return "", errors.New("port is empty")
 	}
 
-	filename, err := service.GetClientService().Generate(req.ServerAddr, req.Port, req.OsType, req.Filename)
+	token, err := middleware.GetToken()
+	if err != nil {
+		return "", err
+	}
+
+	filename, err := service.GetClientService().Generate(req.ServerAddr, req.Port, req.OsType, token, req.Filename)
 	if err != nil {
 		return "", err
 	}

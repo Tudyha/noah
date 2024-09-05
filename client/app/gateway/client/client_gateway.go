@@ -29,7 +29,7 @@ func (c Gateway) NewRequest(method string, url string, body []byte) (*gateway.Ht
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", c.Configuration.Connection.Token)
+	req.Header.Set("Authorization", c.Configuration.Connection.Token)
 
 	res, err := c.HttpClient.Do(req)
 	if err != nil {

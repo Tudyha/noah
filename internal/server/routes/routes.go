@@ -59,15 +59,6 @@ func (r *Router) LoadRoutes() {
 
 	{
 		//免登录接口
-		clientGroup := router.Group("client")
-		clientGroup.POST("/:id/health", handlers.Health)
-		clientGroup.POST("", clientController.CreateClient)
-		clientGroup.GET("/:id/ws", clientController.NewWsClient)
-
-		ptyGroup := router.Group("pty")
-		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
-		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
-
 		// 下载文件
 		router.GET("/file/download/:filename", func(c *gin.Context) {
 			filename := c.Param("filename")
@@ -117,12 +108,28 @@ func (r *Router) LoadRoutes() {
 	{
 		//需要登录接口
 		clientGroup := adminGroup.Group("client")
+		clientGroup.POST("/", clientController.CreateClient)
 		clientGroup.GET("", clientController.GetClient)
 		clientGroup.DELETE("/:id", clientController.DeleteClient)
+		clientGroup.POST("/:id/health", handlers.Health)
+		clientGroup.GET("/:id/ws", clientController.NewWsClient)
 		clientGroup.POST("/cmd", clientController.SendCommandHandler)
 		clientGroup.POST("/generate", clientController.Generate)
 		clientGroup.POST("/:id/update", clientController.Update)
 		clientGroup.GET("/:id/systemInfo", clientController.GetClientInfo)
+
+		fileGroup := adminGroup.Group("/client/:id/file")
+		fileGroup.GET("", fileController.GetFileList)
+		fileGroup.GET("/content", fileController.GetFileContent)
+		fileGroup.POST("/rename", fileController.RenameFile)
+		fileGroup.DELETE("", fileController.DeleteFile)
+		fileGroup.PUT("/content", fileController.UpdateFileContent)
+		fileGroup.POST("", fileController.UploadFile)
+		fileGroup.POST("/dir", fileController.NewDir)
+
+		ptyGroup := adminGroup.Group("pty")
+		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
+		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
 
 		userGroup := adminGroup.Group("user")
 		userGroup.GET("info", func(ctx *gin.Context) {
@@ -136,15 +143,6 @@ func (r *Router) LoadRoutes() {
 				},
 			})
 		})
-
-		fileGroup := adminGroup.Group("/client/:id/file")
-		fileGroup.GET("", fileController.GetFileList)
-		fileGroup.GET("/content", fileController.GetFileContent)
-		fileGroup.POST("/rename", fileController.RenameFile)
-		fileGroup.DELETE("", fileController.DeleteFile)
-		fileGroup.PUT("/content", fileController.UpdateFileContent)
-		fileGroup.POST("", fileController.UploadFile)
-		fileGroup.POST("/dir", fileController.NewDir)
 	}
 
 	router.Use(gin.Recovery())

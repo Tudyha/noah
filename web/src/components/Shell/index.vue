@@ -7,6 +7,7 @@ import { Terminal } from 'xterm'
 import { AttachAddon } from 'xterm-addon-attach'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'Shell',
@@ -47,10 +48,10 @@ export default {
       fitAddon.fit()
 
       if (this.shellType === 1) {
-        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/shell/ws/' + this.id)
+        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/shell/ws/' + this.id + "?token=" + getToken())
       }
       if (this.shellType === 2) {
-        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/pty/ws/' + this.id)
+        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/pty/ws/' + this.id + "?token=" + getToken())
       }
 
       const sendSize = () => {

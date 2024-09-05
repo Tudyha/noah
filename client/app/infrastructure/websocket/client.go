@@ -29,7 +29,7 @@ func NewConnection(configuration *environment.Configuration, path string) (*webs
 
 	header := http.Header{}
 	// header.Set("x-client", clientID)
-	header.Set("Cookie", configuration.Connection.Token)
+	header.Set("Authorization", configuration.Connection.Token)
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	return conn, err

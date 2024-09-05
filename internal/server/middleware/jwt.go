@@ -11,8 +11,9 @@ import (
 var (
 	realm         = "noah"
 	identityKey   = "userId"
-	secretKey     = "secret key"
+	secretKey     = "noah"
 	adminPassword = ""
+	auth          *jwt.GinJWTMiddleware
 )
 
 func SetAdminPassword(password string) {
@@ -25,6 +26,8 @@ func RegisterJwtMiddleWare() (*jwt.GinJWTMiddleware, error) {
 		log.Fatal("JWT Error:" + err.Error())
 		return nil, err
 	}
+
+	auth = authMiddleware
 	return authMiddleware, nil
 }
 
@@ -32,21 +35,18 @@ func initParams() *jwt.GinJWTMiddleware {
 	return &jwt.GinJWTMiddleware{
 		Realm:       realm,
 		Key:         []byte(secretKey),
-		Timeout:     time.Hour,
-		MaxRefresh:  time.Hour,
+		Timeout:     time.Hour * 24,
+		MaxRefresh:  time.Hour * 24 * 7,
 		IdentityKey: identityKey,
 		PayloadFunc: payloadFunc(),
 
 		IdentityHandler: identityHandler(),
 		Authenticator:   authenticator(),
-		//Authorizator:    authorizator(),
-		Unauthorized:  unauthorized(),
-		LoginResponse: loginResponse(),
-		TokenLookup:   "header: Authorization, query:token",
-		// TokenLookup: "query:token",
-		// TokenLookup: "cookie:token",
-		TokenHeadName: "Bearer",
-		TimeFunc:      time.Now,
+		Unauthorized:    unauthorized(),
+		LoginResponse:   loginResponse(),
+		TokenLookup:     "header: Authorization, query:token",
+		TokenHeadName:   "Bearer",
+		TimeFunc:        time.Now,
 	}
 }
 
@@ -89,15 +89,6 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 	}
 }
 
-func authorizator() func(data interface{}, c *gin.Context) bool {
-	return func(data interface{}, c *gin.Context) bool {
-		if v, ok := data.(*dto.UserInfo); ok && v.Username == "admin" {
-			return true
-		}
-		return false
-	}
-}
-
 func loginResponse() func(c *gin.Context, code int, message string, time time.Time) {
 	return func(c *gin.Context, code int, message string, time time.Time) {
 		c.JSON(code, gin.H{
@@ -115,4 +106,15 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 			"message": message,
 		})
 	}
+}
+
+func GetToken() (string, error) {
+	token, _, err := auth.TokenGenerator(&dto.UserInfo{
+		UserID:   1,
+		Username: "admin",
+	})
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

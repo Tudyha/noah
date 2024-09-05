@@ -152,10 +152,11 @@ func handleResponse(payload *dto.Command) (*dto.Command, error) {
 type ClientConfig struct {
 	ServerAddress string `json:"server_address"`
 	ServerPort    string `json:"server_port"`
+	Token         string `json:"token"`
 }
 
-func (c clientService) Generate(serverAddr string, port string, osType int8, filename string) (string, error) {
-	buildPath, err := c.PrepareBuildSession(serverAddr, port, osType)
+func (c clientService) Generate(serverAddr string, port string, osType int8, token string, filename string) (string, error) {
+	buildPath, err := c.PrepareBuildSession(serverAddr, port, token)
 	if err != nil {
 		return "", err
 	}
@@ -173,10 +174,11 @@ func (c clientService) Generate(serverAddr string, port string, osType int8, fil
 	return filename, nil
 }
 
-func (c clientService) BuildClientConfiguration(serverAddr string, port string) (clientConfig *ClientConfig, err error) {
+func (c clientService) BuildClientConfiguration(serverAddr string, port string, token string) (clientConfig *ClientConfig, err error) {
 	return &ClientConfig{
 		ServerAddress: serverAddr,
 		ServerPort:    port,
+		Token:         token,
 	}, err
 }
 
@@ -189,7 +191,7 @@ func (c clientService) WriteClientConfigurationFile(clientConfig *ClientConfig, 
 	return utils.WriteFile(buildPath+configFileName, configurationJson)
 }
 
-func (c clientService) PrepareBuildSession(serverAddr string, port string, osType int8) (string, error) {
+func (c clientService) PrepareBuildSession(serverAddr string, port string, token string) (string, error) {
 	sessionID := uuid.New().String()
 	buildPath := fmt.Sprint(buildBaseDir, sessionID, "/")
 
@@ -198,7 +200,7 @@ func (c clientService) PrepareBuildSession(serverAddr string, port string, osTyp
 		return "", err
 	}
 
-	clientConfiguration, err := c.BuildClientConfiguration(serverAddr, port)
+	clientConfiguration, err := c.BuildClientConfiguration(serverAddr, port, token)
 	if err != nil {
 		return "", err
 	}

@@ -23,7 +23,7 @@ type IClientService interface {
 	Delete(id uint) error
 	AddConnection(id uint, connection *websocket.Conn) error
 	SendCommand(id uint, commandStr string, parameter string) (result string, err error)
-	Generate(serverAddr string, port string, osType int8, filename string) (string, error)
+	Generate(serverAddr string, port string, osType int8, token string, filename string) (string, error)
 	Exit(id uint) error
 	SaveSystemInfo(id uint, systemInfo dto.SystemInfoReq) error
 	GetSystemInfo(id uint, start time.Time, end time.Time) ([]dto.SystemInfoRes, error)

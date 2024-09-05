@@ -10,8 +10,6 @@ import (
 	"noah/internal/server/service"
 
 	"github.com/gin-gonic/gin"
-	_ "noah/internal/server/logic/client"
-	_ "noah/internal/server/logic/pty"
 )
 
 type Server struct {
