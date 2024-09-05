@@ -17,6 +17,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 )
 
 require (

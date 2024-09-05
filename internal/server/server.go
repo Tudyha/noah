@@ -5,7 +5,9 @@ import (
 	"noah/internal/server/dao"
 	"noah/internal/server/environment"
 	"noah/internal/server/middleware"
+	"noah/internal/server/middleware/log"
 	"noah/internal/server/routes"
+	"noah/internal/server/service"
 
 	"github.com/gin-gonic/gin"
 	_ "noah/internal/server/logic/client"
@@ -32,17 +34,6 @@ func NewServer() *Server {
 		panic(dbError)
 	}
 
-	g := gin.Default()
-	// panic recovery
-	//g.Use(gin.Recovery())
-
-	//init routes
-	r := routes.NewRouter(g)
-	r.LoadRoutes()
-
-	//cron
-	middleware.LoadCron()
-
 	//时间统一配置
 	carbon.SetDefault(carbon.Default{
 		Layout:       carbon.DateTimeLayout,
@@ -50,6 +41,25 @@ func NewServer() *Server {
 		WeekStartsAt: carbon.Sunday,
 		Locale:       "zh-CN",
 	})
+
+	//cron
+	middleware.LoadCron()
+
+	//load service
+	service.LoadService()
+
+	gin.SetMode(gin.ReleaseMode)
+	g := gin.New()
+	//log
+	logger := log.SetupLogger()
+	g.Use(log.Logger(logger))
+
+	//init routes
+	r := routes.NewRouter(g)
+	r.LoadRoutes()
+
+	// panic recovery
+	g.Use(gin.Recovery())
 
 	return &Server{
 		G:   g,

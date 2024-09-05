@@ -65,7 +65,7 @@ func (r *Router) LoadRoutes() {
 		clientGroup.GET("/:id/ws", clientController.NewWsClient)
 
 		ptyGroup := router.Group("pty")
-		ptyGroup.GET("/ws/:id", ptyController.WebSocket)
+		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
 		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
 
 		// 下载文件

@@ -11,10 +11,6 @@ var (
 	clientServiceInstance IClientService
 )
 
-func RegisterClientService(i IClientService) {
-	clientServiceInstance = i
-}
-
 func GetClientService() IClientService {
 	return clientServiceInstance
 }

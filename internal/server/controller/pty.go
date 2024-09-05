@@ -15,8 +15,8 @@ func NewPtyController() *PtyController {
 	return &PtyController{}
 }
 
-// WebSocket 前端websocket连接
-func (h PtyController) WebSocket(c *gin.Context) {
+// NewPtyChannel 新建pty通道
+func (h PtyController) NewPtyChannel(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	uintId := uint(id)
 
@@ -34,7 +34,7 @@ func (h PtyController) WebSocket(c *gin.Context) {
 		return
 	}
 
-	err = service.GetPtyService().NewPtyClient(channelId, conn)
+	err = service.GetPtyService().NewPtyChannel(channelId, conn)
 	if err != nil {
 		Fail(c, 500, "NewPtyClient fail")
 		return
@@ -50,7 +50,7 @@ func (h PtyController) NewPtyClient(ctx *gin.Context) {
 		return
 	}
 
-	err = service.GetPtyService().AddPtyConnection(channelId, ws)
+	err = service.GetPtyService().NewPtyClient(channelId, ws)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return

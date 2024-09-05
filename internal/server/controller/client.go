@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"github.com/golang-module/carbon/v2"
 	"github.com/jinzhu/copier"
 	"net/http"
@@ -71,26 +70,25 @@ func (c ClientController) DeleteClient(ctx *gin.Context) {
 	//断开ws连接
 	err = service.GetClientService().Exit(uint(id))
 	if err != nil {
-		Fail(ctx, http.StatusBadRequest, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	//删除客户端
 	err = service.GetClientService().Delete(uint(id))
 	if err != nil {
-		Fail(ctx, http.StatusBadRequest, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	Success(ctx, nil)
 }
 
-// NewWsClient 新建客户端ws连接
+// NewWsClient 新建客户端ws连接，主要用来让客户端执行命令
 func (c ClientController) NewWsClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
-		fmt.Println("upgrade:", err)
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -100,11 +98,9 @@ func (c ClientController) NewWsClient(ctx *gin.Context) {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	//Success(ctx, nil)
 }
 
-// SendCommandHandler 发送命令
+// SendCommandHandler 执行命令
 func (c ClientController) SendCommandHandler(ctx *gin.Context) {
 	var form vo.SendCommandReq
 	if err := ctx.ShouldBindJSON(&form); err != nil {
@@ -136,7 +132,7 @@ func (c ClientController) Generate(ctx *gin.Context) {
 
 	filename, err := generate(req)
 	if err != nil {
-		Fail(ctx, http.StatusBadRequest, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -174,7 +170,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 
 	filename, err := generate(req)
 	if err != nil {
-		Fail(ctx, http.StatusBadRequest, err.Error())
+		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -187,6 +183,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 	Success(ctx, "success")
 }
 
+// GetClientInfo 获取客户端信息
 func (c ClientController) GetClientInfo(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	start := ctx.Query("start")
@@ -198,7 +195,6 @@ func (c ClientController) GetClientInfo(ctx *gin.Context) {
 		//获取5分钟前时间
 		startTime = endTime.Add(-5 * time.Minute)
 	} else {
-		//15:39:55 转time.Time
 		startTime = carbon.Parse(start).StdTime()
 		endTime = carbon.Parse(end).StdTime()
 	}

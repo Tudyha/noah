@@ -2,7 +2,6 @@ package pty
 
 import (
 	"errors"
-	"noah/internal/server/service"
 	"sync"
 	"time"
 
@@ -14,19 +13,20 @@ type ptyService struct {
 	ptyClients map[string]*websocket.Conn //客户端pty websocket
 }
 
-func init() {
-	service.RegisterPtyService(&ptyService{
+func NewPtyService() *ptyService {
+	return &ptyService{
 		mu:         &sync.Mutex{},
 		ptyClients: make(map[string]*websocket.Conn),
-	})
+	}
 }
 
-type ptyClient struct {
-	conn        *websocket.Conn
-	channelId   string
-	closeSignal chan struct{}
-	isClosed    bool       // 标记是否已经关闭
-	mu          sync.Mutex // 用于保护对channelId的访问
+type ptyChannel struct {
+	channelId   string          // 通道id
+	conn        *websocket.Conn // 前端websocket连接
+	closeSignal chan struct{}   // 用于关闭连接的信号
+	isClosed    bool            // 标记是否已经关闭
+	mu          sync.Mutex      // 用于保护对channelId的访问
+	ptyService  *ptyService     // ptyService，用于操作ptyClient
 }
 
 const (
@@ -38,8 +38,16 @@ var (
 	ErrClientConnectionNotFound = errors.New("no active client connection found")
 )
 
-func (c *ptyService) PtyRead(channelId string) (messageType int, data []byte, err error) {
-	client, found := c.getPtyConnection(channelId)
+func (c ptyService) NewPtyClient(channelId string, connection *websocket.Conn) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.ptyClients[channelId] = connection
+	return nil
+}
+
+func (c ptyService) PtyClientRead(channelId string) (messageType int, data []byte, err error) {
+	client, found := c.getPtyClientConnection(channelId)
 	if !found {
 		return 0, nil, ErrClientConnectionNotFound
 	}
@@ -52,8 +60,8 @@ func (c *ptyService) PtyRead(channelId string) (messageType int, data []byte, er
 	return msgType, connReader, nil
 }
 
-func (c *ptyService) PtyWrite(channelId string, messageType int, data []byte) error {
-	client, _ := c.getPtyConnection(channelId)
+func (c ptyService) PtyClientWrite(channelId string, messageType int, data []byte) error {
+	client, _ := c.getPtyClientConnection(channelId)
 
 	err := client.WriteMessage(messageType, data)
 	if err != nil {
@@ -62,62 +70,59 @@ func (c *ptyService) PtyWrite(channelId string, messageType int, data []byte) er
 	return nil
 }
 
-// ClosePtyConnection 关闭pty连接
-func (c *ptyService) ClosePtyConnection(channelId string) error {
-	client, _ := c.getPtyConnection(channelId)
+// ClosePtyClient 关闭pty连接
+func (c ptyService) ClosePtyClient(channelId string) error {
+	client, _ := c.getPtyClientConnection(channelId)
 	if client != nil {
 		if err := client.Close(); err != nil {
 			return err
 		}
 	}
 
-	if err := c.removePtyConnection(channelId); err != nil {
+	if err := c.removePtyClientConnection(channelId); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *ptyService) AddPtyConnection(channelId string, connection *websocket.Conn) error {
+func (c ptyService) getPtyClientConnection(channelId string) (*websocket.Conn, bool) {
 	c.mu.Lock()
-	c.ptyClients[channelId] = connection
-	c.mu.Unlock()
-	return nil
-}
+	defer c.mu.Unlock()
 
-func (c *ptyService) getPtyConnection(channelId string) (*websocket.Conn, bool) {
-	c.mu.Lock()
 	conn, found := c.ptyClients[channelId]
-	c.mu.Unlock()
 	return conn, found
 }
 
-func (c *ptyService) removePtyConnection(channelId string) error {
+func (c ptyService) removePtyClientConnection(channelId string) error {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	delete(c.ptyClients, channelId)
-	c.mu.Unlock()
 	return nil
 }
 
-func (p *ptyService) NewPtyClient(channelId string, conn *websocket.Conn) error {
+// NewPtyChannel 新建pty通道
+func (c ptyService) NewPtyChannel(channelId string, conn *websocket.Conn) error {
 	if conn == nil {
 		return errors.New("connection is nil")
 	}
 
-	ptyClient := &ptyClient{
+	channel := &ptyChannel{
 		conn:        conn,
 		channelId:   channelId,
 		closeSignal: make(chan struct{}),
 		isClosed:    false,
+		ptyService:  &c,
 	}
 
-	go ptyClient.read()
-	go ptyClient.write()
+	go channel.read()
+	go channel.write()
 	return nil
 }
 
 // 往前端发送消息
-func (c *ptyClient) write() {
+func (c *ptyChannel) write() {
 	defer func() {
 		if err := c.close(); err != nil {
 			//log.Fatalf("ptyClient.close: %s", err)
@@ -131,8 +136,7 @@ func (c *ptyClient) write() {
 		default:
 			time.Sleep(10 * time.Millisecond)
 			// 读取client发来的消息
-			//TODO ClientService问题
-			msgType, data, err := service.GetPtyService().PtyRead(c.channelId)
+			msgType, data, err := c.ptyService.PtyClientRead(c.channelId)
 			if err != nil {
 				//log.Fatalf("ptyClient.write: %s", err)
 				return
@@ -149,7 +153,7 @@ func (c *ptyClient) write() {
 }
 
 // 从前端读取消息
-func (c *ptyClient) read() {
+func (c *ptyChannel) read() {
 	defer func() {
 		if err := c.close(); err != nil {
 			//log.Fatalf("ptyClient.close: %s", err)
@@ -170,13 +174,13 @@ func (c *ptyClient) read() {
 
 			// 转发到 client
 			c.mu.Lock()
-			service.GetPtyService().PtyWrite(c.channelId, msgType, data)
+			c.ptyService.PtyClientWrite(c.channelId, msgType, data)
 			c.mu.Unlock()
 		}
 	}
 }
 
-func (c *ptyClient) close() error {
+func (c *ptyChannel) close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -189,7 +193,7 @@ func (c *ptyClient) close() error {
 	}
 
 	//断开与client的websocket连接
-	service.GetPtyService().ClosePtyConnection(c.channelId)
+	c.ptyService.ClosePtyClient(c.channelId)
 
 	close(c.closeSignal)
 	c.isClosed = true

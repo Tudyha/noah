@@ -6,18 +6,14 @@ var (
 	ptyServiceInstance IPtyService
 )
 
-func RegisterPtyService(i IPtyService) {
-	ptyServiceInstance = i
-}
-
 func GetPtyService() IPtyService {
 	return ptyServiceInstance
 }
 
 type IPtyService interface {
-	NewPtyClient(channelId string, conn *websocket.Conn) error
-	AddPtyConnection(channelId string, connection *websocket.Conn) error
-	PtyRead(channelId string) (messageType int, data []byte, err error)
-	PtyWrite(channelId string, messageType int, data []byte) error
-	ClosePtyConnection(channelId string) error
+	NewPtyChannel(channelId string, conn *websocket.Conn) error
+	NewPtyClient(channelId string, connection *websocket.Conn) error
+	PtyClientRead(channelId string) (messageType int, data []byte, err error)
+	PtyClientWrite(channelId string, messageType int, data []byte) error
+	ClosePtyClient(channelId string) error
 }

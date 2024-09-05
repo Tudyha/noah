@@ -7,7 +7,6 @@ import (
 	"github.com/jinzhu/copier"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
-	"noah/internal/server/service"
 	"noah/internal/server/vo"
 	"os/exec"
 	"strings"
@@ -34,11 +33,11 @@ const (
 	buildStr       = `GO_ENABLED=1 CGO_ENABLED=0 GOOS=%s GOARCH=amd64 go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
 )
 
-func init() {
-	service.RegisterClientService(&clientService{
+func NewClientService() *clientService {
+	return &clientService{
 		mu:      &sync.Mutex{},
 		clients: make(map[uint]*websocket.Conn),
-	})
+	}
 }
 
 var (
