@@ -2,6 +2,7 @@ package dao
 
 import (
 	"noah/internal/server/environment"
+	"os"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
@@ -39,6 +40,10 @@ func openMysqlDb(connectStr string) (*gorm.DB, error) {
 }
 
 func openSqlLiteDb() (*gorm.DB, error) {
+	// 确保 data 目录存在
+	if err := os.MkdirAll("data", os.ModePerm); err != nil {
+		return nil, err
+	}
 	return gorm.Open(sqlite.Open("data/noah.db"), &gorm.Config{})
 }
 

@@ -45,7 +45,7 @@ func LoadEnvironment() (Environment, error) {
 		env.Server.Port = os.Getenv("SERVER_PORT")
 	}
 	if os.Getenv("ADMIN_PASSWORD") != "" {
-		env.Database.Host = os.Getenv("ADMIN_PASSWORD")
+		env.Admin.Password = os.Getenv("ADMIN_PASSWORD")
 	}
 
 	return env, nil

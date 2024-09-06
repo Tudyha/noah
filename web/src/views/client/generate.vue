@@ -26,12 +26,12 @@
         />
       </el-select>
     </el-form-item>
-    <el-form-item>
-      点击下载:
-      <a :href="downloadUrl" download>
-        {{ downloadUrl }}
-      </a>
-    </el-form-item>
+<!--    <el-form-item>-->
+<!--      点击下载:-->
+<!--      <a :href="downloadUrl" download>-->
+<!--        {{ downloadUrl }}-->
+<!--      </a>-->
+<!--    </el-form-item>-->
     <el-form-item>
       <div class="margin-top-20">
         <el-button type="primary" :loading="loading" @click="handleGenerate()">立即生成</el-button>
@@ -80,8 +80,8 @@ export default {
         await generate(this.form).then((res) => {
           this.loading = false
           if (res.code === 0) {
-            // window.open(process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + store.getters.token, '_self')
-            this.downloadUrl = process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + getToken()
+            window.open(process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + getToken(), '_self')
+            // this.downloadUrl = process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + getToken()
           } else {
             this.$message.error(res.msg)
           }
