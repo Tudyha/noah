@@ -34,6 +34,9 @@ RUN apk add --no-cache nginx && \
 # 复制 Go 应用到最终镜像
 COPY --from=builder /app /app
 
+# 缓存client 依赖
+RUN cd client && go mod download
+
 # 设置执行权限
 RUN chmod +x ./noah
 
