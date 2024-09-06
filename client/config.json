@@ -2,5 +2,6 @@
     "version": "1.0",
     "version_code": 1,
     "server_address": "127.0.0.1",
-    "server_port": "8080"
+    "server_port": "8080",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjU2NzYyODUsIm9yaWdfaWF0IjoxNzI1NTg5ODg1LCJ1c2VySWQiOjF9.ZuwpxkfDRKBnz9MacfzUwoDOGldXrCk7lTLwSDHRJFI"
 }

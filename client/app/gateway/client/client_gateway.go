@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"noah/client/app/environment"
 	"noah/client/app/gateway"
-	"time"
 )
 
 type Gateway struct {
@@ -63,9 +62,9 @@ func (c Gateway) NewFileDownloadRequest(method string, url string, body []byte) 
 		fmt.Printf("Error creating request: %v\n", err)
 		return nil, err
 	}
-	req.Header.Set("Cookie", c.Configuration.Connection.Token)
+	req.Header.Set("Authorization", c.Configuration.Connection.Token)
 
-	c.HttpClient.Timeout = 60 * time.Second
+	c.HttpClient.Timeout = 0
 
 	res, err := c.HttpClient.Do(req)
 	if err != nil {

@@ -60,7 +60,7 @@ func (r *Router) LoadRoutes() {
 	{
 		//免登录接口
 		// 下载文件
-		router.GET("/file/download/:filename", func(c *gin.Context) {
+		router.GET("/file/download/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename
@@ -79,7 +79,7 @@ func (r *Router) LoadRoutes() {
 		})
 
 		// 删除文件
-		router.DELETE("/file/:filename", func(c *gin.Context) {
+		router.DELETE("/file/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename

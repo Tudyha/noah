@@ -58,10 +58,12 @@ func (c Controller) Health(ctx *gin.Context) {
 	}
 	service.GetClientService().UpdateStatus(uint(id), enum.DEVICE_ONLINE)
 
-	err := service.GetClientService().SaveSystemInfo(uint(id), systemInfo)
-	if err != nil {
-		Fail(ctx, 400, "")
-		return
+	if systemInfo.CpuUsage != 0 {
+		err := service.GetClientService().SaveSystemInfo(uint(id), systemInfo)
+		if err != nil {
+			Fail(ctx, 400, "")
+			return
+		}
 	}
 	Success(ctx, nil)
 }

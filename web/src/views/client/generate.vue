@@ -43,6 +43,7 @@
 <script>
 import * as map from '@/map/client'
 import { generate } from '@/api/client'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'Client',
@@ -80,7 +81,7 @@ export default {
           this.loading = false
           if (res.code === 0) {
             // window.open(process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + store.getters.token, '_self')
-            this.downloadUrl = process.env.VUE_APP_BASE_API + '/file/download/' + res.data
+            this.downloadUrl = process.env.VUE_APP_BASE_API + '/file/download/' + res.data + '?token=' + getToken()
           } else {
             this.$message.error(res.msg)
           }

@@ -87,7 +87,11 @@ func (h *Handler) SendClientSpecs() (id uint, err error) {
 }
 
 func (h *Handler) ServerIsAvailable() error {
-	systemInfo, _ := h.Services.GetSystemInfo()
+	systemInfo, err := h.Services.GetSystemInfo()
+	if err != nil {
+		h.Log("[!] Error getting system info:", err.Error())
+		return err
+	}
 	body, err := json.Marshal(systemInfo)
 	if err != nil {
 		return err
