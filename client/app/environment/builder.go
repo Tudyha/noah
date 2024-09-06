@@ -21,7 +21,7 @@ func Load(serverAddress, httpPort, token string) *Configuration {
 
 func newServerUrl(serverAddress, serverPort string) string {
 	if len(strings.TrimSpace(serverPort)) == 0 {
-		return fmt.Sprintf("%s/", strings.TrimRight(serverAddress, "/"))
+		return fmt.Sprintf("%s/api", strings.TrimRight(serverAddress, "/"))
 	}
-	return fmt.Sprintf("http://%s:%s", serverAddress, serverPort)
+	return fmt.Sprintf("http://%s:%s/api", serverAddress, serverPort)
 }

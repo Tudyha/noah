@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"noah/internal/server/controller"
@@ -10,6 +8,9 @@ import (
 	"noah/internal/server/utils"
 	"os"
 	"path/filepath"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 type Router struct {
@@ -45,10 +46,6 @@ func (r *Router) LoadRoutes() {
 			log.Fatal("authMiddleware.MiddlewareInit() Error:" + errInit.Error())
 		}
 	})
-	router.POST("/login", authMiddleware.LoginHandler)
-
-	auth := router.Group("/auth", authMiddleware.MiddlewareFunc())
-	auth.GET("/refresh_token", authMiddleware.RefreshHandler)
 	// -----  jwt  -----
 
 	handlers := r.handlers
@@ -57,10 +54,58 @@ func (r *Router) LoadRoutes() {
 	ptyController := handlers.GetPtyController()
 	fileController := handlers.GetFileController()
 
+	api := router.Group("/api")
+
 	{
 		//免登录接口
+		api.POST("/login", authMiddleware.LoginHandler)
+	}
+
+	authGroup := api.Group("", authMiddleware.MiddlewareFunc())
+	{
+		//需要登录接口
+		auth := authGroup.Group("/auth")
+		auth.GET("/refresh_token", authMiddleware.RefreshHandler)
+
+		clientGroup := authGroup.Group("client")
+		clientGroup.POST("/", clientController.CreateClient)
+		clientGroup.GET("", clientController.GetClient)
+		clientGroup.DELETE("/:id", clientController.DeleteClient)
+		clientGroup.POST("/:id/health", handlers.Health)
+		clientGroup.GET("/:id/ws", clientController.NewWsClient)
+		clientGroup.POST("/cmd", clientController.SendCommandHandler)
+		clientGroup.POST("/generate", clientController.Generate)
+		clientGroup.POST("/:id/update", clientController.Update)
+		clientGroup.GET("/:id/systemInfo", clientController.GetClientInfo)
+
+		fileGroup := authGroup.Group("/client/:id/file")
+		fileGroup.GET("", fileController.GetFileList)
+		fileGroup.GET("/content", fileController.GetFileContent)
+		fileGroup.POST("/rename", fileController.RenameFile)
+		fileGroup.DELETE("", fileController.DeleteFile)
+		fileGroup.PUT("/content", fileController.UpdateFileContent)
+		fileGroup.POST("", fileController.UploadFile)
+		fileGroup.POST("/dir", fileController.NewDir)
+
+		ptyGroup := authGroup.Group("pty")
+		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
+		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
+
+		userGroup := authGroup.Group("user")
+		userGroup.GET("info", func(ctx *gin.Context) {
+			ctx.JSON(http.StatusOK, gin.H{
+				"code": 0,
+				"data": gin.H{
+					"roles":        []string{"admin"},
+					"introduction": "I am a super administrator",
+					"avatar":       "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif",
+					"name":         "Super Admin",
+				},
+			})
+		})
+
 		// 下载文件
-		router.GET("/file/download/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
+		api.GET("/file/download/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename
@@ -79,7 +124,7 @@ func (r *Router) LoadRoutes() {
 		})
 
 		// 删除文件
-		router.DELETE("/file/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
+		api.DELETE("/file/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename
@@ -101,47 +146,6 @@ func (r *Router) LoadRoutes() {
 			}
 
 			c.Status(http.StatusOK)
-		})
-	}
-
-	adminGroup := router.Group("", authMiddleware.MiddlewareFunc())
-	{
-		//需要登录接口
-		clientGroup := adminGroup.Group("client")
-		clientGroup.POST("/", clientController.CreateClient)
-		clientGroup.GET("", clientController.GetClient)
-		clientGroup.DELETE("/:id", clientController.DeleteClient)
-		clientGroup.POST("/:id/health", handlers.Health)
-		clientGroup.GET("/:id/ws", clientController.NewWsClient)
-		clientGroup.POST("/cmd", clientController.SendCommandHandler)
-		clientGroup.POST("/generate", clientController.Generate)
-		clientGroup.POST("/:id/update", clientController.Update)
-		clientGroup.GET("/:id/systemInfo", clientController.GetClientInfo)
-
-		fileGroup := adminGroup.Group("/client/:id/file")
-		fileGroup.GET("", fileController.GetFileList)
-		fileGroup.GET("/content", fileController.GetFileContent)
-		fileGroup.POST("/rename", fileController.RenameFile)
-		fileGroup.DELETE("", fileController.DeleteFile)
-		fileGroup.PUT("/content", fileController.UpdateFileContent)
-		fileGroup.POST("", fileController.UploadFile)
-		fileGroup.POST("/dir", fileController.NewDir)
-
-		ptyGroup := adminGroup.Group("pty")
-		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
-		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
-
-		userGroup := adminGroup.Group("user")
-		userGroup.GET("info", func(ctx *gin.Context) {
-			ctx.JSON(http.StatusOK, gin.H{
-				"code": 0,
-				"data": gin.H{
-					"roles":        []string{"admin"},
-					"introduction": "I am a super administrator",
-					"avatar":       "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif",
-					"name":         "Super Admin",
-				},
-			})
 		})
 	}
 
