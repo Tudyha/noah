@@ -7,13 +7,11 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
 	"math"
+	"noah/client/app/entitie"
+	"noah/client/app/service"
 	"os"
 	"os/user"
 	"runtime"
-	"time"
-
-	"noah/client/app/entitie"
-	"noah/client/app/service"
 
 	"noah/client/app/utils/network"
 )
@@ -30,7 +28,7 @@ func (i Service) LoadClientSpecs() (*entitie.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	username, err := user.Current()
+	user, err := user.Current()
 	if err != nil {
 		return nil, err
 	}
@@ -38,16 +36,37 @@ func (i Service) LoadClientSpecs() (*entitie.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	cpuInfo, err := cpu.Info()
+	if err != nil {
+		return nil, err
+	}
+	cpu0 := cpuInfo[0]
+
+	memStats, err := mem.VirtualMemory()
+	if err != nil {
+		return nil, err
+	}
+
+	usage, err := disk.Usage("/")
+	if err != nil {
+		return nil, err
+	}
+	diskTotal := coverToGb(usage.Total)
+
 	return &entitie.Client{
-		Hostname:    hostname,
-		Username:    username.Name,
-		UserID:      username.Username,
-		OSName:      runtime.GOOS,
-		OSArch:      runtime.GOARCH,
-		MacAddress:  macAddress,
-		IPAddress:   network.GetLocalIP(),
-		Port:        "",
-		FetchedUnix: time.Now().UTC().Unix(),
+		Hostname:     hostname,
+		Username:     user.Username,
+		Gid:          user.Gid,
+		Uid:          user.Uid,
+		OSName:       runtime.GOOS,
+		OSArch:       runtime.GOARCH,
+		MacAddress:   macAddress,
+		IPAddress:    network.GetLocalIP(),
+		CpuCores:     cpu0.Cores,
+		CpuModelName: cpu0.ModelName,
+		CpuFamily:    cpu0.Family,
+		MemoryTotal:  coverToGb(memStats.Total),
+		DiskTotal:    diskTotal,
 	}, nil
 }
 

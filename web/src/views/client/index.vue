@@ -31,11 +31,15 @@
           {{ scope.row.id }}
         </template>
       </el-table-column>
-      <el-table-column label="主机名称">
-        <template slot-scope="scope">
-          {{ scope.row.hostname }}
-        </template>
-      </el-table-column>
+       template
+   <el-table-column label="主机">
+       <template slot-scope="scope">
+           <a @click="handleConsole(scope.row)" class="hostname-link">
+               {{ scope.row.hostname }}
+           </a>
+       </template>
+   </el-table-column>
+
       <el-table-column label="用户名称" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.username }}</span>
@@ -46,16 +50,11 @@
           {{ scope.row.osName }}
         </template>
       </el-table-column>
-      <el-table-column label="ip" align="center">
+      <el-table-column label="IP" align="center">
         <template slot-scope="scope">
-          {{ scope.row.ipAddress }}
+          内: {{ scope.row.localIp }}<br />外: {{ scope.row.remoteIp }}
         </template>
       </el-table-column>
-      <!-- <el-table-column label="端口号" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.port }}
-        </template>
-      </el-table-column> -->
       <el-table-column class-name="status-col" label="在线状态" align="center">
         <template slot-scope="scope">
           <el-tag :type="scope.row.status | statusTagTypeFilter">{{ scope.row.status | statusFilter }}</el-tag>
@@ -74,18 +73,18 @@
               <i class="el-icon-more" />
             </el-button>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item @click.native="handleSystemInfo(row)">
-                <i class="el-icon-info" /> 系统信息
-              </el-dropdown-item>
-              <el-dropdown-item @click.native="handleFile(row)">
-                <i class="el-icon-document" /> 文件管理
-              </el-dropdown-item>
-              <el-dropdown-item @click.native="handleCmd(row)">
-                <i class="el-icon-s-promotion" /> 执行命令
-              </el-dropdown-item>
-              <el-dropdown-item @click.native="handlePtyShell(row)">
-                <i class="el-icon-setting" /> Shell
-              </el-dropdown-item>
+<!--              <el-dropdown-item @click.native="handleSystemInfo(row)">-->
+<!--                <i class="el-icon-info" /> 系统信息-->
+<!--              </el-dropdown-item>-->
+<!--              <el-dropdown-item @click.native="handleFile(row)">-->
+<!--                <i class="el-icon-document" /> 文件管理-->
+<!--              </el-dropdown-item>-->
+<!--              <el-dropdown-item @click.native="handleCmd(row)">-->
+<!--                <i class="el-icon-s-promotion" /> 执行命令-->
+<!--              </el-dropdown-item>-->
+<!--              <el-dropdown-item @click.native="handlePtyShell(row)">-->
+<!--                <i class="el-icon-setting" /> Shell-->
+<!--              </el-dropdown-item>-->
               <el-dropdown-item @click.native="handleUpdateClient(row)">
                 <i class="el-icon-s-tools" /> 更新客户端
               </el-dropdown-item>
@@ -224,8 +223,8 @@ export default {
       this.selectedRow = row
       this.updateDialogShow = true
     },
-    handleSystemInfo(row) {
-      this.$router.push({ path: '/client/system-info', query: { id: row.id }})
+    handleConsole(row) {
+      this.$router.push({ path: '/client/console', query: { id: row.id }})
     },
     handleDelete(row) {
       this.$confirm('是否确认删除：' + row.hostname, '提示', {
@@ -250,4 +249,7 @@ export default {
 </script>
 
 <style scoped>
+.hostname-link {
+  color: #0e96dc;
+}
 </style>

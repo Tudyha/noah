@@ -6,8 +6,12 @@ import (
 	"github.com/jinzhu/copier"
 	"net/http"
 	"noah/internal/server/config"
+	"noah/internal/server/dao"
 	"noah/internal/server/dto"
+	"noah/internal/server/enum"
 	"noah/internal/server/middleware"
+	"noah/internal/server/middleware/log"
+	"noah/internal/server/request"
 	"noah/internal/server/service"
 	"noah/internal/server/vo"
 	"strconv"
@@ -25,16 +29,22 @@ func NewClientController() *ClientController {
 
 // CreateClient 新增客户端
 func (c ClientController) CreateClient(ctx *gin.Context) {
-	var body vo.ClientPostReq
+	var body request.CreateClientReq
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	var ClientPostDto dto.ClientPostDto
-	copier.Copy(&ClientPostDto, &body)
+	log.Info("new client", map[string]interface{}{"client": body})
 
-	id, err := service.GetClientService().Save(ClientPostDto)
+	var client dao.Client
+	copier.Copy(&client, body)
+
+	client.RemoteIp = ctx.RemoteIP()
+	client.OsType = enum.DetectOS(body.OSName)
+	client.LocalIp = body.IPAddress
+
+	id, err := service.GetClientService().Save(client)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -42,20 +52,32 @@ func (c ClientController) CreateClient(ctx *gin.Context) {
 	Success(ctx, id)
 }
 
-// GetClient 获取客户端列表
-func (c ClientController) GetClient(ctx *gin.Context) {
-	var req vo.ClientListQueryReq
+// GetClientPage 获取客户端列表
+func (c ClientController) GetClientPage(ctx *gin.Context) {
+	var req request.ListClientQueryReq
 	if err := ctx.BindQuery(&req); err != nil {
 		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	total, Clients := service.GetClientService().GetClient(req)
+	total, clients := service.GetClientService().GetClientPage(req)
 
 	Success(ctx, &dto.PageInfo{
-		List:  Clients,
+		List:  clients,
 		Total: total,
 	})
+}
+
+func (c ClientController) GetClient(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+
+	client, err := service.GetClientService().GetClient(uint(id))
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	Success(ctx, client)
 }
 
 // DeleteClient 删除客户端

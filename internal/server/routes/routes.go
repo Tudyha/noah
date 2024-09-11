@@ -55,7 +55,6 @@ func (r *Router) LoadRoutes() {
 	fileController := handlers.GetFileController()
 
 	api := router.Group("/api")
-
 	{
 		//免登录接口
 		api.POST("/login", authMiddleware.LoginHandler)
@@ -69,10 +68,10 @@ func (r *Router) LoadRoutes() {
 
 		clientGroup := authGroup.Group("client")
 		clientGroup.POST("/", clientController.CreateClient)
-		clientGroup.GET("", clientController.GetClient)
+		clientGroup.GET("/:id", clientController.GetClient)
+		clientGroup.GET("/page", clientController.GetClientPage)
 		clientGroup.DELETE("/:id", clientController.DeleteClient)
 		clientGroup.POST("/:id/health", handlers.Health)
-		clientGroup.GET("/:id/ws", clientController.NewWsClient)
 		clientGroup.POST("/cmd", clientController.SendCommandHandler)
 		clientGroup.POST("/generate", clientController.Generate)
 		clientGroup.POST("/:id/update", clientController.Update)
@@ -86,10 +85,6 @@ func (r *Router) LoadRoutes() {
 		fileGroup.PUT("/content", fileController.UpdateFileContent)
 		fileGroup.POST("", fileController.UploadFile)
 		fileGroup.POST("/dir", fileController.NewDir)
-
-		ptyGroup := authGroup.Group("pty")
-		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
-		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
 
 		userGroup := authGroup.Group("user")
 		userGroup.GET("info", func(ctx *gin.Context) {
@@ -147,6 +142,15 @@ func (r *Router) LoadRoutes() {
 
 			c.Status(http.StatusOK)
 		})
+	}
+
+	// websocket接口
+	wsApi := router.Group("/ws-api", authMiddleware.MiddlewareFunc())
+	{
+		wsApi.GET("/client/:id/ws", clientController.NewWsClient)
+		ptyGroup := wsApi.Group("pty")
+		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
+		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
 	}
 
 	router.Use(gin.Recovery())

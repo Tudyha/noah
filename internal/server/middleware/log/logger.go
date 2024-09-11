@@ -45,7 +45,7 @@ func Logger(logger *logrus.Logger) gin.HandlerFunc {
 
 		// 计算请求耗时
 		latency := time.Since(start)
-		clientIP := c.ClientIP()
+		clientIP := c.RemoteIP()
 		method := c.Request.Method
 		statusCode := c.Writer.Status()
 		//header := c.Request.Header
@@ -61,15 +61,15 @@ func Logger(logger *logrus.Logger) gin.HandlerFunc {
 }
 
 func Info(msg string, fields map[string]interface{}) {
-	logger.WithFields(fields).Infoln(msg)
+	logger.WithFields(fields).Infoln("[" + msg + "]")
 }
 
 func Warn(msg string, fields map[string]interface{}) {
-	logger.WithFields(fields).Warningln(msg)
+	logger.WithFields(fields).Warningln("[" + msg + "]")
 }
 
 func Error(msg string, fields map[string]interface{}) {
-	logger.WithFields(fields).Errorln(msg)
+	logger.WithFields(fields).Errorln("[" + msg + "]")
 }
 
 // CustomJSONFormatter 自定义Formatter类

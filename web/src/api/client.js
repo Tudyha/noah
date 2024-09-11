@@ -26,7 +26,7 @@ export function update(data) {
 
 export function fetchList(params) {
   return request({
-    url: '/client',
+    url: '/client/page',
     method: 'get',
     params
   })
@@ -47,5 +47,12 @@ export function systemInfo(params) {
       start: params.start,
       end: params.end
     }
+  })
+}
+
+export function getClient(id) {
+  return request({
+    url: `/client/${id}`,
+    method: 'get'
   })
 }

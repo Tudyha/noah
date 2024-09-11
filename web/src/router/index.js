@@ -75,10 +75,10 @@ export const constantRoutes = [
         meta: { title: '生成客户端', icon: 'el-icon-s-tools' }
       },
       {
-        path: 'system-info',
-        name: '客户端系统信息',
-        component: () => import('@/views/client/system-info'),
-        meta: { title: '客户端系统信息', icon: 'el-icon-info' },
+        path: 'console',
+        name: '客户端工作台',
+        component: () => import('@/views/client/console'),
+        meta: { title: '客户端工作台', icon: 'el-icon-info' },
         hidden: true
       }
     ]

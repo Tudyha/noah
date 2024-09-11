@@ -1,18 +1,20 @@
 package vo
 
-import "noah/internal/server/dto"
-
 // ClientPostReq 客户端注册请求
 type ClientPostReq struct {
-	Hostname    string `json:"hostname,omitempty" description:"主机名"`
-	Username    string `json:"username,omitempty" description:"用户名"`
-	UserID      string `json:"userId,omitempty" description:"用户ID"`
-	OSName      string `json:"osName,omitempty" description:"操作系统名称"`
-	OSArch      string `json:"osArch,omitempty" description:"操作系统架构"`
-	MacAddress  string `json:"macAddress,omitempty" description:"MAC地址"`
-	IPAddress   string `json:"ipAddress,omitempty" description:"IP地址"`
-	Port        string `json:"port,omitempty" description:"端口号"`
-	FetchedUnix int64  `json:"fetchedUnix,omitempty" description:"获取时间戳"`
+	Hostname     string  `json:"hostname"`
+	Username     string  `json:"username"`
+	Gid          string  `json:"gid"`
+	Uid          string  `json:"userId"`
+	OSName       string  `json:"osName"`
+	OSArch       string  `json:"osArch"`
+	MacAddress   string  `json:"macAddress"`
+	IPAddress    string  `json:"ipAddress"`
+	Port         string  `json:"port"`
+	CpuCores     int32   `json:"cpuCores"`
+	CpuModelName string  `json:"cpuModelName"`
+	CpuFamily    string  `json:"cpuFamily"`
+	MemoryTotal  float64 `json:"memoryTotal"`
 }
 
 // SendCommandReq 发送命令请求
@@ -50,10 +52,4 @@ type ClientFileContentReq struct {
 // ClientFileNewDirReq 创建新目录请求
 type ClientFileNewDirReq struct {
 	Path string `json:"path" binding:"required" description:"目录路径"`
-}
-
-type ClientListQueryReq struct {
-	dto.PageQuery
-	Hostname string `form:"hostname"`
-	Status   int8   `form:"status"`
 }

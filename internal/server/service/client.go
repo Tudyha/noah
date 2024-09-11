@@ -2,8 +2,10 @@ package service
 
 import (
 	"github.com/gorilla/websocket"
+	"noah/internal/server/dao"
 	"noah/internal/server/dto"
-	"noah/internal/server/vo"
+	"noah/internal/server/request"
+	"noah/internal/server/response"
 	"time"
 )
 
@@ -16,9 +18,10 @@ func GetClientService() IClientService {
 }
 
 type IClientService interface {
-	Save(body dto.ClientPostDto) (id uint, err error)
+	Save(client dao.Client) (id uint, err error)
 	UpdateStatus(id uint, status int8)
-	GetClient(query vo.ClientListQueryReq) (total int64, ClientDtos []dto.ClientDto)
+	GetClient(id uint) (response.GetClientRes, error)
+	GetClientPage(query request.ListClientQueryReq) (total int64, clients []response.ListClientRes)
 	ScheduleUpdateStatus() error
 	Delete(id uint) error
 	AddConnection(id uint, connection *websocket.Conn) error

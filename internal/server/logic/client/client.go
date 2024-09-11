@@ -7,7 +7,8 @@ import (
 	"github.com/jinzhu/copier"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
-	"noah/internal/server/vo"
+	"noah/internal/server/request"
+	"noah/internal/server/response"
 	"os/exec"
 	"strings"
 	"sync"
@@ -30,7 +31,7 @@ const (
 	buildBaseDir   = "build/"
 	configFileName = "config.json"
 	mainFileName   = "main.go"
-	buildStr       = `GO_ENABLED=1 CGO_ENABLED=0 GOOS=%s GOARCH=amd64 go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
+	buildStr       = `GO_ENABLED=1 CGO_ENABLED=1 GOOS=%s GOARCH=amd64 GOCC=gcc GOCXX=g++ CGO_LDFLAGS="-static" go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
 )
 
 func NewClientService() *clientService {
@@ -259,23 +260,20 @@ func (c clientService) Exit(id uint) error {
 	return nil
 }
 
-func (c clientService) Save(body dto.ClientPostDto) (id uint, err error) {
-	var Client dao.Client
-	copier.Copy(&Client, &body)
-	Client.OsType = enum.DetectOS(Client.OSName)
+func (c clientService) Save(client dao.Client) (id uint, err error) {
 
-	old := dao.GetClientDao().GetByMacAddress(Client.MacAddress)
+	old := dao.GetClientDao().GetByMacAddress(client.MacAddress)
 	if old.ID != 0 {
 		// 已存在，更新数据即可
-		Client.ID = old.ID
-		err = dao.GetClientDao().Update(Client)
+		client.ID = old.ID
+		err = dao.GetClientDao().Update(client)
 		if err != nil {
 			return 0, err
 		}
 		return old.ID, nil
 	}
 
-	id, err = dao.GetClientDao().Save(Client)
+	id, err = dao.GetClientDao().Save(client)
 	if err != nil {
 		return 0, err
 	}
@@ -286,15 +284,26 @@ func (c clientService) UpdateStatus(id uint, status int8) {
 	dao.GetClientDao().UpdateStatus(id, status)
 }
 
-func (c clientService) GetClient(query vo.ClientListQueryReq) (total int64, ClientDtos []dto.ClientDto) {
-	total, Clients := dao.GetClientDao().Page(query)
+func (c clientService) GetClientPage(query request.ListClientQueryReq) (int64, []response.ListClientRes) {
+	total, clients := dao.GetClientDao().Page(query)
 
 	if total == 0 {
-		return 0, make([]dto.ClientDto, 0)
+		return 0, make([]response.ListClientRes, 0)
 	}
 
-	copier.Copy(&ClientDtos, &Clients)
-	return total, ClientDtos
+	var res []response.ListClientRes
+	copier.Copy(&res, &clients)
+	return total, res
+}
+
+func (c clientService) GetClient(id uint) (response.GetClientRes, error) {
+	client, err := dao.GetClientDao().GetById(id)
+	if err != nil {
+		return response.GetClientRes{}, err
+	}
+	var res response.GetClientRes
+	copier.Copy(&res, client)
+	return res, nil
 }
 
 func (c clientService) ScheduleUpdateStatus() error {

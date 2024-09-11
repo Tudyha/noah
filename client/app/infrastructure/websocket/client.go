@@ -25,7 +25,7 @@ func NewConnection(configuration *environment.Configuration, path string) (*webs
 		scheme = "wss"
 	}
 
-	u := url.URL{Scheme: scheme, Host: host, Path: path}
+	u := url.URL{Scheme: scheme, Host: host, Path: "/ws-api" + path}
 
 	header := http.Header{}
 	// header.Set("x-client", clientID)

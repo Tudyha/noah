@@ -18,7 +18,7 @@ export default {
     },
     shellType: {
       type: Number,
-      default: 1
+      default: 2
     }
   },
   data() {

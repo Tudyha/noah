@@ -6,6 +6,7 @@ RUN apk add --no-cache build-base musl-dev gcc libc6-compat && \
 
 # 设置环境变量
 ENV CGO_ENABLED=1
+ENV GOFLAGS="-buildmode=pie"
 
 # 设置工作目录
 WORKDIR /app
@@ -22,7 +23,7 @@ COPY internal ./internal
 COPY pkg ./pkg
 
 # 构建应用程序
-RUN go build -tags netgo -o noah cmd/noah/main.go
+RUN GOCC=gcc GOCXX=g++ CGO_LDFLAGS="-static" go build -tags netgo -o noah cmd/noah/main.go
 
 FROM golang:1.22-alpine
 WORKDIR /app
