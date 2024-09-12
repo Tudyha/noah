@@ -31,7 +31,7 @@ const (
 	buildBaseDir   = "build/"
 	configFileName = "config.json"
 	mainFileName   = "main.go"
-	buildStr       = `GO_ENABLED=1 CGO_ENABLED=1 GOOS=%s GOARCH=amd64 GOCC=gcc GOCXX=g++ CGO_LDFLAGS="-static" go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
+	buildStr       = `CGO_ENABLED=0 GOOS=%s GOARCH=amd64 go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
 )
 
 func NewClientService() *clientService {
