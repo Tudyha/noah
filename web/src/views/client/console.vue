@@ -11,17 +11,23 @@
     </el-header>
     <el-container style="padding: 20px">
       <el-aside width="200px" class="sidebar">
-        <el-card>
+<!--        <el-card>-->
           <el-card class="menu-card">
-            <el-button v-for="(item, index) in menuItems" :key="index" :class="{ active: item.index === currentComponent }" @click="changeContent(item.index)">
+            <el-button v-for="(item, index) in menuItems"
+                       :key="index"
+                       :class="{ active: item.index === currentComponent }"
+                       :icon="item.icon"
+                       @click="changeContent(item.index)">
               {{ item.label }}
             </el-button>
           </el-card>
-        </el-card>
+<!--        </el-card>-->
       </el-aside>
       <el-main class="content">
         <el-card class="main-card">
-          <component :is="currentComponent" :id="id"></component>
+          <keep-alive>
+            <component :is="currentComponent" :id="id"></component>
+          </keep-alive>
         </el-card>
       </el-main>
     </el-container>
@@ -33,7 +39,7 @@ import Load from './components/system-info.vue'
 import Status from './components/system-status.vue'
 import { getClient } from '@/api/client'
 import Shell from '@/components/Shell'
-import File from '@/components/FileManager'
+import File from '@/components/FileTree'
 
 export default {
   name: 'App',
@@ -53,10 +59,10 @@ export default {
       remoteIp: '',
       currentComponent: 'load', // 默认显示资源负载
       menuItems: [
-        { index: 'load', label: '资源负载' },
-        { index: 'status', label: '系统状态' },
-        { index: 'shell', label: '在线终端' },
-        { index: 'file', label: '文件管理' },
+        { index: 'load', label: '资源负载', icon: 'el-icon-cpu' },
+        { index: 'status', label: '系统状态', icon: 'el-icon-monitor' },
+        { index: 'shell', label: '在线终端', icon: 'el-icon-s-promotion' },
+        { index: 'file', label: '文件管理', icon: 'el-icon-folder-opened' },
       ],
     };
   },
@@ -112,7 +118,7 @@ export default {
 .menu-card .el-button {
   width: 100%;
   margin-bottom: 10px;
-  background-color: rgba(255, 255, 255, 0.43);
+  background-color: aliceblue;
   color: rgba(3, 1, 1, 0.77);
   border: none;
   font-size: 16px;

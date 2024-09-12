@@ -30,3 +30,15 @@ type SystemInfo struct {
 	BandwidthIn       float64 `json:"bandwidthIn"`
 	BandwidthOut      float64 `json:"bandwidthOut"`
 }
+
+type Process struct {
+	Pid        int32   `json:"pid"`
+	Name       string  `json:"name"`
+	Uids       []int32 `json:"uids"`
+	Username   string  `json:"username"`
+	Gids       []int32 `json:"gids"`
+	Cpu        float64 `json:"cpu"`
+	Memory     uint64  `json:"memory"`
+	Command    string  `json:"command"`
+	CreateTime int64   `json:"createTime"`
+}

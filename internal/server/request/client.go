@@ -24,3 +24,10 @@ type ListClientQueryReq struct {
 	Hostname string `form:"hostname"`
 	Status   int8   `form:"status"`
 }
+
+type GetFileExplorerQueryReq struct {
+	Path        string `json:"path"`
+	Op          string `json:"op"`
+	Filename    string `json:"filename"`
+	FileContent string `json:"file_content"`
+}

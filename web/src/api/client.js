@@ -50,6 +50,13 @@ export function systemInfo(params) {
   })
 }
 
+export function fetchProcessList(id) {
+  return request({
+    url: `/client/${id}/process`,
+    method: 'get'
+  })
+}
+
 export function getClient(id) {
   return request({
     url: `/client/${id}`,

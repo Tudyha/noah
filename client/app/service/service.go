@@ -23,6 +23,7 @@ type Services struct {
 type Information interface {
 	LoadClientSpecs() (*entitie.Client, error)
 	GetSystemInfo() (*entitie.SystemInfo, error)
+	GetProcessList() ([]entitie.Process, error)
 }
 
 type Terminal interface {

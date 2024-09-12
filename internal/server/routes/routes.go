@@ -76,6 +76,7 @@ func (r *Router) LoadRoutes() {
 		clientGroup.POST("/generate", clientController.Generate)
 		clientGroup.POST("/:id/update", clientController.Update)
 		clientGroup.GET("/:id/systemInfo", clientController.GetClientInfo)
+		clientGroup.GET("/:id/process", clientController.GetClientProcessList)
 
 		fileGroup := authGroup.Group("/client/:id/file")
 		fileGroup.GET("", fileController.GetFileList)

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/golang-module/carbon/v2"
 	"github.com/jinzhu/copier"
@@ -12,6 +13,7 @@ import (
 	"noah/internal/server/middleware"
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/request"
+	"noah/internal/server/response"
 	"noah/internal/server/service"
 	"noah/internal/server/vo"
 	"strconv"
@@ -233,4 +235,40 @@ func (c ClientController) GetClientInfo(ctx *gin.Context) {
 		return
 	}
 	Success(ctx, clientInfoList)
+}
+
+func (c ClientController) GetClientProcessList(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	//发送命令让客户端升级
+	result, err := service.GetClientService().SendCommand(uint(id), "process", "list")
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	var processList []response.GetClientProcessRes
+	err = json.Unmarshal([]byte(result), &processList)
+	if err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+	Success(ctx, processList)
+}
+
+func (c ClientController) KillClientProcess(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	//发送命令让客户端升级
+	result, err := service.GetClientService().SendCommand(uint(id), "process", "kill")
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	var processList []response.GetClientProcessRes
+	err = json.Unmarshal([]byte(result), &processList)
+	if err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+	Success(ctx, processList)
 }

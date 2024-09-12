@@ -43,3 +43,8 @@ VUE_APP_WS_ADDR = 'ws://127.0.0.1:8080'
 ```shell
 npm run build:stage
 ```
+
+## TODO
+1. 在线终端exit命令导致客户端panic挂掉
+2. 文件管理用户字段只有gid、uid，没有名称，需要修改
+3. 文件管理图片、json等文件预览优化

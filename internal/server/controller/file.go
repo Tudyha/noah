@@ -7,7 +7,8 @@ import (
 	"github.com/google/uuid"
 	"io"
 	"net/http"
-	"noah/internal/server/dto"
+	"noah/internal/server/request"
+	"noah/internal/server/response"
 	"noah/internal/server/service"
 	"noah/internal/server/utils"
 	"noah/internal/server/vo"
@@ -29,7 +30,7 @@ func (f FileController) GetFileList(c *gin.Context) {
 		return
 	}
 
-	query := &dto.FileExplorerQueryDto{
+	query := &request.GetFileExplorerQueryReq{
 		Op:   "list",
 		Path: path,
 	}
@@ -45,7 +46,7 @@ func (f FileController) GetFileList(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	var fileList []dto.FileExplorer
+	var fileList []response.GetFileExplorerRes
 	err = json.Unmarshal([]byte(result), &fileList)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -63,7 +64,7 @@ func (f FileController) GetFileContent(c *gin.Context) {
 		return
 	}
 
-	query := &dto.FileExplorerQueryDto{
+	query := &request.GetFileExplorerQueryReq{
 		Op:   "cat",
 		Path: path,
 	}
@@ -91,7 +92,7 @@ func (f FileController) RenameFile(c *gin.Context) {
 		return
 	}
 
-	query := &dto.FileExplorerQueryDto{
+	query := &request.GetFileExplorerQueryReq{
 		Op:       "rename",
 		Path:     body.Path,
 		Filename: body.Filename,
@@ -120,7 +121,7 @@ func (f FileController) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	query := &dto.FileExplorerQueryDto{
+	query := &request.GetFileExplorerQueryReq{
 		Op:   "remove",
 		Path: body.Path,
 	}
@@ -148,7 +149,7 @@ func (f FileController) UpdateFileContent(c *gin.Context) {
 		return
 	}
 
-	query := &dto.FileExplorerQueryDto{
+	query := &request.GetFileExplorerQueryReq{
 		Op:          "edit",
 		Path:        body.Path,
 		FileContent: body.Content,
@@ -234,7 +235,7 @@ func (f FileController) NewDir(c *gin.Context) {
 		return
 	}
 
-	query := &dto.FileExplorerQueryDto{
+	query := &request.GetFileExplorerQueryReq{
 		Op:   "mkdir",
 		Path: body.Path,
 	}

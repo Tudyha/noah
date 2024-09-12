@@ -180,10 +180,12 @@ func (c *ptyClient) close() error {
 	}
 
 	if c.pty != nil {
+		log.Println("[!] Closing pty")
 		if err := c.pty.Close(); err != nil {
 			return err
 		}
 		c.pty = nil
+		log.Println("[!] Closing pty end")
 	}
 
 	return nil
