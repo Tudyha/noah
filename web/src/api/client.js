@@ -57,6 +57,13 @@ export function fetchProcessList(id) {
   })
 }
 
+export function killProcess(params) {
+  return request({
+    url: `/client/${params.id}/process/${params.pid}`,
+    method: 'delete'
+  })
+}
+
 export function getClient(id) {
   return request({
     url: `/client/${id}`,

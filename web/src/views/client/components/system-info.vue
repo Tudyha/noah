@@ -1,7 +1,5 @@
 <template>
   <div>
-    <el-row>
-      <el-col :span="24">
         <el-time-picker
           is-range
           v-model="timeRange"
@@ -10,8 +8,7 @@
           end-placeholder="结束时间"
           @change="onTimeRangeChange"
         ></el-time-picker>
-      </el-col>
-    </el-row>
+        <el-button plain type="text" icon="el-icon-refresh" @click="fetchData">刷新</el-button>
   <div class="dashboard-container">
     <div class="chart-container">
       <h4>CPU</h4>

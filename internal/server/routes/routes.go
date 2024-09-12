@@ -77,6 +77,7 @@ func (r *Router) LoadRoutes() {
 		clientGroup.POST("/:id/update", clientController.Update)
 		clientGroup.GET("/:id/systemInfo", clientController.GetClientInfo)
 		clientGroup.GET("/:id/process", clientController.GetClientProcessList)
+		clientGroup.DELETE("/:id/process/:pid", clientController.KillClientProcess)
 
 		fileGroup := authGroup.Group("/client/:id/file")
 		fileGroup.GET("", fileController.GetFileList)

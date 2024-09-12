@@ -23,11 +23,12 @@ type Services struct {
 type Information interface {
 	LoadClientSpecs() (*entitie.Client, error)
 	GetSystemInfo() (*entitie.SystemInfo, error)
-	GetProcessList() ([]entitie.Process, error)
 }
 
 type Terminal interface {
 	Run(command string) ([]byte, error)
+	GetProcessList() ([]entitie.Process, error)
+	KillProcess(pid int32) error
 }
 
 type Pty interface {

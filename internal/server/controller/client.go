@@ -257,18 +257,11 @@ func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 
 func (c ClientController) KillClientProcess(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	//发送命令让客户端升级
-	result, err := service.GetClientService().SendCommand(uint(id), "process", "kill")
+	pid := ctx.Param("id")
+	_, err := service.GetClientService().SendCommand(uint(id), "process", "kill "+pid)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	var processList []response.GetClientProcessRes
-	err = json.Unmarshal([]byte(result), &processList)
-	if err != nil {
-		Fail(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
-	Success(ctx, processList)
+	Success(ctx, "success")
 }
