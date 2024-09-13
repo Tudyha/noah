@@ -2,8 +2,6 @@ package channel
 
 import (
 	"errors"
-	"fmt"
-	"github.com/gorilla/websocket"
 	"net"
 	"noah/internal/server/config"
 	"noah/internal/server/enum"
@@ -11,6 +9,8 @@ import (
 	"noah/internal/server/utils"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type channelService struct {
@@ -30,16 +30,23 @@ type Channel struct {
 	closeSignal chan struct{}    // 用于关闭连接的信号
 	isClosed    bool             // 标记是否已经关闭
 	mu          sync.Mutex       // 用于保护对channelId的访问
-	clientConn  *websocket.Conn  // 客户端连接
+	clientConn  *websocket.Conn  // 客户端websocket连接
+	serverPort  string           // 服务端端口
 }
 
-func (c channelService) NewChannel(channelType enum.ChannelType) (channel *Channel) {
+func (c channelService) NewChannel(channelType enum.ChannelType, serverPort string) (channel *Channel) {
 	channelId := utils.RandString(16)
 	channel = &Channel{
 		ChannelId:   channelId,
 		ChannelType: channelType,
 		isClosed:    false,
 		closeSignal: make(chan struct{}),
+	}
+
+	if serverPort != "" {
+		// 服务端需要监听新端口
+		channel.serverPort = serverPort
+		go channel.Listen()
 	}
 
 	c.channels[channelId] = channel
@@ -57,18 +64,15 @@ func (c channelService) ClientConnect(channelId string, conn *websocket.Conn) er
 	}
 
 	channel.clientConn = conn
-
-	go channel.Listen()
-
 	return nil
 }
 
 func (channel *Channel) Listen() {
-	log.Info("starting server on port 3322", nil)
-	//监听指定端口，同时把请求转发到客户端
-	listener, err := net.Listen("tcp", ":3322")
+	port := channel.serverPort
+	log.Info("server start listening on port "+port, nil)
+	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		fmt.Println("Error starting server:", err)
+		log.Error("listen error: "+err.Error(), nil)
 		return
 	}
 	defer listener.Close()
@@ -76,19 +80,20 @@ func (channel *Channel) Listen() {
 	// 监听连接
 	for {
 		conn, err := listener.Accept()
-		fmt.Println("accepted connection from:")
 		if err != nil {
-			fmt.Println("Error accepting connection:", err)
+			log.Error("Error accepting connection:"+err.Error(), nil)
 			continue
 		}
 
-		// 线程中处理连接
 		go func() {
 			for {
+				if channel.clientConn == nil {
+					continue
+				}
 				b := make([]byte, 1024)
 				n, err := conn.Read(b)
 				if err != nil {
-					fmt.Println("Error reading from connection:", err)
+					log.Error("Error reading from connection:"+err.Error(), nil)
 					return
 				}
 				if n > 0 {
@@ -99,9 +104,12 @@ func (channel *Channel) Listen() {
 
 		go func() {
 			for {
+				if channel.clientConn == nil {
+					continue
+				}
 				_, b, err := channel.clientConn.ReadMessage()
 				if err != nil {
-					fmt.Println("Error reading from client:", err)
+					log.Error("Error reading from client:"+err.Error(), nil)
 					return
 				}
 				conn.Write(b)

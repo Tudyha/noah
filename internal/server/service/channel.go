@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/gorilla/websocket"
 	"noah/internal/server/enum"
 	"noah/internal/server/logic/channel"
+
+	"github.com/gorilla/websocket"
 )
 
 var (
@@ -15,6 +16,6 @@ func GetChannelService() IChannelService {
 }
 
 type IChannelService interface {
-	NewChannel(channelType enum.ChannelType) (channel *channel.Channel)
+	NewChannel(channelType enum.ChannelType, serverPort string) (channel *channel.Channel)
 	ClientConnect(channelId string, conn *websocket.Conn) error
 }

@@ -1,12 +1,13 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/enum"
 	"noah/internal/server/service"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PtyController struct{}
@@ -20,7 +21,7 @@ func (h PtyController) NewPtyChannel(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	uintId := uint(id)
 
-	channel := service.GetChannelService().NewChannel(enum.Pty)
+	channel := service.GetChannelService().NewChannel(enum.Pty, "")
 	_, err := service.GetClientService().SendCommand(uintId, "pty", channel.ChannelId)
 	if err != nil {
 		Fail(c, 500, "客户端未上线, shell打开失败")
@@ -58,8 +59,10 @@ func (h PtyController) NewPtyClient(ctx *gin.Context) {
 }
 
 type CreateChannelReq struct {
-	ServerPort string `json:"serverPort"`
-	ClientPort string `json:"clientPort"`
+	ChannelType enum.ChannelType `json:"channelType" binding:"required"`
+	ServerPort  string           `json:"serverPort"`
+	ClientIp    string           `json:"clientIp"`
+	ClientPort  string           `json:"clientPort"`
 }
 
 func (h PtyController) NewChannel(c *gin.Context) {
@@ -73,7 +76,7 @@ func (h PtyController) NewChannel(c *gin.Context) {
 		return
 	}
 
-	channel := service.GetChannelService().NewChannel(enum.Pty)
+	channel := service.GetChannelService().NewChannel(req.ChannelType, req.ServerPort)
 	_, err = service.GetClientService().SendCommand(uintId, "channel", channel.ChannelId)
 	if err != nil {
 		Fail(c, 500, "客户端未上线, shell打开失败")
