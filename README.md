@@ -3,12 +3,15 @@
 
 ### docker 启动
 ```shell
-docker run -d -p 80:9527 -p 1234:8080 -e ADMIN_PASSWORD=123456 --name noah knodio/noah
+docker run -d -p 80:9527 -e ADMIN_PASSWORD=123456 --name noah knodio/noah
+```
+国内拉镜像慢，可以使用以下方式
+```shell
+docker run -d -p 80:9527 -e ADMIN_PASSWORD=123456 --name noah registry.cn-guangzhou.aliyuncs.com/knodio/noah
 ```
 说明：
 1. 9527为web管理访问端口
-2. 8080为服务端端口，用于客户端与服务器通信
-3. ADMIN_PASSWORD 为管理密码，默认为123456
+2. ADMIN_PASSWORD 为管理密码，默认为123456
 
 ### 源码部署
 #### 1. 启动服务端

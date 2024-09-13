@@ -55,6 +55,8 @@ func (r *Router) LoadRoutes() {
 	fileController := handlers.GetFileController()
 
 	api := router.Group("/api")
+	api.POST("/test/:id", ptyController.NewChannel)
+	router.GET("/ws-api/channel/client/ws/:channelId", ptyController.ChannelClientConnect)
 	{
 		//免登录接口
 		api.POST("/login", authMiddleware.LoginHandler)

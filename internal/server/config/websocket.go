@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/gorilla/websocket"
 	"net/http"
+	"time"
 )
 
 var (
@@ -15,4 +16,6 @@ var (
 			return true
 		},
 	}
+	// MessageWait Time allowed to write or read a message.
+	MessageWait = 10 * time.Second
 )

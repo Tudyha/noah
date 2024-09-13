@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net"
 	"net/http"
 	"noah/client/app/environment"
 	"noah/client/app/service"
@@ -295,6 +296,42 @@ func (h *Handler) HandleCommand() {
 					response = encode.StringToByte(err.Error())
 				}
 			}
+		case "channel":
+			p := request.Parameter
+			wsconn, err := ws.NewConnection(h.Configuration, "/channel/client/ws/"+p)
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+			}
+			conn, err := net.Dial("tcp", ":9528")
+			if err != nil {
+				hasError = true
+				response = encode.StringToByte(err.Error())
+			}
+			go func() {
+				for {
+					b := make([]byte, 1024)
+					n, err := conn.Read(b)
+					if err != nil {
+						fmt.Println("Error reading from connection:", err)
+						return
+					}
+					if n > 0 {
+						wsconn.WriteMessage(websocket.BinaryMessage, b)
+					}
+				}
+			}()
+
+			go func() {
+				for {
+					_, b, err := wsconn.ReadMessage()
+					if err != nil {
+						fmt.Println("Error reading from client:", err)
+						return
+					}
+					conn.Write(b)
+				}
+			}()
 		default:
 			response, err = h.RunCommand(request.Command)
 			if err != nil {

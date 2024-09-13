@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"noah/internal/server/config"
+	"noah/internal/server/enum"
 	"noah/internal/server/service"
-	"noah/internal/server/utils"
 	"strconv"
 )
 
@@ -20,9 +20,8 @@ func (h PtyController) NewPtyChannel(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	uintId := uint(id)
 
-	//发送命令，让客户端请求接口建立websocket连接
-	channelId := utils.RandString(16)
-	_, err := service.GetClientService().SendCommand(uintId, "pty", channelId)
+	channel := service.GetChannelService().NewChannel(enum.Pty)
+	_, err := service.GetClientService().SendCommand(uintId, "pty", channel.ChannelId)
 	if err != nil {
 		Fail(c, 500, "客户端未上线, shell打开失败")
 		return
@@ -34,7 +33,8 @@ func (h PtyController) NewPtyChannel(c *gin.Context) {
 		return
 	}
 
-	err = service.GetPtyService().NewPtyChannel(channelId, conn)
+	err = channel.Start(conn)
+
 	if err != nil {
 		Fail(c, 500, "NewPtyClient fail")
 		return
@@ -50,7 +50,47 @@ func (h PtyController) NewPtyClient(ctx *gin.Context) {
 		return
 	}
 
-	err = service.GetPtyService().NewPtyClient(channelId, ws)
+	err = service.GetChannelService().ClientConnect(channelId, ws)
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+
+type CreateChannelReq struct {
+	ServerPort string `json:"serverPort"`
+	ClientPort string `json:"clientPort"`
+}
+
+func (h PtyController) NewChannel(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	uintId := uint(id)
+
+	var req CreateChannelReq
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		Fail(c, 500, "参数错误")
+		return
+	}
+
+	channel := service.GetChannelService().NewChannel(enum.Pty)
+	_, err = service.GetClientService().SendCommand(uintId, "channel", channel.ChannelId)
+	if err != nil {
+		Fail(c, 500, "客户端未上线, shell打开失败")
+		return
+	}
+	Success(c, "success")
+}
+
+func (h PtyController) ChannelClientConnect(ctx *gin.Context) {
+	channelId := ctx.Param("channelId")
+	ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	err = service.GetChannelService().ClientConnect(channelId, ws)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
