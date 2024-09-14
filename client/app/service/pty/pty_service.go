@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"noah/client/app/entitie"
 	"noah/client/app/service"
 	"os"
 	"os/exec"
@@ -15,9 +16,15 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
+
+	ws "noah/client/app/infrastructure/websocket"
 )
 
 type Service struct{}
+
+var (
+	ptyClients = make(map[string]*ptyClient)
+)
 
 type ptyClient struct {
 	conn     *websocket.Conn
@@ -186,6 +193,107 @@ func (c *ptyClient) close() error {
 		}
 		c.pty = nil
 		log.Println("[!] Closing pty end")
+	}
+
+	return nil
+}
+
+func (t *Service) NewPtyClient(channelId string, wsc *websocket.Conn) error {
+	_, ok := ptyClients[channelId]
+	if ok {
+		log.Println("Client already exists: ", channelId)
+		return nil
+	}
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case `windows`:
+		cmd = exec.Command("cmd")
+	case `linux`:
+		cmd = exec.Command("bash")
+	case `darwin`:
+		cmd = exec.Command("zsh")
+	default:
+		return service.ErrUnsupportedPlatform
+	}
+
+	// 打开 pty
+	ptmx, err := pty.Start(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to start PTY: %w", err)
+	}
+
+	cl := &ptyClient{
+		conn: wsc,
+		pty:  ptmx,
+	}
+
+	ptyClients[channelId] = cl
+
+	go cl.read1(channelId)
+
+	return nil
+}
+
+func (c *ptyClient) read1(channelId string) {
+	data := make([]byte, maxMessageSize)
+
+	for {
+		n, readErr := c.pty.Read(data)
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				c.pty.Close()
+				break
+			}
+		}
+
+		if n > 0 {
+			ws_data := entitie.PtyRequest{
+				Action:      "write",
+				ChannelId:   channelId,
+				ChannelData: data[:n],
+			}
+			if err := ws.WriteMessage(c.conn, 0, entitie.MessageTypePty, ws_data, ""); err != nil {
+				c.pty.Close()
+				break
+			}
+		}
+	}
+}
+
+func (t *Service) Write(msgType int, channelId string, data []byte) error {
+	c, ok := ptyClients[channelId]
+	if !ok {
+		return errors.New("client not found")
+	}
+
+	if msgType != websocket.BinaryMessage {
+		if _, err := c.pty.Write(data); err != nil {
+			return err
+		}
+	}
+
+	t.SetSize(channelId, data)
+
+	return nil
+}
+
+func (t *Service) SetSize(channelId string, data []byte) error {
+	c, ok := ptyClients[channelId]
+	if !ok {
+		return errors.New("client not found")
+	}
+
+	var wdSize windowSize
+	if err := json.Unmarshal(data, &wdSize); err != nil {
+		return err
+	}
+
+	if err := pty.Setsize(c.pty, &pty.Winsize{
+		Rows: uint16(wdSize.High),
+		Cols: uint16(wdSize.Width),
+	}); err != nil {
+		return err
 	}
 
 	return nil

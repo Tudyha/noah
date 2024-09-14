@@ -14,7 +14,7 @@ var (
 
 type Services struct {
 	Information
-	Terminal
+	Command
 	Pty
 	Download
 	FileExplorer
@@ -25,7 +25,7 @@ type Information interface {
 	GetSystemInfo() (*entitie.SystemInfo, error)
 }
 
-type Terminal interface {
+type Command interface {
 	Run(command string) ([]byte, error)
 	GetProcessList() ([]entitie.Process, error)
 	KillProcess(pid int32) error
@@ -33,6 +33,9 @@ type Terminal interface {
 
 type Pty interface {
 	Run(wsc *websocket.Conn) error
+	NewPtyClient(channelId string, wsc *websocket.Conn) error
+	Write(msgType int, channelId string, data []byte) error
+	SetSize(channelId string, data []byte) error
 }
 
 type Download interface {

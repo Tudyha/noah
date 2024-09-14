@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 	"io"
 	"net/http"
+	"noah/internal/server/enum"
 	"noah/internal/server/request"
 	"noah/internal/server/response"
 	"noah/internal/server/service"
-	"noah/internal/server/utils"
 	"noah/internal/server/vo"
 	"os"
 	"strconv"
@@ -34,13 +34,8 @@ func (f FileController) GetFileList(c *gin.Context) {
 		Op:   "list",
 		Path: path,
 	}
-	jsonStr, err := json.Marshal(query)
-	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
-		return
-	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -68,13 +63,8 @@ func (f FileController) GetFileContent(c *gin.Context) {
 		Op:   "cat",
 		Path: path,
 	}
-	jsonStr, err := json.Marshal(query)
-	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
-		return
-	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -97,13 +87,8 @@ func (f FileController) RenameFile(c *gin.Context) {
 		Path:     body.Path,
 		Filename: body.Filename,
 	}
-	jsonStr, err := json.Marshal(query)
-	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
-		return
-	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -125,13 +110,8 @@ func (f FileController) DeleteFile(c *gin.Context) {
 		Op:   "remove",
 		Path: body.Path,
 	}
-	jsonStr, err := json.Marshal(query)
-	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
-		return
-	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "explorer", string(jsonStr))
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -154,13 +134,8 @@ func (f FileController) UpdateFileContent(c *gin.Context) {
 		Path:        body.Path,
 		FileContent: body.Content,
 	}
-	jsonStr, err := json.Marshal(query)
-	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
-		return
-	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "explorer", string(jsonStr))
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -206,18 +181,8 @@ func (f FileController) UploadFile(c *gin.Context) {
 		return
 	}
 
-	m := make(map[string]string)
-	m["path"] = path + "/" + file.Filename
-	m["filename"] = localFilename
-	//map转json字符串
-	jsonStr, err := json.Marshal(m)
-	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
 	//发送命令，让客户端来上传文件
-	_, err = service.GetClientService().SendCommand(uint(id), "download", utils.ByteToString(jsonStr))
+	_, err = service.GetChannelService().SendCommand(uint(id), enum.MessageTypeDownload, request.DownloadRequest{Filename: localFilename, Path: path + "/" + file.Filename})
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -239,13 +204,8 @@ func (f FileController) NewDir(c *gin.Context) {
 		Op:   "mkdir",
 		Path: body.Path,
 	}
-	jsonStr, err := json.Marshal(query)
-	if err != nil {
-		Fail(c, http.StatusBadRequest, err.Error())
-		return
-	}
 
-	result, err := service.GetClientService().SendCommand(uint(id), "explorer", utils.ByteToString(jsonStr))
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return

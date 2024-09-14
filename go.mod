@@ -4,20 +4,22 @@ go 1.22.0
 
 require (
 	github.com/appleboy/gin-jwt/v2 v2.9.2
+	github.com/duke-git/lancet/v2 v2.3.2
 	github.com/gin-gonic/gin v1.10.0
+	github.com/golang-module/carbon/v2 v2.3.12
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/sirupsen/logrus v1.9.3
 	gorm.io/driver/sqlite v1.5.6
 )
 
 require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
-	github.com/golang-module/carbon/v2 v2.3.12 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
+	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a // indirect
 )
 
 require (

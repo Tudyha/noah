@@ -7,15 +7,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var (
-	channelService IChannelService
-)
-
-func GetChannelService() IChannelService {
-	return channelService
-}
-
 type IChannelService interface {
-	NewChannel(channelType enum.ChannelType, serverPort string) (channel *channel.Channel)
-	ClientConnect(channelId string, conn *websocket.Conn) error
+	NewClientWebsocketConn(id uint, connection *websocket.Conn) error
+	Exit(id uint) error
+	SendCommand(id uint, messageType enum.MessageType, data any) (string, error)
+	NewChannel(id uint, channelType enum.ChannelType, conn *websocket.Conn, serverPort string) (channel *channel.Channel, err error)
 }

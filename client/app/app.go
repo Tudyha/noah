@@ -7,11 +7,11 @@ import (
 	"noah/client/app/gateway/client"
 	"noah/client/app/handler"
 	"noah/client/app/service"
+	"noah/client/app/service/command"
 	"noah/client/app/service/download"
 	"noah/client/app/service/explorer"
 	"noah/client/app/service/information"
 	"noah/client/app/service/pty"
-	"noah/client/app/service/terminal"
 	"noah/client/app/utils/network"
 
 	"golang.org/x/sync/errgroup"
@@ -27,7 +27,7 @@ func New(configuration *environment.Configuration) *App {
 
 	clientServices := &service.Services{
 		Information:  information.NewService(),
-		Terminal:     terminal.NewService(),
+		Command:      command.NewService(),
 		Pty:          pty.NewService(),
 		Download:     download.NewService(clientGateway),
 		FileExplorer: explorer.NewService(),
@@ -39,6 +39,7 @@ func New(configuration *environment.Configuration) *App {
 }
 
 func (a *App) Run() {
+	// 上报客户端信息
 	id, err := a.Handler.SendClientSpecs()
 	a.Handler.ClientID = id
 	if err != nil {

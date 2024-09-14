@@ -86,14 +86,10 @@ func (c ClientController) GetClient(ctx *gin.Context) {
 func (c ClientController) DeleteClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端退出
-	_, err := service.GetClientService().SendCommand(uint(id), "exit", "")
-	if err != nil {
-		Fail(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
+	service.GetChannelService().SendCommand(uint(id), enum.MessageTypeExit, nil)
 
 	//断开ws连接
-	err = service.GetClientService().Exit(uint(id))
+	err := service.GetChannelService().Exit(uint(id))
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -118,7 +114,7 @@ func (c ClientController) NewWsClient(ctx *gin.Context) {
 		return
 	}
 
-	err = service.GetClientService().AddConnection(uint(id), ws)
+	err = service.GetChannelService().NewClientWebsocketConn(uint(id), ws)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -138,8 +134,11 @@ func (c ClientController) SendCommandHandler(ctx *gin.Context) {
 	}
 
 	id := form.ID
+	command := &request.CommandRequest{
+		Command: form.Command,
+	}
 
-	res, err := service.GetClientService().SendCommand(id, form.Command, form.Parameter)
+	res, err := service.GetChannelService().SendCommand(id, enum.MessageTypeCommand, command)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -205,7 +204,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 	}
 
 	//发送命令让客户端升级
-	_, err = service.GetClientService().SendCommand(uint(id), "update", filename)
+	_, err = service.GetChannelService().SendCommand(uint(id), enum.MessageTypeUpdate, filename)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -240,7 +239,7 @@ func (c ClientController) GetClientInfo(ctx *gin.Context) {
 func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端升级
-	result, err := service.GetClientService().SendCommand(uint(id), "process", "list")
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, "list")
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -258,7 +257,7 @@ func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 func (c ClientController) KillClientProcess(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	pid := ctx.Param("id")
-	_, err := service.GetClientService().SendCommand(uint(id), "process", "kill "+pid)
+	_, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, "kill "+pid)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return

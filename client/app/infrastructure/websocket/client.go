@@ -1,9 +1,11 @@
 package websocket
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"noah/client/app/entitie"
 	"noah/client/app/environment"
 	"strings"
 
@@ -33,4 +35,34 @@ func NewConnection(configuration *environment.Configuration, path string) (*webs
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	return conn, err
+}
+
+func WriteMessage(conn *websocket.Conn, messageId uint64, messageType entitie.MessageType, data any, errMsg string) (err error) {
+	var d []byte
+	switch data.(type) {
+	case []byte:
+		d = data.([]byte)
+	default:
+		d, err = json.Marshal(data)
+		if err != nil {
+			return err
+		}
+	}
+
+	body, err := json.Marshal(entitie.Message{
+		MessageId:   messageId,
+		MessageType: messageType,
+		Data:        d,
+		Error:       errMsg,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = conn.WriteMessage(websocket.TextMessage, body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

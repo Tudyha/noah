@@ -1,4 +1,4 @@
-package terminal
+package command
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 type Service struct{}
 
-func NewService() service.Terminal {
+func NewService() service.Command {
 	return &Service{}
 }
 
@@ -25,7 +25,6 @@ func (t Service) Run(command string) ([]byte, error) {
 	switch runtime.GOOS {
 	case `windows`:
 		cmd = exec.CommandContext(ctx, "cmd", "/C", command)
-		cmd.SysProcAttr = GetHideWindowParam()
 	case `linux`:
 		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	case `darwin`:

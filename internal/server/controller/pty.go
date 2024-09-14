@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/enum"
 	"noah/internal/server/service"
@@ -21,12 +20,6 @@ func (h PtyController) NewPtyChannel(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	uintId := uint(id)
 
-	channel := service.GetChannelService().NewChannel(enum.Pty, "")
-	_, err := service.GetClientService().SendCommand(uintId, "pty", channel.ChannelId)
-	if err != nil {
-		Fail(c, 500, "客户端未上线, shell打开失败")
-		return
-	}
 	//建立与前端的websocket连接
 	conn, err := config.Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -34,7 +27,11 @@ func (h PtyController) NewPtyChannel(c *gin.Context) {
 		return
 	}
 
-	err = channel.Start(conn)
+	_, err = service.GetChannelService().NewChannel(uintId, enum.Pty, conn, "")
+	if err != nil {
+		Fail(c, 500, "NewChannel fail")
+		return
+	}
 
 	if err != nil {
 		Fail(c, 500, "NewPtyClient fail")
@@ -44,18 +41,18 @@ func (h PtyController) NewPtyChannel(c *gin.Context) {
 
 // NewPtyClient 新建pty客户端
 func (h PtyController) NewPtyClient(ctx *gin.Context) {
-	channelId := ctx.Param("channelId")
-	ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
-	if err != nil {
-		Fail(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	err = service.GetChannelService().ClientConnect(channelId, ws)
-	if err != nil {
-		Fail(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
+	//channelId := ctx.Param("channelId")
+	//ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	//if err != nil {
+	//	Fail(ctx, http.StatusInternalServerError, err.Error())
+	//	return
+	//}
+	//
+	//err = service.GetChannelService().ClientConnect(channelId, ws)
+	//if err != nil {
+	//	Fail(ctx, http.StatusInternalServerError, err.Error())
+	//	return
+	//}
 }
 
 type CreateChannelReq struct {
@@ -76,26 +73,26 @@ func (h PtyController) NewChannel(c *gin.Context) {
 		return
 	}
 
-	channel := service.GetChannelService().NewChannel(req.ChannelType, req.ServerPort)
-	_, err = service.GetClientService().SendCommand(uintId, "channel", channel.ChannelId)
+	_, err = service.GetChannelService().NewChannel(uintId, req.ChannelType, nil, req.ServerPort)
 	if err != nil {
-		Fail(c, 500, "客户端未上线, shell打开失败")
+		Fail(c, 500, err.Error())
 		return
 	}
+
 	Success(c, "success")
 }
 
 func (h PtyController) ChannelClientConnect(ctx *gin.Context) {
-	channelId := ctx.Param("channelId")
-	ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
-	if err != nil {
-		Fail(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	err = service.GetChannelService().ClientConnect(channelId, ws)
-	if err != nil {
-		Fail(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
+	//channelId := ctx.Param("channelId")
+	//ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	//if err != nil {
+	//	Fail(ctx, http.StatusInternalServerError, err.Error())
+	//	return
+	//}
+	//
+	//err = service.GetChannelService().ClientConnect(channelId, ws)
+	//if err != nil {
+	//	Fail(ctx, http.StatusInternalServerError, err.Error())
+	//	return
+	//}
 }

@@ -3,12 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"math"
 	"net"
 	"net/http"
 	"noah/client/app/environment"
 	"noah/client/app/service"
-	"noah/client/app/utils/encode"
 	"os"
 	"os/exec"
 	"strconv"
@@ -132,230 +133,214 @@ func (h *Handler) HandleCommand() {
 			continue
 		}
 
-		_, message, err := h.Connection.ReadMessage()
+		wsMessageType, wsMessage, err := h.Connection.ReadMessage()
 		if err != nil {
 			h.Log("[!] Error reading from connection:", err)
 			h.Reconnect()
 			continue
 		}
 
-		var request entitie.Command
-		if err := json.Unmarshal(message, &request); err != nil {
+		var message entitie.Message
+		if err := json.Unmarshal(wsMessage, &message); err != nil {
 			continue
 		}
 
-		var response []byte
-		var hasError bool
-
-		switch request.Command {
-		case "getos":
-			ClientSpecs, err := h.Services.Information.LoadClientSpecs()
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-			} else {
-				response = encode.StringToByte(encode.PrettyJson(ClientSpecs))
-			}
-		case "pty":
-			p := request.Parameter
-			conn, err := ws.NewConnection(h.Configuration, "/pty/client/ws/"+p)
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-			}
-			go h.Services.Pty.Run(conn)
-		case "download":
-			p := request.Parameter
-			//json字符串转map
-			var m map[string]string
-			err := json.Unmarshal([]byte(p), &m)
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-			} else {
-				// 下载文件
-				err = h.Services.Download.DownloadFile(m["filename"], m["path"])
-
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-			}
-		case "update":
-			filename := request.Parameter
-
-			// 下载文件
-			filepath := "/tmp/" + filename
-			err = h.Services.Download.DownloadFile(filename, filepath)
-
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-				break
-			}
-
-			//删除服务器文件
-			h.Gateway.NewRequest(http.MethodDelete, "/file/"+filename, nil)
-
-			// 设置新版本文件的执行权限
-			err = os.Chmod(filepath, 0755)
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-				break
-			}
-			// 使用 nohup 命令启动新进程
-			cmd := exec.Command("nohup", filepath, "&")
-
-			// 重定向标准输出和错误输出到 /dev/null
-			//cmd.Stdout = os.DevNull
-			//cmd.Stderr = os.DevNull
-
-			err = cmd.Start()
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-				break
-			}
-
-			// 等待一段时间以确保新进程已经启动
-			time.Sleep(1 * time.Second)
-
-			// 确保新进程已经启动后再退出当前进程
-			os.Exit(0)
-		case "exit":
-			os.Exit(0)
-		case "explorer":
-			p := request.Parameter
-			var fileExplorerQuery entitie.FileExplorerQuery
-			err := json.Unmarshal([]byte(p), &fileExplorerQuery)
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-				break
-			}
-			op := fileExplorerQuery.Op
-			path := fileExplorerQuery.Path
-			switch op {
-			case "list":
-				res, err := h.Services.FileExplorer.GetFileExplorer(path)
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-				response = encode.StringToByte(encode.PrettyJson(res))
-			case "cat":
-				res, err := h.Services.FileExplorer.ReadFile(path)
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-				response = res
-			case "rename":
-				newFilename := fileExplorerQuery.Filename
-				err := h.Services.FileExplorer.Rename(path, newFilename)
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-			case "remove":
-				err := h.Services.FileExplorer.Remove(path)
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-			case "edit":
-				fileContent := fileExplorerQuery.FileContent
-				err := h.Services.FileExplorer.WriteFile(path, []byte(fileContent))
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-			case "mkdir":
-				err := h.Services.FileExplorer.MkDir(path)
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-			}
-		case "process":
-			p := request.Parameter
-			if p == "list" {
-				process, err := h.Services.Terminal.GetProcessList()
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-				response = encode.StringToByte(encode.PrettyJson(process))
-			}
-			if strings.Contains(p, "kill") {
-				pid, _ := strconv.Atoi(strings.Split(p, " ")[1])
-				err := h.Services.Terminal.KillProcess(int32(pid))
-				if err != nil {
-					hasError = true
-					response = encode.StringToByte(err.Error())
-				}
-			}
-		case "channel":
-			p := request.Parameter
-			wsconn, err := ws.NewConnection(h.Configuration, "/channel/client/ws/"+p)
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-			}
-			conn, err := net.Dial("tcp", ":9528")
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-			}
-			go func() {
-				for {
-					b := make([]byte, 1024)
-					n, err := conn.Read(b)
-					if err != nil {
-						fmt.Println("Error reading from connection:", err)
-						return
-					}
-					if n > 0 {
-						wsconn.WriteMessage(websocket.BinaryMessage, b)
-					}
-				}
-			}()
-
-			go func() {
-				for {
-					_, b, err := wsconn.ReadMessage()
-					if err != nil {
-						fmt.Println("Error reading from client:", err)
-						return
-					}
-					conn.Write(b)
-				}
-			}()
-		default:
-			response, err = h.RunCommand(request.Command)
-			if err != nil {
-				hasError = true
-				response = encode.StringToByte(err.Error())
-			}
-		}
-
-		body, err := json.Marshal(entitie.Command{
-			ClientID: h.ClientID,
-			Response: response,
-			HasError: hasError,
-		})
+		response, err := h.handleMessage(wsMessageType, message)
+		errMsg := ""
 		if err != nil {
-			continue
+			errMsg = err.Error()
 		}
 
-		err = h.Connection.WriteMessage(websocket.BinaryMessage, body)
-		if err != nil {
-			continue
-		}
+		ws.WriteMessage(h.Connection, message.MessageId, message.MessageType, response, errMsg)
 	}
 }
 
-func (h *Handler) RunCommand(command string) ([]byte, error) {
-	return h.Services.Terminal.Run(command)
+func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (response any, err error) {
+	switch message.MessageType {
+	case entitie.MessageTypeCommand:
+		var commandRequest entitie.CommandRequest
+		if err := json.Unmarshal(message.Data, &commandRequest); err != nil {
+			return nil, err
+		}
+		return h.Services.Command.Run(commandRequest.Command)
+	case entitie.MessageTypePty:
+		var ptyRequest entitie.PtyRequest
+		if err := json.Unmarshal(message.Data, &ptyRequest); err != nil {
+			return nil, err
+		}
+		switch ptyRequest.Action {
+		case "open":
+			err := h.Services.Pty.NewPtyClient(ptyRequest.ChannelId, h.Connection)
+			if err != nil {
+				return nil, err
+			}
+		case "write":
+			err := h.Services.Pty.Write(wsMessageType, ptyRequest.ChannelId, ptyRequest.ChannelData)
+			if err != nil {
+				return nil, err
+			}
+		case "resize":
+			err := h.Services.Pty.SetSize(ptyRequest.ChannelId, ptyRequest.ChannelData)
+			if err != nil {
+				return nil, err
+			}
+		}
+	case entitie.MessageTypeDownload:
+		var downloadParams entitie.DownloadRequest
+		err := json.Unmarshal(message.Data, &downloadParams)
+		if err != nil {
+			return nil, err
+		}
+		// 下载文件
+		err = h.Services.Download.DownloadFile(downloadParams.Filename, downloadParams.Path)
+
+		if err != nil {
+			return nil, err
+		}
+	case entitie.MessageTypeUpdate:
+		filename := string(message.Data)
+
+		// 下载文件
+		filepath := "/tmp/" + filename
+		err = h.Services.Download.DownloadFile(filename, filepath)
+		if err != nil {
+			return nil, err
+		}
+
+		//删除服务器文件
+		h.Gateway.NewRequest(http.MethodDelete, "/file/"+filename, nil)
+
+		// 设置新版本文件的执行权限
+		err = os.Chmod(filepath, 0755)
+		if err != nil {
+			return nil, err
+		}
+		// 使用 nohup 命令启动新进程
+		cmd := exec.Command("nohup", filepath, "&")
+
+		err = cmd.Start()
+		if err != nil {
+			return nil, err
+		}
+
+		// 等待一段时间以确保新进程已经启动
+		time.Sleep(1 * time.Second)
+
+		// 确保新进程已经启动后再退出当前进程
+		os.Exit(0)
+	case entitie.MessageTypeExit:
+		os.Exit(0)
+	case entitie.MessageTypeFileExplorer:
+		var fileExplorerQuery entitie.FileExplorerQuery
+		err := json.Unmarshal(message.Data, &fileExplorerQuery)
+		if err != nil {
+			return nil, err
+		}
+		op := fileExplorerQuery.Op
+		path := fileExplorerQuery.Path
+		switch op {
+		case "list":
+			res, err := h.Services.FileExplorer.GetFileExplorer(path)
+			if err != nil {
+				return nil, err
+			}
+			response = res
+		case "cat":
+			res, err := h.Services.FileExplorer.ReadFile(path)
+			if err != nil {
+				return nil, err
+			}
+			response = res
+		case "rename":
+			newFilename := fileExplorerQuery.Filename
+			err := h.Services.FileExplorer.Rename(path, newFilename)
+			if err != nil {
+				return nil, err
+			}
+		case "remove":
+			err := h.Services.FileExplorer.Remove(path)
+			if err != nil {
+				return nil, err
+			}
+		case "edit":
+			fileContent := fileExplorerQuery.FileContent
+			err := h.Services.FileExplorer.WriteFile(path, []byte(fileContent))
+			if err != nil {
+				return nil, err
+			}
+		case "mkdir":
+			err := h.Services.FileExplorer.MkDir(path)
+			if err != nil {
+				return nil, err
+			}
+		}
+	case entitie.MessageTypeProcess:
+		p := string(message.Data)
+		if p == "list" {
+			process, err := h.Services.Command.GetProcessList()
+			if err != nil {
+				return nil, err
+			}
+			response = process
+		}
+		if strings.Contains(p, "kill") {
+			pid, _ := strconv.Atoi(strings.Split(p, " ")[1])
+			err := h.Services.Command.KillProcess(int32(pid))
+			if err != nil {
+				return nil, err
+			}
+		}
+	case entitie.MessageTypeChannel:
+		p := string(message.Data)
+		wsconn, err := ws.NewConnection(h.Configuration, "/channel/client/ws/"+p)
+		if err != nil {
+			return nil, err
+		}
+		conn, err := net.Dial("tcp", ":22")
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			defer conn.Close()
+			defer wsconn.Close()
+
+			for {
+				_, message, err := wsconn.ReadMessage()
+				if err != nil {
+					log.Println("Error reading from WebSocket:", err)
+					return
+				}
+				_, err = conn.Write(message)
+				if err != nil {
+					log.Println("Error writing to TCP:", err)
+					return
+				}
+			}
+		}()
+
+		go func() {
+			defer conn.Close()
+			defer wsconn.Close()
+
+			buffer := make([]byte, 1024)
+			for {
+				n, err := conn.Read(buffer)
+				if err != nil {
+					if err != io.EOF {
+						log.Println("Error reading from TCP:", err)
+					}
+					return
+				}
+				err = wsconn.WriteMessage(websocket.TextMessage, buffer[:n])
+				if err != nil {
+					log.Println("Error writing to WebSocket:", err)
+					return
+				}
+			}
+		}()
+
+	default:
+
+	}
+	return response, nil
 }

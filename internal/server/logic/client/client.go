@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/jinzhu/copier"
 	"noah/internal/server/dao"
@@ -11,143 +10,26 @@ import (
 	"noah/internal/server/response"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 
 	"noah/internal/server/dto"
 	"noah/internal/server/utils"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 )
 
-type clientService struct {
-	mu      *sync.Mutex
-	clients map[uint]*websocket.Conn //客户端命令执行websocket
+type Service struct {
 }
 
 const (
 	clientBaseDir  = "client/"
 	buildBaseDir   = "build/"
 	configFileName = "config.json"
-	mainFileName   = "main.go"
 	buildStr       = `CGO_ENABLED=0 GOOS=%s GOARCH=amd64 go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
 )
 
-func NewClientService() *clientService {
-	return &clientService{
-		mu:      &sync.Mutex{},
-		clients: make(map[uint]*websocket.Conn),
-	}
-}
-
-var (
-	ErrClientConnectionNotFound = errors.New("no active client connection found")
-	ErrInvalidServerAddress     = errors.New("the server address provided is invalid")
-	ErrInvalidServerPort        = errors.New("the server port provided is invalid")
-)
-
-// AddConnection 新增ws连接
-func (c clientService) AddConnection(id uint, connection *websocket.Conn) error {
-	// 验证连接是否有效
-	if connection == nil || connection.RemoteAddr() == nil {
-		return errors.New("invalid connection")
-	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// 更新或添加新连接
-	c.clients[id] = connection
-	return nil
-}
-
-// getConnection 获取连接
-func (c clientService) getConnection(clientID uint) (*websocket.Conn, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	conn, found := c.clients[clientID]
-	return conn, found
-}
-
-// removeConnection 删除连接
-func (c clientService) removeConnection(clientID uint) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if conn, found := c.clients[clientID]; !found {
-	} else {
-		err := conn.Close()
-		if err != nil {
-		}
-	}
-	delete(c.clients, clientID)
-	return nil
-}
-
-// SendCommand 执行命令
-func (c clientService) SendCommand(id uint, commandStr string, parameter string) (string, error) {
-	client, found := c.getConnection(id)
-	if !found {
-		return ErrClientConnectionNotFound.Error(), nil
-	}
-
-	command := &dto.Command{
-		Command:   commandStr,
-		Parameter: parameter,
-	}
-
-	req, err := json.Marshal(command)
-	if err != nil {
-		return "", err
-	}
-
-	err = client.WriteMessage(websocket.BinaryMessage, req)
-	if err != nil {
-		return ErrClientConnectionNotFound.Error(), nil
-	}
-
-	_, readMessage, err := client.ReadMessage()
-	if err != nil {
-		return ErrClientConnectionNotFound.Error(), nil
-	}
-
-	var response dto.RespondCommandRequestBody
-	if err := json.Unmarshal(readMessage, &response); err != nil {
-		return "", err
-	}
-
-	command.Response = response.Response
-	command.HasError = response.HasError
-
-	command, err = handleResponse(command)
-	if err != nil {
-		return "", err
-	}
-
-	res := utils.ByteToString(command.Response)
-	if command.HasError {
-		return "", fmt.Errorf(res)
-	}
-	//if len(strings.TrimSpace(res)) == 0 {
-	//	return `No content.`, nil
-	//}
-	return res, nil
-}
-
-func handleResponse(payload *dto.Command) (*dto.Command, error) {
-	// const screenshotCmd = "screenshot"
-	switch payload.Command {
-	// case screenshotCmd:
-	// 	filepath, err := image.WritePNG(payload.Response)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	payload.Response = utils.StringToByte(filepath)
-	// 	break
-	default:
-		return payload, nil
-	}
+func NewClientService() *Service {
+	return &Service{}
 }
 
 type ClientConfig struct {
@@ -156,7 +38,7 @@ type ClientConfig struct {
 	Token         string `json:"token"`
 }
 
-func (c clientService) Generate(serverAddr string, port string, osType int8, token string, filename string) (string, error) {
+func (c Service) Generate(serverAddr string, port string, osType int8, token string, filename string) (string, error) {
 	buildPath, err := c.PrepareBuildSession(serverAddr, port, token)
 	if err != nil {
 		return "", err
@@ -175,7 +57,7 @@ func (c clientService) Generate(serverAddr string, port string, osType int8, tok
 	return filename, nil
 }
 
-func (c clientService) BuildClientConfiguration(serverAddr string, port string, token string) (clientConfig *ClientConfig, err error) {
+func (c Service) BuildClientConfiguration(serverAddr string, port string, token string) (clientConfig *ClientConfig, err error) {
 	return &ClientConfig{
 		ServerAddress: serverAddr,
 		ServerPort:    port,
@@ -183,7 +65,7 @@ func (c clientService) BuildClientConfiguration(serverAddr string, port string, 
 	}, err
 }
 
-func (c clientService) WriteClientConfigurationFile(clientConfig *ClientConfig, buildPath string) error {
+func (c Service) WriteClientConfigurationFile(clientConfig *ClientConfig, buildPath string) error {
 	configurationJson, err := json.Marshal(clientConfig)
 	if err != nil {
 		return err
@@ -192,7 +74,7 @@ func (c clientService) WriteClientConfigurationFile(clientConfig *ClientConfig, 
 	return utils.WriteFile(buildPath+configFileName, configurationJson)
 }
 
-func (c clientService) PrepareBuildSession(serverAddr string, port string, token string) (string, error) {
+func (c Service) PrepareBuildSession(serverAddr string, port string, token string) (string, error) {
 	sessionID := uuid.New().String()
 	buildPath := fmt.Sprint(buildBaseDir, sessionID, "/")
 
@@ -252,15 +134,7 @@ func buildFilename(os enum.OSType, filename string) string {
 	}
 }
 
-// Exit 关闭连接
-func (c clientService) Exit(id uint) error {
-	if err := c.removeConnection(id); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c clientService) Save(client dao.Client) (id uint, err error) {
+func (c Service) Save(client dao.Client) (id uint, err error) {
 
 	old := dao.GetClientDao().GetByMacAddress(client.MacAddress)
 	if old.ID != 0 {
@@ -280,11 +154,11 @@ func (c clientService) Save(client dao.Client) (id uint, err error) {
 	return id, nil
 }
 
-func (c clientService) UpdateStatus(id uint, status int8) {
+func (c Service) UpdateStatus(id uint, status int8) {
 	dao.GetClientDao().UpdateStatus(id, status)
 }
 
-func (c clientService) GetClientPage(query request.ListClientQueryReq) (int64, []response.ListClientRes) {
+func (c Service) GetClientPage(query request.ListClientQueryReq) (int64, []response.ListClientRes) {
 	total, clients := dao.GetClientDao().Page(query)
 
 	if total == 0 {
@@ -296,7 +170,7 @@ func (c clientService) GetClientPage(query request.ListClientQueryReq) (int64, [
 	return total, res
 }
 
-func (c clientService) GetClient(id uint) (response.GetClientRes, error) {
+func (c Service) GetClient(id uint) (response.GetClientRes, error) {
 	client, err := dao.GetClientDao().GetById(id)
 	if err != nil {
 		return response.GetClientRes{}, err
@@ -306,23 +180,23 @@ func (c clientService) GetClient(id uint) (response.GetClientRes, error) {
 	return res, nil
 }
 
-func (c clientService) ScheduleUpdateStatus() error {
+func (c Service) ScheduleUpdateStatus() error {
 	dao.GetClientDao().ScheduleUpdateStatus()
 	return nil
 }
 
-func (c clientService) Delete(id uint) error {
+func (c Service) Delete(id uint) error {
 	return dao.GetClientDao().Delete(id)
 }
 
-func (c clientService) SaveSystemInfo(id uint, systemInfo dto.SystemInfoReq) error {
+func (c Service) SaveSystemInfo(id uint, systemInfo dto.SystemInfoReq) error {
 	var clientInfo dao.ClientInfo
 	copier.Copy(&clientInfo, systemInfo)
 	clientInfo.ClientID = id
 	return dao.GetClientInfoDao().Create(clientInfo)
 }
 
-func (c clientService) GetSystemInfo(id uint, start time.Time, end time.Time) ([]dto.SystemInfoRes, error) {
+func (c Service) GetSystemInfo(id uint, start time.Time, end time.Time) ([]dto.SystemInfoRes, error) {
 	clientInfoList := dao.GetClientInfoDao().GetByClientId(id, start, end)
 	if len(clientInfoList) == 0 {
 		return make([]dto.SystemInfoRes, 0), nil
@@ -332,7 +206,7 @@ func (c clientService) GetSystemInfo(id uint, start time.Time, end time.Time) ([
 	return result, nil
 }
 
-func (c clientService) CleanSystemInfo() error {
+func (c Service) CleanSystemInfo() error {
 	dao.GetClientInfoDao().Clean()
 	return nil
 }
