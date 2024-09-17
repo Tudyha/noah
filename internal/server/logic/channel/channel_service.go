@@ -3,15 +3,16 @@ package channel
 import (
 	"encoding/json"
 	"errors"
-	"github.com/duke-git/lancet/v2/slice"
+	"fmt"
 	"net"
-	"noah/internal/server/config"
 	"noah/internal/server/enum"
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/request"
 	"noah/internal/server/utils"
 	"sync"
 	"time"
+
+	"github.com/duke-git/lancet/v2/slice"
 
 	"github.com/gorilla/websocket"
 )
@@ -25,6 +26,7 @@ type Service struct {
 	clients       map[uint]*websocket.Conn //客户端命令执行websocket
 	messageResult map[uint64]chan request.Message
 	channels      map[string]*Channel
+	messageMq     map[string]chan []byte
 }
 
 func NewChannelService() *Service {
@@ -33,6 +35,7 @@ func NewChannelService() *Service {
 		clients:       make(map[uint]*websocket.Conn),
 		messageResult: make(map[uint64]chan request.Message),
 		channels:      make(map[string]*Channel),
+		messageMq:     make(map[string]chan []byte),
 	}
 }
 
@@ -48,6 +51,7 @@ func (c Service) NewClientWebsocketConn(id uint, connection *websocket.Conn) err
 	// 更新或添加新连接
 	c.clients[id] = connection
 
+	// 启动一个goroutine用于读取客户端的websocket消息
 	go c.clientWebsocketRead(id)
 	return nil
 }
@@ -87,20 +91,21 @@ func (c Service) removeClientWebsocketConnection(clientID uint) error {
 	return nil
 }
 
+// clientWebsocketWrite 发送消息
 func (c Service) clientWebsocketWrite(id uint, websocketMessageType int, messageType enum.MessageType, data any, errMsg string) (messageId uint64, err error) {
 	client, err := c.getClientWebsocketConn(id)
 	if err != nil {
 		return 0, err
 	}
 
-	var d []byte
-	switch data.(type) {
+	var messageByteData []byte
+	switch data := data.(type) {
 	case []byte:
-		d = data.([]byte)
+		messageByteData = data
 	case string:
-		d = []byte(data.(string))
+		messageByteData = []byte(data)
 	default:
-		d, err = json.Marshal(data)
+		messageByteData, err = json.Marshal(data)
 		if err != nil {
 			return 0, err
 		}
@@ -108,25 +113,34 @@ func (c Service) clientWebsocketWrite(id uint, websocketMessageType int, message
 
 	messageId = messageId + 1
 
-	body, err := json.Marshal(request.Message{
+	req := request.Message{
 		MessageId:   messageId,
 		MessageType: messageType,
-		Data:        d,
+		Data:        messageByteData,
 		Error:       errMsg,
-	})
+	}
+
+	body, err := json.Marshal(req)
 	if err != nil {
 		return 0, err
 	}
 
 	err = client.WriteMessage(websocketMessageType, body)
 	if err != nil {
+		log.Error("write client websocket message error, websocket exit", map[string]interface{}{"clientId": id, "error": err})
+		c.Exit(id)
 		return 0, err
 	}
 
 	return messageId, nil
 }
 
+// clientWebsocketRead 读取客户端的websocket消息
 func (c Service) clientWebsocketRead(id uint) {
+	defer func() {
+		log.Info("client websocket read fail, websocket exit", map[string]interface{}{"clientId": id})
+		c.Exit(id)
+	}()
 	client, err := c.getClientWebsocketConn(id)
 	if err != nil {
 		return
@@ -139,6 +153,7 @@ func (c Service) clientWebsocketRead(id uint) {
 		}
 		var message request.Message
 		if err := json.Unmarshal(wsMessage, &message); err != nil {
+			log.Error("parse message error", map[string]interface{}{"clientId": id, "error": err})
 			continue
 		}
 		if message.Error != "" {
@@ -149,10 +164,11 @@ func (c Service) clientWebsocketRead(id uint) {
 	}
 }
 
+// handleMessage 处理客户端发送的消息
 func (c Service) handleMessage(id uint, message request.Message) {
 	switch message.MessageType {
-	case enum.MessageTypePty:
-		var ptyRequest request.PtyRequest
+	case enum.MessageTypeChannel:
+		var ptyRequest request.ChannelRequest
 		err := json.Unmarshal(message.Data, &ptyRequest)
 		if err != nil {
 			log.Error("parse pty request error", map[string]interface{}{"clientId": id, "error": err})
@@ -160,7 +176,11 @@ func (c Service) handleMessage(id uint, message request.Message) {
 		}
 		switch ptyRequest.Action {
 		case "write":
-			c.write(ptyRequest.ChannelId, ptyRequest.ChannelData)
+			_, ok := c.channels[ptyRequest.ChannelId]
+			if !ok {
+				break
+			}
+			c.messageMq[ptyRequest.ChannelId] <- ptyRequest.ChannelData
 		}
 	default:
 
@@ -175,7 +195,7 @@ func (c Service) handleMessage(id uint, message request.Message) {
 }
 
 func isNeedResult(messageType enum.MessageType) bool {
-	if messageType == enum.MessageTypePty {
+	if messageType == enum.MessageTypeChannel {
 
 	}
 	return slice.Contain([]enum.MessageType{
@@ -192,6 +212,7 @@ func (c Service) SendCommand(id uint, messageType enum.MessageType, data any) (s
 	}
 
 	if !isNeedResult(messageType) {
+		// 不需要命令执行结果，直接返回
 		return "", nil
 	}
 
@@ -224,55 +245,63 @@ type Channel struct {
 	ChannelType enum.ChannelType // 通道类型
 	clientId    uint             // 客户端id
 	conn        *websocket.Conn  // 前端websocket连接
-	//closeSignal chan struct{}    // 用于关闭连接的信号
-	isClosed   bool       // 标记是否已经关闭
-	mu         sync.Mutex // 用于保护对channelId的访问
-	serverPort string     // 服务端端口
+	isClosed    bool             // 标记是否已经关闭
+	serverPort  string           // 服务端端口
+	tcpConn     net.Conn         // tcp连接
 }
 
-func (c Service) NewChannel(id uint, channelType enum.ChannelType, conn *websocket.Conn, serverPort string) (channel *Channel, err error) {
+func (c Service) NewChannel(id uint, channelType enum.ChannelType, conn *websocket.Conn, serverPort string, clientAddr string) (err error) {
 	_, err = c.getClientWebsocketConn(id)
 	if err != nil {
-		return nil, err
-	}
-
-	channelId := utils.RandString(16)
-	channel = &Channel{
-		ChannelId:   channelId,
-		ChannelType: channelType,
-		conn:        conn,
-		isClosed:    false,
-		//closeSignal: make(chan struct{}),
-		serverPort: serverPort,
+		return err
 	}
 
 	if channelType == enum.Tcp {
 		// 服务端需要监听新端口
-		go channel.listen(c, id)
+		go c.listen(id, serverPort, clientAddr)
 	}
 
 	if channelType == enum.Pty {
-		// pty通道需要通知客户端打开pty TODO need result to check
-		_, err = c.SendCommand(id, enum.MessageTypePty, &request.PtyRequest{
-			Action:      "open",
-			ChannelId:   channel.ChannelId,
-			ChannelData: nil,
-		})
+		channel, err := c.createChannel(id, enum.Pty, "")
 		if err != nil {
-			return nil, err
+			return err
 		}
-
-		go channel.read(c, id)
+		channel.conn = conn
+		go channel.ptyRead(c)
+		go channel.ptyWrite(c)
 	}
 
+	return nil
+}
+
+func (c Service) createChannel(id uint, channelType enum.ChannelType, clientAddr string) (channel *Channel, err error) {
+	channelId := utils.RandString(16)
+	channel = &Channel{
+		ChannelId:   channelId,
+		ChannelType: channelType,
+		clientId:    id,
+		isClosed:    false,
+	}
 	c.channels[channelId] = channel
+	c.messageMq[channel.ChannelId] = make(chan []byte, 32)
+
+	// 通知客户端打开对应通道
+	_, err = c.SendCommand(id, enum.MessageTypeChannel, &request.ChannelRequest{
+		Action:      "open",
+		ChannelId:   channel.ChannelId,
+		ChannelType: channelType,
+		ChannelData: nil,
+		Addr:        clientAddr,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return channel, nil
 }
 
-func (channel *Channel) listen(c Service, id uint) {
-	port := channel.serverPort
-	log.Info("server start listening on port "+port, nil)
-	listener, err := net.Listen("tcp", ":"+port)
+func (c Service) listen(id uint, serverPort string, clientAddr string) {
+	log.Info("server start listening on port "+serverPort, nil)
+	listener, err := net.Listen("tcp", ":"+serverPort)
 	if err != nil {
 		log.Error("listen error: "+err.Error(), nil)
 		return
@@ -286,55 +315,67 @@ func (channel *Channel) listen(c Service, id uint) {
 			log.Error("Error accepting connection:"+err.Error(), nil)
 			continue
 		}
+		fmt.Println("New connection from:", conn.RemoteAddr())
 
-		go channel.tcpRead(conn, c, id)
-		go channel.tcpWrite(conn, c, id)
+		channel, err := c.createChannel(id, enum.Tcp, clientAddr)
+		if err != nil {
+			log.Error("Error creating channel:"+err.Error(), nil)
+			continue
+		}
+
+		channel.tcpConn = conn
+
+		go channel.tcpRead(c)
+		go channel.tcpWrite(c)
 	}
 }
 
-func (channel *Channel) tcpRead(tcpConn net.Conn, c Service, id uint) {
-	// 从 TCP 读取数据并写入 WebSocket
+func (channel *Channel) tcpRead(c Service) {
+	defer channel.close()
 	buffer := make([]byte, 1024)
 	for {
-		n, err := tcpConn.Read(buffer)
+		n, err := channel.tcpConn.Read(buffer)
 		if err != nil {
-			log.Error("Error reading from TCP:"+err.Error(), nil)
-			break
+			fmt.Println("Error reading from TCP connection:", err)
+			return
 		}
-		c.clientWebsocketWrite(id, websocket.TextMessage, enum.MessageTypeChannel, buffer[:n], "")
+		ws_data := request.ChannelRequest{
+			Action:      "write",
+			ChannelId:   channel.ChannelId,
+			ChannelData: buffer[:n],
+		}
+		_, err = c.clientWebsocketWrite(channel.clientId, websocket.TextMessage, enum.MessageTypeChannel, ws_data, "")
+		if err != nil {
+			fmt.Println("Error writing to WebSocket:", err)
+			return
+		}
 	}
 }
 
-func (channel *Channel) tcpWrite(tcpConn net.Conn, c Service, id uint) {
-	//for {
-	//	_, message, err := clientWebsocketConn.ReadMessage()
-	//	if err != nil {
-	//		log.Error("Error reading from WebSocket:"+err.Error(), nil)
-	//		break
-	//	}
-	//
-	//	if _, err = tcpConn.Write(message); err != nil {
-	//		log.Error("Error writing to TCP:"+err.Error(), nil)
-	//		break
-	//	}
-	//}
+func (channel *Channel) tcpWrite(c Service) error {
+	for {
+		data := <-c.messageMq[channel.ChannelId]
+		if _, err := channel.tcpConn.Write(data); err != nil {
+			log.Error("Error writing to TCP:"+err.Error(), nil)
+			return err
+		}
+	}
+	return nil
 }
 
-func (c Service) write(channelId string, data []byte) {
-	channel, ok := c.channels[channelId]
-	if !ok {
-		return
+func (channel *Channel) ptyWrite(c Service) error {
+	for {
+		data := <-c.messageMq[channel.ChannelId]
+		if err := channel.conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
+			log.Error("Error writing to TCP:"+err.Error(), nil)
+			return err
+		}
 	}
-
-	channel.conn.SetWriteDeadline(time.Now().Add(config.MessageWait))
-	if err := channel.conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
-		log.Error("channel write goroutine WriteMessage error: "+err.Error(), nil)
-		return
-	}
-
+	return nil
 }
 
-func (channel *Channel) read(c Service, id uint) {
+func (channel *Channel) ptyRead(c Service) {
+	defer channel.close()
 	for {
 		msgType, data, err := channel.conn.ReadMessage()
 		if err != nil {
@@ -342,7 +383,7 @@ func (channel *Channel) read(c Service, id uint) {
 			return
 		}
 
-		_, err = c.clientWebsocketWrite(id, msgType, enum.MessageTypePty, &request.PtyRequest{
+		_, err = c.clientWebsocketWrite(channel.clientId, msgType, enum.MessageTypeChannel, &request.ChannelRequest{
 			Action:      "write",
 			ChannelId:   channel.ChannelId,
 			ChannelData: data,
@@ -354,15 +395,16 @@ func (channel *Channel) read(c Service, id uint) {
 }
 
 func (channel *Channel) close() error {
-	channel.mu.Lock()
-	defer channel.mu.Unlock()
-
 	if channel.isClosed {
 		return nil
 	}
 
 	if channel.conn != nil {
 		channel.conn.Close()
+	}
+
+	if channel.tcpConn != nil {
+		channel.tcpConn.Close()
 	}
 
 	channel.isClosed = true

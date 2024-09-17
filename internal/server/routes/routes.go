@@ -51,12 +51,10 @@ func (r *Router) LoadRoutes() {
 	handlers := r.handlers
 
 	clientController := handlers.GetClientController()
-	ptyController := handlers.GetPtyController()
+	channelController := handlers.GetChannelController()
 	fileController := handlers.GetFileController()
 
 	api := router.Group("/api")
-	api.POST("/test/:id", ptyController.NewChannel)
-	router.GET("/ws-api/channel/client/ws/:channelId", ptyController.ChannelClientConnect)
 	{
 		//免登录接口
 		api.POST("/login", authMiddleware.LoginHandler)
@@ -102,6 +100,9 @@ func (r *Router) LoadRoutes() {
 				},
 			})
 		})
+
+		chGroup := authGroup.Group("/channel")
+		chGroup.POST("", channelController.NewChannel)
 
 		// 下载文件
 		api.GET("/file/download/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
@@ -153,8 +154,7 @@ func (r *Router) LoadRoutes() {
 	{
 		wsApi.GET("/client/:id/ws", clientController.NewWsClient)
 		ptyGroup := wsApi.Group("pty")
-		ptyGroup.GET("/ws/:id", ptyController.NewPtyChannel)
-		ptyGroup.GET("/client/ws/:channelId", ptyController.NewPtyClient)
+		ptyGroup.GET("/ws/:id", channelController.NewPtyChannel)
 	}
 
 	router.Use(gin.Recovery())

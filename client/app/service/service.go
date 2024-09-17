@@ -15,7 +15,7 @@ var (
 type Services struct {
 	Information
 	Command
-	Pty
+	Channel
 	Download
 	FileExplorer
 }
@@ -31,11 +31,9 @@ type Command interface {
 	KillProcess(pid int32) error
 }
 
-type Pty interface {
-	Run(wsc *websocket.Conn) error
-	NewPtyClient(channelId string, wsc *websocket.Conn) error
-	Write(msgType int, channelId string, data []byte) error
-	SetSize(channelId string, data []byte) error
+type Channel interface {
+	NewChannel(channelId string, cType int, wsc *websocket.Conn, addr string) error
+	Write(wsMessageType int, channelId string, data []byte) error
 }
 
 type Download interface {

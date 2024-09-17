@@ -7,11 +7,11 @@ import (
 	"noah/client/app/gateway/client"
 	"noah/client/app/handler"
 	"noah/client/app/service"
+	"noah/client/app/service/channel"
 	"noah/client/app/service/command"
 	"noah/client/app/service/download"
 	"noah/client/app/service/explorer"
 	"noah/client/app/service/information"
-	"noah/client/app/service/pty"
 	"noah/client/app/utils/network"
 
 	"golang.org/x/sync/errgroup"
@@ -28,7 +28,7 @@ func New(configuration *environment.Configuration) *App {
 	clientServices := &service.Services{
 		Information:  information.NewService(),
 		Command:      command.NewService(),
-		Pty:          pty.NewService(),
+		Channel:      channel.NewService(),
 		Download:     download.NewService(clientGateway),
 		FileExplorer: explorer.NewService(),
 	}

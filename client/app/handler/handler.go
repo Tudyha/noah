@@ -3,10 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"math"
-	"net"
 	"net/http"
 	"noah/client/app/environment"
 	"noah/client/app/service"
@@ -148,9 +145,13 @@ func (h *Handler) HandleCommand() {
 		response, err := h.handleMessage(wsMessageType, message)
 		errMsg := ""
 		if err != nil {
+			h.Log("[!] Error handling message:", err)
 			errMsg = err.Error()
 		}
 
+		if message.MessageType == entitie.MessageTypeChannel {
+			continue
+		}
 		ws.WriteMessage(h.Connection, message.MessageId, message.MessageType, response, errMsg)
 	}
 }
@@ -163,25 +164,23 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 			return nil, err
 		}
 		return h.Services.Command.Run(commandRequest.Command)
-	case entitie.MessageTypePty:
-		var ptyRequest entitie.PtyRequest
-		if err := json.Unmarshal(message.Data, &ptyRequest); err != nil {
+	case entitie.MessageTypeChannel:
+		var channelRequest entitie.ChannelRequest
+		if err := json.Unmarshal(message.Data, &channelRequest); err != nil {
+			fmt.Println("Error unmarshalling channel request:", err.Error())
 			return nil, err
 		}
-		switch ptyRequest.Action {
+		switch channelRequest.Action {
 		case "open":
-			err := h.Services.Pty.NewPtyClient(ptyRequest.ChannelId, h.Connection)
+			err := h.Services.Channel.NewChannel(channelRequest.ChannelId, channelRequest.ChannelType, h.Connection, channelRequest.Addr)
 			if err != nil {
+				fmt.Println("Error opening channel:", err.Error())
 				return nil, err
 			}
 		case "write":
-			err := h.Services.Pty.Write(wsMessageType, ptyRequest.ChannelId, ptyRequest.ChannelData)
+			err := h.Services.Channel.Write(wsMessageType, channelRequest.ChannelId, channelRequest.ChannelData)
 			if err != nil {
-				return nil, err
-			}
-		case "resize":
-			err := h.Services.Pty.SetSize(ptyRequest.ChannelId, ptyRequest.ChannelData)
-			if err != nil {
+				fmt.Println("Error writing to channel:", err)
 				return nil, err
 			}
 		}
@@ -290,54 +289,6 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 				return nil, err
 			}
 		}
-	case entitie.MessageTypeChannel:
-		p := string(message.Data)
-		wsconn, err := ws.NewConnection(h.Configuration, "/channel/client/ws/"+p)
-		if err != nil {
-			return nil, err
-		}
-		conn, err := net.Dial("tcp", ":22")
-		if err != nil {
-			return nil, err
-		}
-		go func() {
-			defer conn.Close()
-			defer wsconn.Close()
-
-			for {
-				_, message, err := wsconn.ReadMessage()
-				if err != nil {
-					log.Println("Error reading from WebSocket:", err)
-					return
-				}
-				_, err = conn.Write(message)
-				if err != nil {
-					log.Println("Error writing to TCP:", err)
-					return
-				}
-			}
-		}()
-
-		go func() {
-			defer conn.Close()
-			defer wsconn.Close()
-
-			buffer := make([]byte, 1024)
-			for {
-				n, err := conn.Read(buffer)
-				if err != nil {
-					if err != io.EOF {
-						log.Println("Error reading from TCP:", err)
-					}
-					return
-				}
-				err = wsconn.WriteMessage(websocket.TextMessage, buffer[:n])
-				if err != nil {
-					log.Println("Error writing to WebSocket:", err)
-					return
-				}
-			}
-		}()
 
 	default:
 

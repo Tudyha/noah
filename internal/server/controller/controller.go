@@ -10,21 +10,21 @@ import (
 )
 
 type Controller struct {
-	ClientController *ClientController
-	clientController *ClientController
-	shellController  *ShellController
-	ptyController    *PtyController
-	userController   *UserController
-	fileController   *FileController
+	ClientController  *ClientController
+	clientController  *ClientController
+	channelController *ChannelController
+	userController    *UserController
+	fileController    *FileController
+	shellController   *ShellController
 }
 
 func NewController() *Controller {
 	return &Controller{
-		clientController: NewClientController(),
-		shellController:  NewShellController(),
-		ptyController:    NewPtyController(),
-		userController:   NewUserController(),
-		fileController:   NewFileController(),
+		clientController:  NewClientController(),
+		shellController:   NewShellController(),
+		channelController: NewChannelController(),
+		userController:    NewUserController(),
+		fileController:    NewFileController(),
 	}
 }
 
@@ -36,8 +36,8 @@ func (c Controller) GetShellController() *ShellController {
 	return c.shellController
 }
 
-func (c Controller) GetPtyController() *PtyController {
-	return c.ptyController
+func (c Controller) GetChannelController() *ChannelController {
+	return c.channelController
 }
 
 func (c Controller) GetUserController() *UserController {
