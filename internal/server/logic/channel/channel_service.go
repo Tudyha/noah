@@ -248,6 +248,7 @@ type Channel struct {
 	isClosed    bool             // 标记是否已经关闭
 	serverPort  string           // 服务端端口
 	tcpConn     net.Conn         // tcp连接
+	clientAddr  string
 }
 
 func (c Service) NewChannel(id uint, channelType enum.ChannelType, conn *websocket.Conn, serverPort string, clientAddr string) (err error) {
@@ -281,6 +282,7 @@ func (c Service) createChannel(id uint, channelType enum.ChannelType, clientAddr
 		ChannelType: channelType,
 		clientId:    id,
 		isClosed:    false,
+		clientAddr:  clientAddr,
 	}
 	c.channels[channelId] = channel
 	c.messageMq[channel.ChannelId] = make(chan []byte, 32)

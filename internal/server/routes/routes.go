@@ -101,7 +101,7 @@ func (r *Router) LoadRoutes() {
 			})
 		})
 
-		chGroup := authGroup.Group("/channel")
+		chGroup := authGroup.Group("/client/:id/channel")
 		chGroup.POST("", channelController.NewChannel)
 
 		// 下载文件

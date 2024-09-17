@@ -40,6 +40,7 @@ import Status from './components/system-status.vue'
 import { getClient } from '@/api/client'
 import Shell from '@/components/Shell'
 import File from '@/components/FileTree'
+import Channel from './components/chennel.vue'
 
 export default {
   name: 'App',
@@ -48,6 +49,7 @@ export default {
     Status,
     Shell,
     File,
+    Channel
   },
   data() {
     return {
@@ -63,6 +65,7 @@ export default {
         { index: 'status', label: '系统状态', icon: 'el-icon-monitor' },
         { index: 'shell', label: '在线终端', icon: 'el-icon-s-promotion' },
         { index: 'file', label: '文件管理', icon: 'el-icon-folder-opened' },
+        { index: 'channel', label: '隧道管理', icon: 'el-icon-connection' },
       ],
     };
   },
