@@ -41,15 +41,17 @@ import { getClient } from '@/api/client'
 import Shell from '@/components/Shell'
 import File from '@/components/FileTree'
 import Channel from './components/chennel.vue'
+import App from './components/app.vue'
 
 export default {
-  name: 'App',
+  name: 'Console',
   components: {
     Load,
     Status,
     Shell,
     File,
-    Channel
+    Channel,
+    App
   },
   data() {
     return {
@@ -66,6 +68,7 @@ export default {
         { index: 'shell', label: '在线终端', icon: 'el-icon-s-promotion' },
         { index: 'file', label: '文件管理', icon: 'el-icon-folder-opened' },
         { index: 'channel', label: '隧道管理', icon: 'el-icon-connection' },
+        { index: 'app', label: '应用管理', icon: 'el-icon-s-grid' }
       ],
     };
   },
