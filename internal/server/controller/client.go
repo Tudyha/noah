@@ -42,7 +42,7 @@ func (c ClientController) CreateClient(ctx *gin.Context) {
 	var client dao.Client
 	copier.Copy(&client, body)
 
-	client.RemoteIp = ctx.RemoteIP()
+	client.RemoteIp = ctx.Request.Header.Get("X-Real-IP")
 	client.OsType = enum.DetectOS(body.OSName)
 	client.LocalIp = body.IPAddress
 
