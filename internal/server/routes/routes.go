@@ -103,6 +103,8 @@ func (r *Router) LoadRoutes() {
 
 		chGroup := authGroup.Group("/client/:id/channel")
 		chGroup.POST("", channelController.NewChannel)
+		chGroup.GET("", channelController.GetChannelList)
+		//chGroup.DELETE("/:channelId", channelController.DeleteChannel)
 
 		// 下载文件
 		api.GET("/file/download/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {

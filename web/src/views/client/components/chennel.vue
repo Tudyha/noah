@@ -8,7 +8,7 @@
                 <el-table :data="list">
                     <el-table-column label="模式">
                         <template slot-scope="scope">
-                            {{ scope.row.channelType }}
+                            {{ m.channelType[scope.row.channelType] }}
                         </template>
                     </el-table-column>
                     <el-table-column label="端口">
@@ -16,11 +16,16 @@
                             {{ scope.row.serverPort }}
                         </template>
                     </el-table-column>
-                    <el-table-column label="目标 (IP:端口)">
+                    <el-table-column label="目标IP">
                         <template slot-scope="scope">
-                            {{ scope.row.clientAddr }}
+                            {{ scope.row.clientIp }}
                         </template>
                     </el-table-column>
+                  <el-table-column label="目标端口">
+                    <template slot-scope="scope">
+                      {{ scope.row.clientPort }}
+                    </template>
+                  </el-table-column>
                 </el-table>
             </el-main>
 
@@ -35,13 +40,13 @@
                     </el-select>
                 </el-form-item>
                 <el-form-item label="端口">
-                    <el-input v-model="form.serverPort" autocomplete="off"></el-input>
+                    <el-input v-model.number="form.serverPort" autocomplete="off"></el-input>
                 </el-form-item>
                 <el-form-item label="目标ip">
                     <el-input v-model="form.clientIp" autocomplete="off"></el-input>
                 </el-form-item>
                 <el-form-item label="port">
-                    <el-input v-model="form.clientPort" autocomplete="off"></el-input>
+                    <el-input v-model.number="form.clientPort" autocomplete="off"></el-input>
                 </el-form-item>
             </el-form>
             <div slot="footer" class="dialog-footer">
@@ -53,8 +58,8 @@
 </template>
 
 <script>
-import { fetchProcessList } from '@/api/client'
-import { newChannel } from '@/api/channel'
+import { newChannel, fetchList } from '@/api/channel'
+import * as m from '@/map/channel'
 
 export default {
     props: {
@@ -65,6 +70,7 @@ export default {
     },
     data() {
         return {
+          m,
             list: [],
             dialogVisible: false,
             form: {
@@ -76,17 +82,17 @@ export default {
         };
     },
     methods: {
-        fetchProcessList() {
-            fetchProcessList(this.id)
+      fetchList() {
+        fetchList(this.id)
                 .then(response => {
-                    this.processList = response.data;
+                    this.list = response.data;
                 })
                 .catch(error => {
                     console.error('Error fetching process list:', error);
                 });
         },
         refresh() {
-            this.fetchProcessList();
+            this.fetchList();
         },
         newChannel() {
             this.form.id = this.id
@@ -97,7 +103,7 @@ export default {
                         type: 'success'
                     })
                     this.dialogVisible = false
-                    this.fetchProcessList()
+                    this.fetchList()
                 } else {
                     this.$message({
                         message: res.msg,
@@ -110,7 +116,7 @@ export default {
     components: {
     },
     created() {
-        this.fetchProcessList();
+        this.fetchList();
     },
 }
 </script>

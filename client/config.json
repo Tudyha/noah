@@ -1,7 +1,7 @@
 {
     "version": "1.0",
     "version_code": 1,
-    "server_address": "192.168.1.238",
+    "server_address": "127.0.0.1",
     "server_port": "8080",
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjY1OTc1NTgsIm9yaWdfaWF0IjoxNzI2NTExMTU4LCJ1c2VySWQiOjF9.WwPhOvf39d_4hApcrTksTefGYUmyPxiMJ4CAbJJ6bbc"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjY3MTc2NDEsIm9yaWdfaWF0IjoxNzI2NjMxMjQxLCJ1c2VySWQiOjF9.henQ7JBWHV0RhXtZi7BuDZMtRIoufhDUgpBtJcn-fOI"
 }

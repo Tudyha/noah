@@ -172,7 +172,8 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 		}
 		switch channelRequest.Action {
 		case "open":
-			err := h.Services.Channel.NewChannel(channelRequest.ChannelId, channelRequest.ChannelType, h.Connection, channelRequest.Addr)
+			addr := fmt.Sprintf("%s:%d", channelRequest.LocalIp, channelRequest.LocalPort)
+			err := h.Services.Channel.NewChannel(channelRequest.ChannelId, channelRequest.ChannelType, h.Connection, addr)
 			if err != nil {
 				fmt.Println("Error opening channel:", err.Error())
 				return nil, err

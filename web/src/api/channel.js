@@ -6,4 +6,11 @@ export function newChannel(data) {
       method: 'post',
       data
     })
-  }
+}
+
+export function fetchList(clientId) {
+  return request({
+    url: `/client/${clientId}/channel`,
+    method: 'get',
+  })
+}

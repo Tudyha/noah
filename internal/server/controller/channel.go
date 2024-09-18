@@ -1,9 +1,10 @@
 package controller
 
 import (
-	"fmt"
+	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/enum"
+	"noah/internal/server/request"
 	"noah/internal/server/service"
 	"strconv"
 
@@ -28,7 +29,9 @@ func (h ChannelController) NewPtyChannel(c *gin.Context) {
 		return
 	}
 
-	err = service.GetChannelService().NewChannel(uintId, enum.Pty, conn, "", "")
+	err = service.GetChannelService().NewChannel(uintId, request.CreateChannelReq{
+		ChannelType: enum.Pty,
+	}, conn)
 	if err != nil {
 		Fail(c, 500, "NewChannel fail")
 		return
@@ -40,29 +43,35 @@ func (h ChannelController) NewPtyChannel(c *gin.Context) {
 	}
 }
 
-type CreateChannelReq struct {
-	ChannelType enum.ChannelType `json:"channelType" binding:"required"`
-	ServerPort  string           `json:"serverPort"`
-	ClientIp    string           `json:"clientIp"`
-	ClientPort  string           `json:"clientPort"`
-}
-
 func (h ChannelController) NewChannel(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	uintId := uint(id)
 
-	var req CreateChannelReq
+	var req request.CreateChannelReq
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		Fail(c, 500, "参数错误")
+		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
 
-	err = service.GetChannelService().NewChannel(uintId, req.ChannelType, nil, req.ServerPort, fmt.Sprintf("%s:%s", req.ClientIp, req.ClientPort))
+	err = service.GetChannelService().NewChannel(uintId, req, nil)
 	if err != nil {
 		Fail(c, 500, err.Error())
 		return
 	}
 
 	Success(c, "success")
+}
+
+func (h ChannelController) GetChannelList(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	uintId := uint(id)
+
+	res, err := service.GetChannelService().GetChannelList(uintId)
+	if err != nil {
+		Fail(c, 500, err.Error())
+		return
+	}
+	Success(c, res)
+
 }

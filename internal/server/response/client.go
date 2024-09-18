@@ -67,3 +67,11 @@ type GetClientProcessRes struct {
 	Command    string  `json:"command"`
 	CreateTime int64   `json:"createTime"`
 }
+
+type GetChannelListRes struct {
+	ID          uint             `json:"id"`
+	ChannelType enum.ChannelType `json:"channelType"`
+	ClientIp    string           `json:"clientIp"`
+	ClientPort  int              `json:"clientPort"`
+	ServerPort  int              `json:"serverPort"`
+}

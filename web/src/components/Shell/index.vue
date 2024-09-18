@@ -4,7 +4,6 @@
 
 <script>
 import { Terminal } from 'xterm'
-import { AttachAddon } from 'xterm-addon-attach'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 import { getToken } from '@/utils/auth'
@@ -54,8 +53,17 @@ export default {
         this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/pty/ws/' + this.id + "?token=" + getToken())
       }
 
+      this.webSocket.onmessage = (event) => {
+        this.terminal.write(event.data)
+      }
+
+      this.terminal.onData((data) => {
+        const blob = new Blob([JSON.stringify({type: 'data', data: data})], { type: 'application/json' })
+        this.webSocket.send(blob)
+      })
+
       const sendSize = () => {
-        const windowSize = { high: this.terminal.rows, width: this.terminal.cols }
+        const windowSize = { type: 'size', high: this.terminal.rows, width: this.terminal.cols }
         const blob = new Blob([JSON.stringify(windowSize)], { type: 'application/json' })
         this.webSocket.send(blob)
       }
@@ -67,9 +75,6 @@ export default {
         sendSize()
       }
       window.addEventListener('resize', resizeScreen, false)
-
-      const attachAddon = new AttachAddon(this.webSocket)
-      this.terminal.loadAddon(attachAddon)
     },
     close() {
       if (this.webSocket !== null) {

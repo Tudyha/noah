@@ -18,7 +18,8 @@ type ChannelRequest struct {
 	ChannelId   string           `json:"channelId,omitempty"`
 	ChannelType enum.ChannelType `json:"channelType,omitempty"`
 	ChannelData []byte           `json:"channelData,omitempty"`
-	Addr        string           `json:"addr,omitempty"`
+	LocalIp     string           `json:"localIp,omitempty"`
+	LocalPort   int              `json:"localPort,omitempty"`
 }
 
 type DownloadRequest struct {

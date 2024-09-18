@@ -36,11 +36,6 @@ type Channel struct {
 	WriteFunc   func(msgType int, data []byte) error
 }
 
-type windowSize struct {
-	High  int `json:"high"`
-	Width int `json:"width"`
-}
-
 type ChannelType int
 
 const (
@@ -122,12 +117,10 @@ func (t *Service) NewChannel(channelId string, cType int, wsc *websocket.Conn, a
 }
 
 func (t *Service) Write(wsMessageType int, channelId string, data []byte) error {
-	fmt.Println(t.channels)
 	ch, ok := t.channels[channelId]
 	if !ok {
 		return errors.New("channel not found")
 	}
-	fmt.Println("Write to channel: ", channelId)
 
 	return ch.WriteFunc(wsMessageType, data)
 }
@@ -184,23 +177,31 @@ func (c *Channel) tcpRead() error {
 	return nil
 }
 
+type ptyData struct {
+	Type  string `json:"type"`
+	Data  any    `json:"data"`
+	High  int    `json:"high"`
+	Width int    `json:"width"`
+}
+
 func (c *Channel) ptyWrite(msgType int, data []byte) error {
-	if msgType != websocket.BinaryMessage {
-		if _, err := c.pty.Write(data); err != nil {
+	var ptyData ptyData
+	err := json.Unmarshal(data, &ptyData)
+	if err != nil {
+		return err
+	}
+	switch ptyData.Type {
+	case "size":
+		if err := pty.Setsize(c.pty, &pty.Winsize{
+			Rows: uint16(ptyData.High),
+			Cols: uint16(ptyData.Width),
+		}); err != nil {
 			return err
 		}
-	}
-
-	var wdSize windowSize
-	if err := json.Unmarshal(data, &wdSize); err != nil {
-		return err
-	}
-
-	if err := pty.Setsize(c.pty, &pty.Winsize{
-		Rows: uint16(wdSize.High),
-		Cols: uint16(wdSize.Width),
-	}); err != nil {
-		return err
+	case "data":
+		if _, err := c.pty.Write([]byte(ptyData.Data.(string))); err != nil {
+			return err
+		}
 	}
 
 	return nil

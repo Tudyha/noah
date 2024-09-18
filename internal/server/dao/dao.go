@@ -13,6 +13,7 @@ var (
 	db            *gorm.DB
 	clientDao     *ClientDao
 	clientInfoDao *ClientInfoDao
+	channelDao    *ChannelDao
 )
 
 func InitDb(dbConfig environment.DatabaseConfig) (err error) {
@@ -28,9 +29,11 @@ func InitDb(dbConfig environment.DatabaseConfig) (err error) {
 
 	_ = db.AutoMigrate(&Client{})
 	_ = db.AutoMigrate(&ClientInfo{})
+	_ = db.AutoMigrate(&Channel{})
 
 	clientDao = &ClientDao{db}
 	clientInfoDao = &ClientInfoDao{db}
+	channelDao = &ChannelDao{db}
 
 	return nil
 }
@@ -53,4 +56,8 @@ func GetClientDao() *ClientDao {
 
 func GetClientInfoDao() *ClientInfoDao {
 	return clientInfoDao
+}
+
+func GetChannelDao() *ChannelDao {
+	return channelDao
 }
