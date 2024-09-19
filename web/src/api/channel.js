@@ -14,3 +14,10 @@ export function fetchList(clientId) {
     method: 'get',
   })
 }
+
+export function deleteChannel(data) {
+  return request({
+    url: `/client/${data.id}/channel/${data.channelId}`,
+    method: 'delete',
+  })
+}

@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	"noah/client/app/gateway"
@@ -159,13 +158,13 @@ func (h *Handler) HandleCommand() {
 func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (response any, err error) {
 	switch message.MessageType {
 	case entitie.MessageTypeCommand:
-		var commandRequest entitie.CommandRequest
+		var commandRequest entitie.CommandReq
 		if err := json.Unmarshal(message.Data, &commandRequest); err != nil {
 			return nil, err
 		}
 		return h.Services.Command.Run(commandRequest.Command)
 	case entitie.MessageTypeChannel:
-		var channelRequest entitie.ChannelRequest
+		var channelRequest entitie.ChannelReq
 		if err := json.Unmarshal(message.Data, &channelRequest); err != nil {
 			fmt.Println("Error unmarshalling channel request:", err.Error())
 			return nil, err
@@ -186,7 +185,7 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 			}
 		}
 	case entitie.MessageTypeDownload:
-		var downloadParams entitie.DownloadRequest
+		var downloadParams entitie.DownloadReq
 		err := json.Unmarshal(message.Data, &downloadParams)
 		if err != nil {
 			return nil, err
@@ -274,25 +273,49 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 				return nil, err
 			}
 		}
-	case entitie.MessageTypeProcess:
-		p := string(message.Data)
-		if p == "list" {
-			process, err := h.Services.Command.GetProcessList()
-			if err != nil {
-				return nil, err
-			}
-			response = process
+	case entitie.MessageTypeSystemInfo:
+		var systemInfoReq entitie.SystemInfoReq
+		err := json.Unmarshal(message.Data, &systemInfoReq)
+		if err != nil {
+			return nil, err
 		}
-		if strings.Contains(p, "kill") {
-			pid, _ := strconv.Atoi(strings.Split(p, " ")[1])
-			err := h.Services.Command.KillProcess(int32(pid))
-			if err != nil {
-				return nil, err
+		switch systemInfoType := systemInfoReq.SystemInfoType; systemInfoType {
+		case "process":
+			switch action := systemInfoReq.Action; action {
+			case "list":
+				process, err := h.Services.Information.GetProcessList()
+				if err != nil {
+					return nil, err
+				}
+				response = process
+			case "kill":
+				pid, _ := strconv.Atoi(systemInfoReq.Params)
+				err := h.Services.Information.KillProcess(int32(pid))
+				if err != nil {
+					return nil, err
+				}
 			}
+		case "net":
+			switch action := systemInfoReq.Action; action {
+			case "list":
+				networkInfo, err := h.Services.Information.GetNetworkInfo()
+				if err != nil {
+					return nil, err
+				}
+				response = networkInfo
+			}
+		case "docker":
+			switch action := systemInfoReq.Action; action {
+			case "containerList":
+				dockerContainerList, err := h.Services.Information.GetDockerContainerList()
+				if err != nil {
+					return nil, err
+				}
+				response = dockerContainerList
+			}
+
+		default:
 		}
-
-	default:
-
 	}
 	return response, nil
 }

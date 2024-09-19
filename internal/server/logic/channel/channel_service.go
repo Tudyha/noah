@@ -26,20 +26,27 @@ var (
 
 type Service struct {
 	mu            *sync.Mutex
-	clients       map[uint]*websocket.Conn //客户端命令执行websocket
-	messageResult map[uint64]chan request.Message
-	channels      map[string]*Conn
-	messageMq     map[string]chan []byte
+	clients       map[uint]*websocket.Conn        //客户端命令执行websocket
+	messageResult map[uint64]chan request.Message //命令执行结果
+	channelConns  map[string]*Conn                // channel连接
+	messageMq     map[string]chan []byte          //channel消息队列
+	channelClose  map[uint]chan struct{}          // channel关闭
 }
 
 func NewChannelService() *Service {
-	return &Service{
+	s := &Service{
 		mu:            &sync.Mutex{},
 		clients:       make(map[uint]*websocket.Conn),
 		messageResult: make(map[uint64]chan request.Message),
-		channels:      make(map[string]*Conn),
+		channelConns:  make(map[string]*Conn),
 		messageMq:     make(map[string]chan []byte),
+		channelClose:  make(map[uint]chan struct{}),
 	}
+
+	// 恢复channel
+	s.recoverChannel()
+
+	return s
 }
 
 // NewClientWebsocketConn 新增ws连接
@@ -179,7 +186,7 @@ func (c Service) handleMessage(id uint, message request.Message) {
 		}
 		switch channelRequest.Action {
 		case "write":
-			_, ok := c.channels[channelRequest.ChannelId]
+			_, ok := c.channelConns[channelRequest.ChannelId]
 			if !ok {
 				break
 			}
@@ -290,7 +297,7 @@ func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, conn *
 		go func() {
 			err := c.listen(channelId)
 			if err != nil {
-				log.Info("listen error", map[string]interface{}{"error": err})
+				dao.GetChannelDao().UpdateStatus(channelId, enum.ChannelStatusDisconnected, err.Error())
 				return
 			}
 		}()
@@ -306,6 +313,39 @@ func (c Service) GetChannelList(clientId uint) (res []response.GetChannelListRes
 	}
 	copier.Copy(&res, list)
 	return res, nil
+}
+
+func (c Service) DeleteChannel(id uint) (err error) {
+	err = dao.GetChannelDao().Delete(id)
+	if err != nil {
+		return err
+	}
+
+	// 关闭端口监听
+	if _, ok := c.channelClose[id]; ok {
+		close(c.channelClose[id])
+		delete(c.channelClose, id)
+	}
+	return nil
+}
+
+func (c Service) recoverChannel() {
+	list, err := dao.GetChannelDao().List(0)
+	if err != nil {
+		return
+	}
+
+	for _, channel := range list {
+		if channel.ChannelType == enum.Tcp && channel.Status == enum.ChannelStatusConnected {
+			go func() {
+				err := c.listen(channel.ID)
+				if err != nil {
+					dao.GetChannelDao().UpdateStatus(channel.ID, enum.ChannelStatusDisconnected, err.Error())
+					return
+				}
+			}()
+		}
+	}
 }
 
 func (c Service) NewChannelConn(id uint, conn Connection, channelType enum.ChannelType, clientIp string, clientPort int) (*Conn, error) {
@@ -329,13 +369,13 @@ func (c Service) NewChannelConn(id uint, conn Connection, channelType enum.Chann
 		return nil, err
 	}
 
-	c.channels[channelConn.connId] = channelConn
+	c.channelConns[channelConn.connId] = channelConn
 	c.messageMq[channelConn.connId] = make(chan []byte, 32)
 	return channelConn, nil
 }
 
 func (c Service) closeChannelConn(connId string) error {
-	conn, ok := c.channels[connId]
+	conn, ok := c.channelConns[connId]
 	if !ok {
 		return errors.New("channel conn not found")
 	}
@@ -347,7 +387,7 @@ func (c Service) closeChannelConn(connId string) error {
 		}
 	}
 
-	delete(c.channels, conn.connId)
+	delete(c.channelConns, conn.connId)
 	if _, ok := c.messageMq[conn.connId]; ok {
 		close(c.messageMq[conn.connId])
 		delete(c.messageMq, conn.connId)
@@ -368,24 +408,41 @@ func (c Service) listen(channelId uint) error {
 		log.Error("listen error: "+err.Error(), nil)
 		return err
 	}
-	defer listener.Close()
+	defer func() {
+		log.Info("channel listen close", map[string]interface{}{"channelId": channelId})
+		err := listener.Close()
+		if err != nil {
+			log.Error("channel listen close error", map[string]interface{}{"channelId": channelId, "error": err})
+			return
+		}
+	}()
+
+	c.channelClose[channelId] = make(chan struct{})
+
+	dao.GetChannelDao().UpdateStatus(channelId, enum.ChannelStatusConnected, "")
 
 	// 监听连接
 	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Error("Error accepting connection:"+err.Error(), nil)
-			continue
-		}
+		select {
+		case <-c.channelClose[channelId]:
+			log.Info("channel listen close", map[string]interface{}{"channelId": channelId})
+			return nil
+		default:
+			conn, err := listener.Accept()
+			if err != nil {
+				log.Error("Error accepting connection:"+err.Error(), nil)
+				continue
+			}
 
-		channelCoon, err := c.NewChannelConn(channel.ClientId, &TCPConnection{conn: conn}, enum.Tcp, channel.ClientIp, channel.ClientPort)
-		if err != nil {
-			log.Error("NewChannelConn error", map[string]interface{}{"error": err})
-			continue
-		}
+			channelCoon, err := c.NewChannelConn(channel.ClientId, &TCPConnection{conn: conn}, enum.Tcp, channel.ClientIp, channel.ClientPort)
+			if err != nil {
+				log.Error("NewChannelConn error", map[string]interface{}{"error": err})
+				continue
+			}
 
-		go channelCoon.read(c)
-		go channelCoon.write(c)
+			go channelCoon.read(c)
+			go channelCoon.write(c)
+		}
 	}
 }
 

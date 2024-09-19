@@ -139,7 +139,7 @@ func (c *Channel) ptyRead() error {
 		}
 
 		if n > 0 {
-			ws_data := entitie.ChannelRequest{
+			ws_data := entitie.ChannelReq{
 				Action:      "write",
 				ChannelId:   c.channelId,
 				ChannelData: data[:n],
@@ -164,7 +164,7 @@ func (c *Channel) tcpRead() error {
 			break
 		}
 
-		ws_data := entitie.ChannelRequest{
+		ws_data := entitie.ChannelReq{
 			Action:      "write",
 			ChannelId:   c.channelId,
 			ChannelData: buffer[:n],

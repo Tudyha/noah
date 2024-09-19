@@ -11,11 +11,13 @@ type ChannelDao struct {
 
 type Channel struct {
 	gorm.Model
-	ChannelType enum.ChannelType // 通道类型
-	ClientId    uint             // 客户端id
-	ServerPort  int              // 服务端端口
-	ClientIp    string           // 客户端ip
-	ClientPort  int              // 客户端端口
+	ChannelType enum.ChannelType   // 通道类型
+	ClientId    uint               // 客户端id
+	ServerPort  int                // 服务端端口
+	ClientIp    string             // 客户端ip
+	ClientPort  int                // 客户端端口
+	Status      enum.ChannelStatus // 服务端状态
+	FailReason  string
 }
 
 func (Channel) TableName() string {
@@ -35,7 +37,20 @@ func (d ChannelDao) GetById(channelId uint) (channel Channel, err error) {
 	return channel, err
 }
 
+func (d ChannelDao) Delete(id uint) error {
+	d.Db.Unscoped().Delete(&Channel{}, id)
+	return nil
+}
+
 func (d ChannelDao) List(clientId uint) (channels []Channel, err error) {
+	if clientId == 0 {
+		err = d.Db.Find(&channels).Error
+		return channels, err
+	}
 	err = d.Db.Where("client_id = ?", clientId).Find(&channels).Error
 	return channels, err
+}
+
+func (d ChannelDao) UpdateStatus(id uint, status enum.ChannelStatus, failReason string) error {
+	return d.Db.Model(&Channel{}).Where("id = ?", id).Updates(Channel{Status: status, FailReason: failReason}).Error
 }

@@ -26,6 +26,25 @@
                       {{ scope.row.clientPort }}
                     </template>
                   </el-table-column>
+                  <el-table-column label="服务端状态">
+                    <template slot-scope="scope">
+                      <span :title="scope.row.failReason">
+                        {{ m.status[scope.row.status] }}
+                      </span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="50">
+                    <template slot-scope="{row}">
+                      <el-dropdown trigger="click" placement="bottom-start" size="small">
+                        <el-button type="text" size="medium">
+                          <i class="el-icon-more" />
+                        </el-button>
+                        <el-dropdown-menu slot="dropdown">
+                          <el-dropdown-item icon="el-icon-close" @click.native="deleteChannel(row)">删除</el-dropdown-item>
+                        </el-dropdown-menu>
+                      </el-dropdown>
+                    </template>
+                  </el-table-column>
                 </el-table>
             </el-main>
 
@@ -58,7 +77,7 @@
 </template>
 
 <script>
-import { newChannel, fetchList } from '@/api/channel'
+import { newChannel, fetchList, deleteChannel } from '@/api/channel'
 import * as m from '@/map/channel'
 
 export default {
@@ -111,7 +130,25 @@ export default {
                     })
                 }
             })
-        }
+        },
+      deleteChannel(row) {
+        this.$confirm('是否确认删除', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }).then(() => {
+          deleteChannel({ id: this.id, channelId: row.id }).then((res) => {
+            if (res.code === 0) {
+              this.$message.success('删除成功')
+              this.fetchList()
+            } else {
+              this.$message.error(res.msg)
+            }
+          })
+        }).catch(() => {
+
+        });
+      }
     },
     components: {
     },

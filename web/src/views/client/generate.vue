@@ -85,6 +85,8 @@ export default {
           } else {
             this.$message.error(res.msg)
           }
+        }).catch(() => {
+          this.loading = false
         })
       })
     }

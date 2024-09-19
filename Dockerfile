@@ -50,7 +50,6 @@ ENV ADMIN_PASSWORD ${ADMIN_PASSWORD}
 
 # 暴露端口
 EXPOSE 9527
-EXPOSE 8080
 
 # 运行
 CMD ["sh", "-c", "nginx -g 'daemon off;' & ./noah"]

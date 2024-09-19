@@ -2,7 +2,6 @@ package dao
 
 import (
 	"fmt"
-	"noah/internal/server/dto"
 	"noah/internal/server/enum"
 	"noah/internal/server/request"
 	"strings"
@@ -91,7 +90,7 @@ func (d ClientDao) Page(query request.ListClientQueryReq) (total int64, Clients 
 	}
 
 	// 分页查询
-	err := qw.Scopes(dto.Paginate(&query.PageQuery)).Find(&Clients).Error
+	err := qw.Scopes(request.Paginate(&query.PageQuery)).Find(&Clients).Error
 	if err != nil {
 		// 处理数据库操作错误
 		fmt.Println("Database error:", err)

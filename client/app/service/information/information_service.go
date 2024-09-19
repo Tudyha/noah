@@ -1,11 +1,15 @@
 package information
 
 import (
+	"context"
 	"fmt"
+	"github.com/docker/docker/api/types/container"
+	"github.com/jinzhu/copier"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v3/process"
 	"math"
 	"noah/client/app/entitie"
 	"noah/client/app/service"
@@ -13,6 +17,7 @@ import (
 	"os/user"
 	"runtime"
 
+	"github.com/docker/docker/client"
 	"noah/client/app/utils/network"
 )
 
@@ -136,4 +141,82 @@ func coverToGb(b uint64) float64 {
 // roundToTwoDecimals 将浮点数保留两位小数
 func roundToTwoDecimals(f float64) float64 {
 	return math.Round(f*100) / 100
+}
+
+func (i Service) GetProcessList() ([]entitie.Process, error) {
+	//获取系统进程
+	processes, err := process.Processes()
+	if err != nil {
+		return nil, err
+	}
+	//
+	var result []entitie.Process
+	for _, proc := range processes {
+		if proc.Pid == 0 {
+			fmt.Println("pid = 0 进程不显示")
+			continue
+		}
+		name, _ := proc.Name()
+		uid, _ := proc.Uids()
+		gid, _ := proc.Gids()
+		cmdline, _ := proc.Cmdline()
+		username, _ := proc.Username()
+		cpu, _ := proc.Percent(0)
+		m, _ := proc.MemoryInfo()
+		m_rss := uint64(0)
+		if m != nil {
+			m_rss = m.RSS
+		}
+		createTime, _ := proc.CreateTime()
+
+		result = append(result, entitie.Process{
+			Pid:        proc.Pid,
+			Name:       name,
+			Username:   username,
+			Uids:       uid,
+			Gids:       gid,
+			Command:    cmdline,
+			Cpu:        cpu,
+			Memory:     m_rss,
+			CreateTime: createTime,
+		})
+	}
+	return result, nil
+}
+
+func (i Service) KillProcess(pid int32) error {
+	p, err := process.NewProcess(pid)
+	if err != nil {
+		return err
+	}
+	return p.Kill()
+}
+
+func (i Service) GetNetworkInfo() (res []entitie.NetworkInfo, err error) {
+	// 获取所有监听中的连接
+	conns, err := net.Connections("-1")
+	if err != nil {
+		return nil, err
+	}
+
+	// 打印所有 TCP 和 TCP4 类型的连接
+	copier.Copy(&res, &conns)
+	return res, nil
+}
+
+func (i Service) GetDockerContainerList() (res []entitie.DockerContainer, err error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		fmt.Println("Error creating Docker client:", err)
+		return nil, err
+	}
+
+	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
+	if err != nil {
+		fmt.Println("Error listing Docker containers:", err)
+		return
+	}
+
+	copier.Copy(&res, &containers)
+	return res, nil
 }

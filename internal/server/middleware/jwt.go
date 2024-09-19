@@ -4,7 +4,8 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"log"
-	"noah/internal/server/dto"
+	"noah/internal/server/request"
+	"noah/internal/server/response"
 	"time"
 )
 
@@ -52,7 +53,7 @@ func initParams() *jwt.GinJWTMiddleware {
 
 func payloadFunc() func(data interface{}) jwt.MapClaims {
 	return func(data interface{}) jwt.MapClaims {
-		if v, ok := data.(*dto.UserInfo); ok {
+		if v, ok := data.(*response.GetUserInfoRes); ok {
 			return jwt.MapClaims{
 				"userId": v.UserID,
 			}
@@ -64,7 +65,7 @@ func payloadFunc() func(data interface{}) jwt.MapClaims {
 func identityHandler() func(c *gin.Context) interface{} {
 	return func(c *gin.Context) interface{} {
 		claims := jwt.ExtractClaims(c)
-		return &dto.UserInfo{
+		return &response.GetUserInfoRes{
 			UserID: uint(claims["userId"].(float64)),
 		}
 	}
@@ -72,7 +73,7 @@ func identityHandler() func(c *gin.Context) interface{} {
 
 func authenticator() func(c *gin.Context) (interface{}, error) {
 	return func(c *gin.Context) (interface{}, error) {
-		var loginVals dto.LoginReq
+		var loginVals request.LoginReq
 		if err := c.ShouldBind(&loginVals); err != nil {
 			return "", jwt.ErrMissingLoginValues
 		}
@@ -80,7 +81,7 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 		password := loginVals.Password
 
 		if username == "admin" && password == adminPassword {
-			return &dto.UserInfo{
+			return &response.GetUserInfoRes{
 				UserID:   1,
 				Username: username,
 			}, nil
@@ -109,7 +110,7 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 }
 
 func GetToken() (string, error) {
-	token, _, err := auth.TokenGenerator(&dto.UserInfo{
+	token, _, err := auth.TokenGenerator(&response.GetUserInfoRes{
 		UserID:   1,
 		Username: "admin",
 	})

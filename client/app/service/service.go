@@ -23,12 +23,14 @@ type Services struct {
 type Information interface {
 	LoadClientSpecs() (*entitie.Client, error)
 	GetSystemInfo() (*entitie.SystemInfo, error)
+	GetProcessList() ([]entitie.Process, error)
+	KillProcess(pid int32) error
+	GetNetworkInfo() ([]entitie.NetworkInfo, error)
+	GetDockerContainerList() (res []entitie.DockerContainer, err error)
 }
 
 type Command interface {
 	Run(command string) ([]byte, error)
-	GetProcessList() ([]entitie.Process, error)
-	KillProcess(pid int32) error
 }
 
 type Channel interface {

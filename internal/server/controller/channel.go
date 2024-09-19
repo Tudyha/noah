@@ -75,3 +75,15 @@ func (h ChannelController) GetChannelList(c *gin.Context) {
 	Success(c, res)
 
 }
+
+func (h ChannelController) DeleteChannel(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("channelId"))
+	uintId := uint(id)
+
+	err := service.GetChannelService().DeleteChannel(uintId)
+	if err != nil {
+		Fail(c, 500, err.Error())
+		return
+	}
+	Success(c, "success")
+}

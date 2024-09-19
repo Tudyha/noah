@@ -1,7 +1,5 @@
 package request
 
-import "noah/internal/server/dto"
-
 type CreateClientReq struct {
 	Hostname     string  `json:"hostname"`
 	Username     string  `json:"username"`
@@ -20,7 +18,7 @@ type CreateClientReq struct {
 }
 
 type ListClientQueryReq struct {
-	dto.PageQuery
+	PageQuery
 	Hostname string `form:"hostname"`
 	Status   int8   `form:"status"`
 }

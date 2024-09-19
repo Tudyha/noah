@@ -64,6 +64,20 @@ export function killProcess(params) {
   })
 }
 
+export function fetchNetworkList(id) {
+  return request({
+    url: `/client/${id}/network`,
+    method: 'get'
+  })
+}
+
+export function fetchDockerContainerList(id) {
+  return request({
+    url: `/client/${id}/docker/container`,
+    method: 'get'
+  })
+}
+
 export function getClient(id) {
   return request({
     url: `/client/${id}`,

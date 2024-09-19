@@ -4,8 +4,8 @@
       <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal" @select="handleSelect">
         <el-menu-item index="1">进程清单</el-menu-item>
         <el-menu-item index="2">网络端口</el-menu-item>
-        <el-menu-item index="3">系统账号</el-menu-item>
-        <el-menu-item index="4">登录历史</el-menu-item>
+<!--        <el-menu-item index="3">系统账号</el-menu-item>-->
+<!--        <el-menu-item index="4">登录历史</el-menu-item>-->
       </el-menu>
       <el-button plain type="text" icon="el-icon-refresh" @click="refreshData">刷新</el-button>
     </div>
@@ -17,6 +17,7 @@
 
 <script>
 import Process from './process.vue'; // 引入进程组件
+import Network from './network.vue';
 
 export default {
   props: {
@@ -40,6 +41,8 @@ export default {
       switch (key) {
         case '1':
           return 'Process';
+        case '2':
+          return 'Network';
         // 添加更多 case 以支持其他组件
         default:
           return 'Process';
@@ -50,7 +53,8 @@ export default {
     }
   },
   components: {
-    Process // 注册进程组件
+    Process, // 注册进程组件
+    Network
   }
 }
 </script>

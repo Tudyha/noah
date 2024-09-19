@@ -9,3 +9,4 @@ data
 
 temp
 /web/node_modules
+/web/dist

@@ -54,6 +54,14 @@ func (r *Router) LoadRoutes() {
 	channelController := handlers.GetChannelController()
 	fileController := handlers.GetFileController()
 
+	{
+		//前端静态文件
+		router.Static("/static", "web/dist/static") // 假设前端的静态资源在 /dist/assets 下
+		router.GET("/", func(c *gin.Context) {
+			c.File("web/dist/index.html")
+		})
+	}
+
 	api := router.Group("/api")
 	{
 		//免登录接口
@@ -78,6 +86,8 @@ func (r *Router) LoadRoutes() {
 		clientGroup.GET("/:id/systemInfo", clientController.GetClientInfo)
 		clientGroup.GET("/:id/process", clientController.GetClientProcessList)
 		clientGroup.DELETE("/:id/process/:pid", clientController.KillClientProcess)
+		clientGroup.GET("/:id/network", clientController.GetClientNetworkList)
+		clientGroup.GET("/:id/docker/container", clientController.GetClientDockerContainerList)
 
 		fileGroup := authGroup.Group("/client/:id/file")
 		fileGroup.GET("", fileController.GetFileList)
@@ -104,7 +114,7 @@ func (r *Router) LoadRoutes() {
 		chGroup := authGroup.Group("/client/:id/channel")
 		chGroup.POST("", channelController.NewChannel)
 		chGroup.GET("", channelController.GetChannelList)
-		//chGroup.DELETE("/:channelId", channelController.DeleteChannel)
+		chGroup.DELETE("/:channelId", channelController.DeleteChannel)
 
 		// 下载文件
 		api.GET("/file/download/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {

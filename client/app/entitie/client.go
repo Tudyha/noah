@@ -42,3 +42,45 @@ type Process struct {
 	Command    string  `json:"command"`
 	CreateTime int64   `json:"createTime"`
 }
+
+type NetworkInfo struct {
+	Fd     uint32          `json:"fd"`
+	Family uint32          `json:"family"`
+	Type   uint32          `json:"type"`
+	Laddr  NetworkInfoAddr `json:"localaddr"`
+	Raddr  NetworkInfoAddr `json:"remoteaddr"`
+	Status string          `json:"status"`
+	Uids   []int32         `json:"uids"`
+	Pid    int32           `json:"pid"`
+}
+
+type NetworkInfoAddr struct {
+	IP   string `json:"ip"`
+	Port uint32 `json:"port"`
+}
+
+type DockerContainer struct {
+	ID         string `json:"Id"`
+	Names      []string
+	Image      string
+	ImageID    string
+	Command    string
+	Created    int64
+	Ports      []DockerContainerPort
+	SizeRw     int64 `json:",omitempty"`
+	SizeRootFs int64 `json:",omitempty"`
+	Labels     map[string]string
+	State      string
+	Status     string
+	HostConfig struct {
+		NetworkMode string            `json:",omitempty"`
+		Annotations map[string]string `json:",omitempty"`
+	}
+}
+
+type DockerContainerPort struct {
+	IP          string `json:"IP,omitempty"`
+	PrivatePort uint16 `json:"PrivatePort"`
+	PublicPort  uint16 `json:"PublicPort,omitempty"`
+	Type        string `json:"Type"`
+}

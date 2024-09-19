@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/dao"
-	"noah/internal/server/dto"
 	"noah/internal/server/enum"
 	"noah/internal/server/middleware"
 	"noah/internal/server/middleware/log"
@@ -64,7 +63,7 @@ func (c ClientController) GetClientPage(ctx *gin.Context) {
 
 	total, clients := service.GetClientService().GetClientPage(req)
 
-	Success(ctx, &dto.PageInfo{
+	Success(ctx, &request.PageInfo{
 		List:  clients,
 		Total: total,
 	})
@@ -239,7 +238,11 @@ func (c ClientController) GetClientInfo(ctx *gin.Context) {
 func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端升级
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, "list")
+	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+		SystemInfoType: "process",
+		Action:         "list",
+		Params:         "",
+	})
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -257,10 +260,54 @@ func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 func (c ClientController) KillClientProcess(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	pid := ctx.Param("id")
-	_, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, "kill "+pid)
+	_, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+		SystemInfoType: "process",
+		Action:         "kill",
+		Params:         pid,
+	})
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 	Success(ctx, "success")
+}
+
+func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	res, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+		SystemInfoType: "net",
+		Action:         "list",
+		Params:         "",
+	})
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	var networkList []response.GetClientNetworkInfoRes
+	err = json.Unmarshal([]byte(res), &networkList)
+	if err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+	Success(ctx, networkList)
+}
+
+func (c ClientController) GetClientDockerContainerList(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	res, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+		SystemInfoType: "docker",
+		Action:         "containerList",
+		Params:         "",
+	})
+	if err != nil {
+		Fail(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	var containerList []response.GetClientDockerContainerRes
+	err = json.Unmarshal([]byte(res), &containerList)
+	if err != nil {
+		Fail(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+	Success(ctx, containerList)
 }

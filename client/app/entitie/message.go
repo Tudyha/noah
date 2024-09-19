@@ -10,7 +10,7 @@ const (
 	MessageTypeUpdate
 	MessageTypeExit
 	MessageTypeFileExplorer
-	MessageTypeProcess
+	MessageTypeSystemInfo
 	MessageTypeChannel
 )
 
@@ -21,11 +21,11 @@ type Message struct {
 	Error       string      `json:"error,omitempty"`
 }
 
-type CommandRequest struct {
+type CommandReq struct {
 	Command string `json:"command,omitempty"`
 }
 
-type ChannelRequest struct {
+type ChannelReq struct {
 	Action      string `json:"action,omitempty"`
 	ChannelId   string `json:"channelId,omitempty"`
 	ChannelType int    `json:"channelType,omitempty"`
@@ -34,7 +34,13 @@ type ChannelRequest struct {
 	LocalPort   int    `json:"localPort,omitempty"`
 }
 
-type DownloadRequest struct {
+type DownloadReq struct {
 	Filename string `json:"filename"`
 	Path     string `json:"path"`
+}
+
+type SystemInfoReq struct {
+	SystemInfoType string `json:"systemInfoType"`
+	Action         string `json:"action"`
+	Params         string `json:"params"`
 }
