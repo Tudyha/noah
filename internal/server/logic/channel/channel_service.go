@@ -166,16 +166,27 @@ func (c Service) clientWebsocketRead(id uint) {
 			log.Error("parse message error", map[string]interface{}{"clientId": id, "error": err})
 			continue
 		}
-		if message.Error != "" {
-			log.Warn("receive message error", map[string]interface{}{"clientId": id, "error": err})
-			continue
-		}
+
 		c.handleMessage(id, message)
 	}
 }
 
 // handleMessage 处理客户端发送的消息
 func (c Service) handleMessage(id uint, message request.Message) {
+	defer func() {
+		if isNeedResult(message.MessageType) {
+			//判断chan是否已初始化以及是否已关闭
+			if _, ok := c.messageResult[message.MessageId]; ok {
+				c.messageResult[message.MessageId] <- message
+			}
+		}
+	}()
+
+	if message.Error != "" {
+		log.Warn("receive message error", map[string]interface{}{"clientId": id, "error": message.Error})
+		return
+	}
+
 	switch message.MessageType {
 	case enum.MessageTypeChannel:
 		var channelRequest request.ChannelRequest
@@ -196,13 +207,6 @@ func (c Service) handleMessage(id uint, message request.Message) {
 		}
 	default:
 
-	}
-
-	if isNeedResult(message.MessageType) {
-		//判断chan是否已初始化以及是否已关闭
-		if _, ok := c.messageResult[message.MessageId]; ok {
-			c.messageResult[message.MessageId] <- message
-		}
 	}
 }
 
