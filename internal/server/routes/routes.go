@@ -66,14 +66,11 @@ func (r *Router) LoadRoutes() {
 	{
 		//免登录接口
 		api.POST("/login", authMiddleware.LoginHandler)
+		api.GET("/refresh_token", authMiddleware.RefreshHandler)
 	}
 
 	authGroup := api.Group("", authMiddleware.MiddlewareFunc())
 	{
-		//需要登录接口
-		auth := authGroup.Group("/auth")
-		auth.GET("/refresh_token", authMiddleware.RefreshHandler)
-
 		clientGroup := authGroup.Group("client")
 		clientGroup.POST("/", clientController.CreateClient)
 		clientGroup.GET("/:id", clientController.GetClient)

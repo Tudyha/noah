@@ -37,7 +37,16 @@ func (c Gateway) NewRequest(method string, url string, body []byte) (*gateway.Ht
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("failed with status code %d", res.StatusCode)
+		if res.StatusCode == 401 {
+			//尝试刷新token
+			if err := c.refreshToken(); err != nil {
+				return nil, err
+			}
+			//重新请求
+			return c.NewRequest(method, url, body)
+		} else {
+			return nil, fmt.Errorf("failed with status code %d", res.StatusCode)
+		}
 	}
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -51,6 +60,39 @@ func (c Gateway) NewRequest(method string, url string, body []byte) (*gateway.Ht
 	}
 
 	return &response, nil
+}
+
+func (c Gateway) refreshToken() error {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprint(c.Configuration.Server.Url, "/refresh_token"), nil)
+	req.Header.Set("Authorization", c.Configuration.Connection.Token)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.HttpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return fmt.Errorf("failed refresh token")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	var response map[string]any
+
+	if err := json.Unmarshal(bodyBytes, &response); err != nil {
+		return err
+	}
+
+	c.Configuration.Connection.Token = fmt.Sprint("Bearer ", response["token"].(string))
+
+	return nil
 }
 
 func (c Gateway) NewFileDownloadRequest(method string, url string, body []byte) ([]byte, error) {
