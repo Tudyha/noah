@@ -67,7 +67,8 @@ func NewServer() *Server {
 }
 
 func (s *Server) Run() {
-	err := s.G.Run(":" + s.Env.Server.Port)
+	addr := ":" + s.Env.Server.Port
+	err := s.G.Run(addr)
 	if err != nil {
 		panic(err)
 	}

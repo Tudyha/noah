@@ -11,7 +11,6 @@ import (
 	"noah/internal/server/request"
 	"noah/internal/server/response"
 	"noah/internal/server/service"
-	"noah/internal/server/vo"
 	"os"
 	"strconv"
 )
@@ -75,7 +74,7 @@ func (f FileController) GetFileContent(c *gin.Context) {
 
 func (f FileController) RenameFile(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.ClientFileRenameReq
+	var body request.ClientFileRenameReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -99,7 +98,7 @@ func (f FileController) RenameFile(c *gin.Context) {
 
 func (f FileController) DeleteFile(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.ClientFileDeleteReq
+	var body request.ClientFileDeleteReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -122,7 +121,7 @@ func (f FileController) DeleteFile(c *gin.Context) {
 
 func (f FileController) UpdateFileContent(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.ClientFileContentReq
+	var body request.ClientFileContentReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -193,7 +192,7 @@ func (f FileController) UploadFile(c *gin.Context) {
 
 func (f FileController) NewDir(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var body vo.ClientFileNewDirReq
+	var body request.ClientFileNewDirReq
 	err := c.BindJSON(&body)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())

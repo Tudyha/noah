@@ -14,7 +14,6 @@ import (
 	"noah/internal/server/request"
 	"noah/internal/server/response"
 	"noah/internal/server/service"
-	"noah/internal/server/vo"
 	"strconv"
 	"strings"
 	"time"
@@ -122,7 +121,7 @@ func (c ClientController) NewWsClient(ctx *gin.Context) {
 
 // SendCommandHandler 执行命令
 func (c ClientController) SendCommandHandler(ctx *gin.Context) {
-	var form vo.SendCommandReq
+	var form request.SendCommandReq
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -147,7 +146,7 @@ func (c ClientController) SendCommandHandler(ctx *gin.Context) {
 
 // Generate 生成客户端文件
 func (c ClientController) Generate(ctx *gin.Context) {
-	var req vo.ClientGenerateReq
+	var req request.ClientGenerateReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		Fail(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -164,7 +163,7 @@ func (c ClientController) Generate(ctx *gin.Context) {
 
 // generate 生成客户端文件
 // return filename 客户端文件名
-func generate(req vo.ClientGenerateReq) (string, error) {
+func generate(req request.ClientGenerateReq) (string, error) {
 	if len(strings.TrimSpace(req.ServerAddr)) == 0 {
 		return "", errors.New("serverAddr is empty")
 	}
@@ -190,7 +189,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
 	//生成最新客户端
-	var req vo.ClientGenerateReq
+	var req request.ClientGenerateReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		Fail(ctx, http.StatusBadRequest, err.Error())
 		return

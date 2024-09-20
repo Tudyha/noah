@@ -316,6 +316,10 @@ func (c Service) GetChannelList(clientId uint) (res []response.GetChannelListRes
 }
 
 func (c Service) DeleteChannel(id uint) (err error) {
+	channel, err := dao.GetChannelDao().GetById(id)
+	if err != nil {
+		return err
+	}
 	err = dao.GetChannelDao().Delete(id)
 	if err != nil {
 		return err
@@ -324,7 +328,11 @@ func (c Service) DeleteChannel(id uint) (err error) {
 	// 关闭端口监听
 	if _, ok := c.channelClose[id]; ok {
 		close(c.channelClose[id])
-		delete(c.channelClose, id)
+
+		// 向监听地址发送一个自连接以释放阻塞，fix 关闭端口监听后还可以接受一次连接
+		if conn, err := net.Dial("tcp", fmt.Sprintf(":%d", channel.ServerPort)); err == nil {
+			conn.Close()
+		}
 	}
 	return nil
 }
@@ -408,14 +416,6 @@ func (c Service) listen(channelId uint) error {
 		log.Error("listen error: "+err.Error(), nil)
 		return err
 	}
-	defer func() {
-		log.Info("channel listen close", map[string]interface{}{"channelId": channelId})
-		err := listener.Close()
-		if err != nil {
-			log.Error("channel listen close error", map[string]interface{}{"channelId": channelId, "error": err})
-			return
-		}
-	}()
 
 	c.channelClose[channelId] = make(chan struct{})
 
@@ -426,11 +426,17 @@ func (c Service) listen(channelId uint) error {
 		select {
 		case <-c.channelClose[channelId]:
 			log.Info("channel listen close", map[string]interface{}{"channelId": channelId})
+			delete(c.channelClose, channelId)
+			listener.Close()
 			return nil
 		default:
 			conn, err := listener.Accept()
 			if err != nil {
-				log.Error("Error accepting connection:"+err.Error(), nil)
+				if opErr, ok := err.(*net.OpError); ok && opErr.Err.Error() == "use of closed network connection" {
+					// 监听器被关闭
+					fmt.Println("Listener closed")
+					return nil
+				}
 				continue
 			}
 

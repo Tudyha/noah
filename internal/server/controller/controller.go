@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"noah/internal/server/dto"
 	"noah/internal/server/enum"
+	"noah/internal/server/request"
 	"noah/internal/server/service"
 	"strconv"
 
@@ -51,7 +51,7 @@ func (c Controller) GetFileController() *FileController {
 // Health 心跳检测
 func (c Controller) Health(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	var systemInfo dto.SystemInfoReq
+	var systemInfo request.CreateSystemInfoReq
 	if err := ctx.ShouldBindJSON(&systemInfo); err != nil {
 		Fail(ctx, 400, "")
 		return

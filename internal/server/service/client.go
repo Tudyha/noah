@@ -2,7 +2,6 @@ package service
 
 import (
 	"noah/internal/server/dao"
-	"noah/internal/server/dto"
 	"noah/internal/server/request"
 	"noah/internal/server/response"
 	"time"
@@ -16,7 +15,7 @@ type IClientService interface {
 	ScheduleUpdateStatus() error
 	Delete(id uint) error
 	Generate(serverAddr string, port string, osType int8, token string, filename string) (string, error)
-	SaveSystemInfo(id uint, systemInfo dto.SystemInfoReq) error
-	GetSystemInfo(id uint, start time.Time, end time.Time) ([]dto.SystemInfoRes, error)
+	SaveSystemInfo(id uint, systemInfo request.CreateSystemInfoReq) error
+	GetSystemInfo(id uint, start time.Time, end time.Time) ([]response.GetSystemInfoRes, error)
 	CleanSystemInfo() error
 }

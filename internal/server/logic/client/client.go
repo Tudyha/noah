@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"noah/internal/server/dto"
 	"noah/internal/server/utils"
 
 	"github.com/google/uuid"
@@ -189,19 +188,19 @@ func (c Service) Delete(id uint) error {
 	return dao.GetClientDao().Delete(id)
 }
 
-func (c Service) SaveSystemInfo(id uint, systemInfo dto.SystemInfoReq) error {
+func (c Service) SaveSystemInfo(id uint, systemInfo request.CreateSystemInfoReq) error {
 	var clientInfo dao.ClientInfo
 	copier.Copy(&clientInfo, systemInfo)
 	clientInfo.ClientID = id
 	return dao.GetClientInfoDao().Create(clientInfo)
 }
 
-func (c Service) GetSystemInfo(id uint, start time.Time, end time.Time) ([]dto.SystemInfoRes, error) {
+func (c Service) GetSystemInfo(id uint, start time.Time, end time.Time) ([]response.GetSystemInfoRes, error) {
 	clientInfoList := dao.GetClientInfoDao().GetByClientId(id, start, end)
 	if len(clientInfoList) == 0 {
-		return make([]dto.SystemInfoRes, 0), nil
+		return make([]response.GetSystemInfoRes, 0), nil
 	}
-	var result []dto.SystemInfoRes
+	var result []response.GetSystemInfoRes
 	copier.Copy(&result, clientInfoList)
 	return result, nil
 }

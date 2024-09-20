@@ -5,9 +5,24 @@ import (
 )
 
 func main() {
+	printBanner()
+
 	// new server
 	s := server.NewServer()
 
 	//start server
 	s.Run()
+}
+
+func printBanner() {
+	b := `
+#    #  ####    ##   #    #
+##   # #    #  #  #  #    #
+# #  # #    # #    # ######
+#  # # #    # ###### #    #
+#   ## #    # #    # #    #
+#    #  ####  #    # #    #
+
+`
+	println(b)
 }

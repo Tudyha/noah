@@ -119,3 +119,18 @@ type DockerContainerPort struct {
 	PublicPort  uint16 `json:"PublicPort,omitempty"`
 	Type        string `json:"Type"`
 }
+
+type GetSystemInfoRes struct {
+	CpuUsage          float64   `json:"cpuUsage"`
+	MemoryTotal       float64   `json:"memoryTotal"`
+	MemoryUsed        float64   `json:"memoryUsed"`
+	MemoryFree        float64   `json:"memoryFree"`
+	MemoryUsedPercent float64   `json:"memoryPercent"`
+	MemoryAvailable   float64   `json:"memoryAvailable"`
+	DiskTotal         float64   `json:"diskTotal"`
+	DiskFree          float64   `json:"diskFree"`
+	DiskUsed          float64   `json:"diskUsed"`
+	BandwidthIn       float64   `json:"bandwidthIn"`
+	BandwidthOut      float64   `json:"bandwidthOut"`
+	CreatedAt         time.Time `json:"createdAt"`
+}
