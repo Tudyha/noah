@@ -37,7 +37,7 @@ func NewConnection(configuration *environment.Configuration, path string) (*webs
 	return conn, err
 }
 
-func WriteMessage(conn *websocket.Conn, messageId uint64, messageType entitie.MessageType, data any, errMsg string) (err error) {
+func WriteMessage(conn *websocket.Conn, messageId string, messageType entitie.MessageType, data any, errMsg string) (err error) {
 	var d []byte
 	switch data.(type) {
 	case []byte:

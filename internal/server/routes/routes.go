@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"noah/internal/server/controller"
+	"noah/internal/server/gateway"
 	"noah/internal/server/middleware"
 	"noah/internal/server/utils"
 	"os"
@@ -14,19 +15,21 @@ import (
 )
 
 type Router struct {
-	G        *gin.Engine
+	Gin      *gin.Engine
 	handlers *controller.Controller
+	gateway  *gateway.Gateway
 }
 
-func NewRouter(g *gin.Engine) *Router {
+func NewRouter(g *gin.Engine, gate *gateway.Gateway) *Router {
 	return &Router{
-		G:        g,
-		handlers: controller.NewController(),
+		Gin:      g,
+		handlers: controller.NewController(gate),
+		gateway:  gate,
 	}
 }
 
 func (r *Router) LoadRoutes() {
-	router := r.G
+	router := r.Gin
 
 	// ----- CORS -----
 	config := cors.DefaultConfig()
@@ -59,6 +62,9 @@ func (r *Router) LoadRoutes() {
 		router.Static("/static", "web/dist/static") // 假设前端的静态资源在 /dist/assets 下
 		router.GET("/", func(c *gin.Context) {
 			c.File("web/dist/index.html")
+		})
+		router.GET("/favicon.ico", func(c *gin.Context) {
+			c.File("web/dist/favicon.ico")
 		})
 	}
 

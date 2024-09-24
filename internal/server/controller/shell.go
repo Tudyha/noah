@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"noah/internal/server/enum"
-	"noah/internal/server/service"
 	"os"
 	"strings"
 	"time"
@@ -179,7 +177,7 @@ func (c *sshClient) bridgeWSAndSSH() {
 		}
 		cmd := "echo %s >> ~/.ssh/authorized_keys"
 		fmt.Printf(cmd, strings.TrimSpace(string(pubKey)))
-		service.GetChannelService().SendCommand(c.clientId, enum.MessageTypeCommand, fmt.Sprintf(cmd, strings.TrimSpace(string(pubKey))))
+		//service.GetChannelService().SendCommand(c.clientId, enum.MessageTypeCommand, fmt.Sprintf(cmd, strings.TrimSpace(string(pubKey))))
 
 		//重新连接
 		c.client, err = ssh.Dial("tcp", c.addr, config)

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"noah/internal/server/enum"
+	"noah/internal/server/gateway"
 	"noah/internal/server/request"
 	"noah/internal/server/service"
 	"strconv"
@@ -18,13 +19,13 @@ type Controller struct {
 	shellController   *ShellController
 }
 
-func NewController() *Controller {
+func NewController(gateway *gateway.Gateway) *Controller {
 	return &Controller{
-		clientController:  NewClientController(),
+		clientController:  NewClientController(gateway),
 		shellController:   NewShellController(),
 		channelController: NewChannelController(),
 		userController:    NewUserController(),
-		fileController:    NewFileController(),
+		fileController:    NewFileController(gateway),
 	}
 }
 

@@ -3,7 +3,7 @@ package request
 import "noah/internal/server/enum"
 
 type Message struct {
-	MessageId   uint64           `json:"messageId"`
+	MessageId   string           `json:"messageId"`
 	MessageType enum.MessageType `json:"messageType,omitempty"`
 	Data        []byte           `json:"data,omitempty"`
 	Error       string           `json:"error,omitempty"`

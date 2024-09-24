@@ -15,7 +15,7 @@ const (
 )
 
 type Message struct {
-	MessageId   uint64      `json:"messageId"`
+	MessageId   string      `json:"messageId"`
 	MessageType MessageType `json:"messageType,omitempty"`
 	Data        []byte      `json:"data,omitempty"`
 	Error       string      `json:"error,omitempty"`

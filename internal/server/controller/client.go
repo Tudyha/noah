@@ -9,6 +9,7 @@ import (
 	"noah/internal/server/config"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
+	"noah/internal/server/gateway"
 	"noah/internal/server/middleware"
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/request"
@@ -21,10 +22,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ClientController struct{}
+type ClientController struct {
+	gateway *gateway.Gateway
+}
 
-func NewClientController() *ClientController {
-	return &ClientController{}
+func NewClientController(gateway *gateway.Gateway) *ClientController {
+	return &ClientController{
+		gateway: gateway,
+	}
 }
 
 // CreateClient 新增客户端
@@ -84,17 +89,10 @@ func (c ClientController) GetClient(ctx *gin.Context) {
 func (c ClientController) DeleteClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端退出
-	service.GetChannelService().SendCommand(uint(id), enum.MessageTypeExit, nil)
-
-	//断开ws连接
-	err := service.GetChannelService().Exit(uint(id))
-	if err != nil {
-		Fail(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
+	c.gateway.SendCommand(uint(id), enum.MessageTypeExit, nil)
 
 	//删除客户端
-	err = service.GetClientService().Delete(uint(id))
+	err := service.GetClientService().Delete(uint(id))
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -112,7 +110,7 @@ func (c ClientController) NewWsClient(ctx *gin.Context) {
 		return
 	}
 
-	err = service.GetChannelService().NewClientWebsocketConn(uint(id), ws)
+	err = c.gateway.NewClientWebsocketConn(uint(id), ws)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -136,7 +134,7 @@ func (c ClientController) SendCommandHandler(ctx *gin.Context) {
 		Command: form.Command,
 	}
 
-	res, err := service.GetChannelService().SendCommand(id, enum.MessageTypeCommand, command)
+	res, err := c.gateway.SendCommand(id, enum.MessageTypeCommand, command)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -202,7 +200,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 	}
 
 	//发送命令让客户端升级
-	_, err = service.GetChannelService().SendCommand(uint(id), enum.MessageTypeUpdate, filename)
+	_, err = c.gateway.SendCommand(uint(id), enum.MessageTypeUpdate, filename)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -237,7 +235,7 @@ func (c ClientController) GetClientInfo(ctx *gin.Context) {
 func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端升级
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	result, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
 		SystemInfoType: "process",
 		Action:         "list",
 		Params:         "",
@@ -259,7 +257,7 @@ func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 func (c ClientController) KillClientProcess(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	pid := ctx.Param("id")
-	_, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	_, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
 		SystemInfoType: "process",
 		Action:         "kill",
 		Params:         pid,
@@ -273,7 +271,7 @@ func (c ClientController) KillClientProcess(ctx *gin.Context) {
 
 func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	res, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	res, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
 		SystemInfoType: "net",
 		Action:         "list",
 		Params:         "",
@@ -293,7 +291,7 @@ func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 
 func (c ClientController) GetClientDockerContainerList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	res, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	res, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
 		SystemInfoType: "docker",
 		Action:         "containerList",
 		Params:         "",

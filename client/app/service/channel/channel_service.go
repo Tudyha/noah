@@ -144,7 +144,7 @@ func (c *Channel) ptyRead() error {
 				ChannelId:   c.channelId,
 				ChannelData: data[:n],
 			}
-			if err := ws.WriteMessage(c.conn, 0, entitie.MessageTypeChannel, ws_data, ""); err != nil {
+			if err := ws.WriteMessage(c.conn, c.channelId, entitie.MessageTypeChannel, ws_data, ""); err != nil {
 				break
 			}
 		}
@@ -169,7 +169,7 @@ func (c *Channel) tcpRead() error {
 			ChannelId:   c.channelId,
 			ChannelData: buffer[:n],
 		}
-		if err := ws.WriteMessage(c.conn, 0, entitie.MessageTypeChannel, ws_data, ""); err != nil {
+		if err := ws.WriteMessage(c.conn, c.channelId, entitie.MessageTypeChannel, ws_data, ""); err != nil {
 			break
 		}
 	}

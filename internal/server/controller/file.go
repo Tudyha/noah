@@ -8,17 +8,21 @@ import (
 	"io"
 	"net/http"
 	"noah/internal/server/enum"
+	"noah/internal/server/gateway"
 	"noah/internal/server/request"
 	"noah/internal/server/response"
-	"noah/internal/server/service"
 	"os"
 	"strconv"
 )
 
-type FileController struct{}
+type FileController struct {
+	gateway *gateway.Gateway
+}
 
-func NewFileController() *FileController {
-	return &FileController{}
+func NewFileController(gateway *gateway.Gateway) *FileController {
+	return &FileController{
+		gateway: gateway,
+	}
 }
 
 func (f FileController) GetFileList(c *gin.Context) {
@@ -34,7 +38,7 @@ func (f FileController) GetFileList(c *gin.Context) {
 		Path: path,
 	}
 
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -63,7 +67,7 @@ func (f FileController) GetFileContent(c *gin.Context) {
 		Path: path,
 	}
 
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -87,7 +91,7 @@ func (f FileController) RenameFile(c *gin.Context) {
 		Filename: body.Filename,
 	}
 
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -110,7 +114,7 @@ func (f FileController) DeleteFile(c *gin.Context) {
 		Path: body.Path,
 	}
 
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -134,7 +138,7 @@ func (f FileController) UpdateFileContent(c *gin.Context) {
 		FileContent: body.Content,
 	}
 
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -181,7 +185,7 @@ func (f FileController) UploadFile(c *gin.Context) {
 	}
 
 	//发送命令，让客户端来上传文件
-	_, err = service.GetChannelService().SendCommand(uint(id), enum.MessageTypeDownload, request.DownloadRequest{Filename: localFilename, Path: path + "/" + file.Filename})
+	_, err = f.gateway.SendCommand(uint(id), enum.MessageTypeDownload, request.DownloadRequest{Filename: localFilename, Path: path + "/" + file.Filename})
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -204,7 +208,7 @@ func (f FileController) NewDir(c *gin.Context) {
 		Path: body.Path,
 	}
 
-	result, err := service.GetChannelService().SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
