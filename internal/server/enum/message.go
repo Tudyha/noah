@@ -13,16 +13,3 @@ const (
 	MessageTypeProcess
 	MessageTypeChannel
 )
-
-func GetAllMessageType() []MessageType {
-	return []MessageType{
-		MessageTypeCommand,
-		MessageTypePty,
-		MessageTypeDownload,
-		MessageTypeUpdate,
-		MessageTypeExit,
-		MessageTypeFileExplorer,
-		MessageTypeProcess,
-		MessageTypeChannel,
-	}
-}

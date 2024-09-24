@@ -10,6 +10,7 @@ import (
 	"noah/internal/server/utils"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type Gateway struct {
@@ -185,9 +186,18 @@ func (g Gateway) clientWebsocketRead(clientId uint) {
 	}
 }
 
-func (g Gateway) ClientWebsocketRead(messageId string) (request.Message, error) {
+func (g Gateway) ClientWebsocketRead(messageId string, timeout int64) (request.Message, error) {
 	if _, ok := g.messageMq[messageId]; ok {
-		return <-g.messageMq[messageId], nil
+		if timeout > 0 {
+			select {
+			case res := <-g.messageMq[messageId]:
+				return res, nil
+			case <-time.After(time.Second * time.Duration(timeout)):
+				return request.Message{}, errors.New("timeout")
+			}
+		} else {
+			return <-g.messageMq[messageId], nil
+		}
 	}
 	return request.Message{}, errors.New("message not found")
 }
@@ -207,7 +217,7 @@ func (g Gateway) SendCommand(clientId uint, messageType enum.MessageType, data a
 	}
 
 	// 获取命令执行结果
-	result, err := g.ClientWebsocketRead(msgId)
+	result, err := g.ClientWebsocketRead(msgId, 5)
 	defer g.CloseMessageMq(msgId)
 	if err != nil {
 		return "", err

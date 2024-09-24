@@ -287,7 +287,7 @@ func (conn *Conn) write(c Service) {
 	}()
 
 	for {
-		message, err := c.gateway.ClientWebsocketRead(conn.connId)
+		message, err := c.gateway.ClientWebsocketRead(conn.connId, 0)
 		if err != nil {
 			return
 		}
