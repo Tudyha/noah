@@ -90,12 +90,15 @@ func (g Gateway) removeClientWebsocketConnection(clientID uint) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	if conn, found := g.clients[clientID]; !found {
-	} else {
+	if conn, found := g.clients[clientID]; found {
 		err := conn.Close()
 		if err != nil {
 		}
 		delete(g.clients, clientID)
+	}
+
+	if _, found := g.messageSubscribers[clientID]; found {
+		delete(g.messageSubscribers, clientID)
 	}
 
 	return nil
