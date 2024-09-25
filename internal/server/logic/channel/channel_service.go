@@ -249,8 +249,6 @@ func (c Service) listen(channelId uint) error {
 // read 从连接中读取数据，并转发给客户端
 func (conn *Conn) read(c Service) {
 	defer func() {
-		c.gateway.CloseMessageMq(conn.connId)
-
 		err := c.closeChannelConn(conn.connId)
 		if err != nil {
 			log.Error("closeChannelConn error", map[string]interface{}{"error": err})
@@ -278,7 +276,7 @@ func (conn *Conn) read(c Service) {
 // write 从客户端读取数据，并转发给连接
 func (conn *Conn) write(c Service) {
 	defer func() {
-		c.gateway.CloseMessageMq(conn.connId)
+		c.gateway.UnSubscribeMessage(conn.clientId, conn.connId)
 
 		err := c.closeChannelConn(conn.connId)
 		if err != nil {
@@ -286,14 +284,15 @@ func (conn *Conn) write(c Service) {
 		}
 	}()
 
-	for {
-		message, err := c.gateway.ClientWebsocketRead(conn.connId, 0)
-		if err != nil {
-			return
-		}
+	ch := make(chan request.Message, 32)
 
+	c.gateway.SubscribeMessage(conn.clientId, conn.connId, func(message request.Message) {
+		ch <- message
+	})
+
+	for message := range ch {
 		var channelRequest request.ChannelRequest
-		err = json.Unmarshal(message.Data, &channelRequest)
+		err := json.Unmarshal(message.Data, &channelRequest)
 		if err != nil {
 			continue
 		}
@@ -310,7 +309,8 @@ func (conn *Conn) write(c Service) {
 
 		if err := conn.conn.WriteMessage(channelRequest.ChannelData); err != nil {
 			log.Error("Error writing to TCP:"+err.Error(), nil)
-			return
+			break
 		}
 	}
+	close(ch)
 }

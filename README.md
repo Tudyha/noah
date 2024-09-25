@@ -31,3 +31,6 @@ docker run -d -p 80:9527 -e ADMIN_PASSWORD=123456 --name noah registry.cn-guangz
 3. 文件管理用户字段只有gid、uid，没有名称，需要修改
 4. 文件管理图片、json等文件预览优化
 
+## 截图
+![](https://github.com/Tudyha/noah/blob/main/doc/client-list.png?raw=true)
+![](https://github.com/Tudyha/noah/blob/main/doc/console.jpeg?raw=true)

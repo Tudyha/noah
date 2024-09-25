@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
@@ -14,25 +15,30 @@ import (
 )
 
 type Gateway struct {
-	mu        *sync.Mutex
-	clients   map[uint]*websocket.Conn //客户端命令执行websocket
-	messageMq map[string]chan request.Message
-	messageId uint64 //消息id
+	mu                 *sync.Mutex
+	clients            map[uint]*websocket.Conn //客户端命令执行websocket
+	messageId          uint64                   //消息id
+	messageSubscribers map[uint][]messageSubscriber
+}
+
+type messageSubscriber struct {
+	messageId string
+	f         func(message request.Message)
 }
 
 func NewGateway() *Gateway {
 	g := &Gateway{
-		mu:        &sync.Mutex{},
-		clients:   make(map[uint]*websocket.Conn),
-		messageMq: make(map[string]chan request.Message),
-		messageId: 0,
+		mu:                 &sync.Mutex{},
+		clients:            make(map[uint]*websocket.Conn),
+		messageId:          0,
+		messageSubscribers: make(map[uint][]messageSubscriber),
 	}
 
 	//go func() {
 	//	for {
 	//		log.Info("gateway health check", map[string]interface{}{
-	//			"clients":   g.clients,
-	//			"messageMq": g.messageMq,
+	//			"clients":            g.clients,
+	//			"messageSubscribers": g.messageSubscribers[1],
 	//		})
 	//
 	//		time.Sleep(time.Second * 10)
@@ -52,6 +58,7 @@ func (g Gateway) NewClientWebsocketConn(clientId uint, connection *websocket.Con
 
 	// 更新或添加新连接
 	g.clients[clientId] = connection
+	g.messageSubscribers[clientId] = make([]messageSubscriber, 0)
 
 	// 启动一个goroutine用于读取客户端的websocket消息
 	go g.clientWebsocketRead(clientId)
@@ -115,7 +122,8 @@ func (g Gateway) ClientWebsocketWrite(clientId uint, messageId string, messageTy
 	}
 
 	if messageId == "" {
-		messageId = strconv.FormatUint(g.messageId+1, 10)
+		g.messageId++
+		messageId = strconv.FormatUint(g.messageId, 10)
 	}
 
 	req := request.Message{
@@ -141,10 +149,6 @@ func (g Gateway) ClientWebsocketWrite(clientId uint, messageId string, messageTy
 			return "", err
 		}
 		return "", err
-	}
-
-	if _, ok := g.messageMq[messageId]; !ok {
-		g.messageMq[messageId] = make(chan request.Message, 32)
 	}
 
 	return messageId, nil
@@ -179,33 +183,25 @@ func (g Gateway) clientWebsocketRead(clientId uint) {
 			continue
 		}
 
-		//fixme 消息转发
-		if _, ok := g.messageMq[message.MessageId]; ok {
-			g.messageMq[message.MessageId] <- message
+		for _, subscriber := range g.messageSubscribers[clientId] {
+			subscriber.f(message)
 		}
 	}
 }
 
-func (g Gateway) ClientWebsocketRead(messageId string, timeout int64) (request.Message, error) {
-	if _, ok := g.messageMq[messageId]; ok {
-		if timeout > 0 {
-			select {
-			case res := <-g.messageMq[messageId]:
-				return res, nil
-			case <-time.After(time.Second * time.Duration(timeout)):
-				return request.Message{}, errors.New("timeout")
-			}
-		} else {
-			return <-g.messageMq[messageId], nil
-		}
-	}
-	return request.Message{}, errors.New("message not found")
+func (g Gateway) SubscribeMessage(clientId uint, messageId string, f func(message request.Message)) {
+	g.messageSubscribers[clientId] = append(g.messageSubscribers[clientId], messageSubscriber{
+		messageId: messageId,
+		f:         f,
+	})
 }
 
-func (g Gateway) CloseMessageMq(messageId string) {
-	if _, ok := g.messageMq[messageId]; ok {
-		close(g.messageMq[messageId])
-		delete(g.messageMq, messageId)
+func (g Gateway) UnSubscribeMessage(clientId uint, messageId string) {
+	for i, subscriber := range g.messageSubscribers[clientId] {
+		if subscriber.messageId == messageId {
+			g.messageSubscribers[clientId] = append(g.messageSubscribers[clientId][:i], g.messageSubscribers[clientId][i+1:]...)
+			break
+		}
 	}
 }
 
@@ -216,11 +212,31 @@ func (g Gateway) SendCommand(clientId uint, messageType enum.MessageType, data a
 		return "", err
 	}
 
-	// 获取命令执行结果
-	result, err := g.ClientWebsocketRead(msgId, 5)
-	defer g.CloseMessageMq(msgId)
-	if err != nil {
-		return "", err
+	// 创建一个带超时的 context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var result request.Message
+	done := make(chan struct{})
+
+	// 使用 context 来控制订阅消息的 goroutine 的生命周期
+	go func() {
+		g.SubscribeMessage(clientId, msgId, func(message request.Message) {
+			result = message
+			close(done)
+		})
+		defer g.UnSubscribeMessage(clientId, msgId)
+
+		select {
+		case <-ctx.Done():
+		}
+	}()
+
+	select {
+	case <-done:
+
+	case <-ctx.Done():
+		return "", errors.New("timeout")
 	}
 
 	if result.Error != "" {

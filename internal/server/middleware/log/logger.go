@@ -45,7 +45,7 @@ func Logger(logger *logrus.Logger) gin.HandlerFunc {
 
 		// 计算请求耗时
 		latency := time.Since(start)
-		clientIP := c.Request.Header.Get("X-Real-IP")
+		clientIP := c.RemoteIP()
 		method := c.Request.Method
 		statusCode := c.Writer.Status()
 		//header := c.Request.Header

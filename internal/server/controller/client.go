@@ -45,7 +45,7 @@ func (c ClientController) CreateClient(ctx *gin.Context) {
 	var client dao.Client
 	copier.Copy(&client, body)
 
-	client.RemoteIp = ctx.Request.Header.Get("X-Real-IP")
+	client.RemoteIp = ctx.RemoteIP()
 	client.OsType = enum.DetectOS(body.OSName)
 	client.LocalIp = body.IPAddress
 
@@ -89,7 +89,7 @@ func (c ClientController) GetClient(ctx *gin.Context) {
 func (c ClientController) DeleteClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端退出
-	c.gateway.SendCommand(uint(id), enum.MessageTypeExit, nil)
+	go c.gateway.SendCommand(uint(id), enum.MessageTypeExit, nil)
 
 	//删除客户端
 	err := service.GetClientService().Delete(uint(id))
@@ -200,11 +200,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 	}
 
 	//发送命令让客户端升级
-	_, err = c.gateway.SendCommand(uint(id), enum.MessageTypeUpdate, filename)
-	if err != nil {
-		Fail(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
+	go c.gateway.SendCommand(uint(id), enum.MessageTypeUpdate, filename)
 	Success(ctx, "success")
 }
 
