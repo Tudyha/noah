@@ -209,10 +209,13 @@ func (g Gateway) UnSubscribeMessage(clientId uint, messageId string) {
 }
 
 // SendCommand 执行命令
-func (g Gateway) SendCommand(clientId uint, messageType enum.MessageType, data any) (string, error) {
+func (g Gateway) SendCommand(clientId uint, messageType enum.MessageType, data any, needResult bool) (string, error) {
 	msgId, err := g.ClientWebsocketWrite(clientId, "", messageType, data)
 	if err != nil {
 		return "", err
+	}
+	if !needResult {
+		return "", nil
 	}
 
 	// 创建一个带超时的 context

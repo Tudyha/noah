@@ -89,7 +89,7 @@ func (c ClientController) GetClient(ctx *gin.Context) {
 func (c ClientController) DeleteClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端退出
-	go c.gateway.SendCommand(uint(id), enum.MessageTypeExit, nil)
+	c.gateway.SendCommand(uint(id), enum.MessageTypeExit, nil, false)
 
 	//删除客户端
 	err := service.GetClientService().Delete(uint(id))
@@ -134,7 +134,7 @@ func (c ClientController) SendCommandHandler(ctx *gin.Context) {
 		Command: form.Command,
 	}
 
-	res, err := c.gateway.SendCommand(id, enum.MessageTypeCommand, command)
+	res, err := c.gateway.SendCommand(id, enum.MessageTypeCommand, command, true)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -200,7 +200,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 	}
 
 	//发送命令让客户端升级
-	go c.gateway.SendCommand(uint(id), enum.MessageTypeUpdate, filename)
+	c.gateway.SendCommand(uint(id), enum.MessageTypeUpdate, filename, false)
 	Success(ctx, "success")
 }
 
@@ -230,12 +230,11 @@ func (c ClientController) GetClientInfo(ctx *gin.Context) {
 
 func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	//发送命令让客户端升级
 	result, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
 		SystemInfoType: "process",
 		Action:         "list",
 		Params:         "",
-	})
+	}, true)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -257,7 +256,7 @@ func (c ClientController) KillClientProcess(ctx *gin.Context) {
 		SystemInfoType: "process",
 		Action:         "kill",
 		Params:         pid,
-	})
+	}, true)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -271,7 +270,7 @@ func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 		SystemInfoType: "net",
 		Action:         "list",
 		Params:         "",
-	})
+	}, true)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -291,7 +290,7 @@ func (c ClientController) GetClientDockerContainerList(ctx *gin.Context) {
 		SystemInfoType: "docker",
 		Action:         "containerList",
 		Params:         "",
-	})
+	}, true)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return

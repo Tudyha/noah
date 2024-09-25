@@ -38,7 +38,7 @@ func (f FileController) GetFileList(c *gin.Context) {
 		Path: path,
 	}
 
-	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query, true)
 
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -67,7 +67,7 @@ func (f FileController) GetFileContent(c *gin.Context) {
 		Path: path,
 	}
 
-	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query, true)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -91,7 +91,7 @@ func (f FileController) RenameFile(c *gin.Context) {
 		Filename: body.Filename,
 	}
 
-	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query, true)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -114,7 +114,7 @@ func (f FileController) DeleteFile(c *gin.Context) {
 		Path: body.Path,
 	}
 
-	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query, true)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -138,7 +138,7 @@ func (f FileController) UpdateFileContent(c *gin.Context) {
 		FileContent: body.Content,
 	}
 
-	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query, true)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -185,7 +185,7 @@ func (f FileController) UploadFile(c *gin.Context) {
 	}
 
 	//发送命令，让客户端来上传文件
-	_, err = f.gateway.SendCommand(uint(id), enum.MessageTypeDownload, request.DownloadRequest{Filename: localFilename, Path: path + "/" + file.Filename})
+	_, err = f.gateway.SendCommand(uint(id), enum.MessageTypeDownload, request.DownloadRequest{Filename: localFilename, Path: path + "/" + file.Filename}, false)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -208,7 +208,7 @@ func (f FileController) NewDir(c *gin.Context) {
 		Path: body.Path,
 	}
 
-	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query)
+	result, err := f.gateway.SendCommand(uint(id), enum.MessageTypeFileExplorer, query, true)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
