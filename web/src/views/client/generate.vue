@@ -63,7 +63,7 @@ export default {
         port: [{ required: true, message: '必填', trigger: 'change' }],
         osType: [{ required: true, message: '必填', trigger: 'change' }]
       },
-      downloadUrl: "",
+      downloadUrl: '',
       loading: false
     }
   },

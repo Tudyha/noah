@@ -4,10 +4,6 @@ FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache build-base musl-dev gcc libc6-compat && \
     rm -rf /var/cache/apk/*
 
-# 设置环境变量
-ENV CGO_ENABLED=1
-ENV GOFLAGS="-buildmode=pie"
-
 # 设置工作目录
 WORKDIR /app
 
@@ -21,35 +17,28 @@ COPY cmd ./cmd
 COPY configs ./configs
 COPY internal ./internal
 COPY pkg ./pkg
+COPY web/dist ./web/dist
 
 # 构建应用程序
-RUN GOCC=gcc GOCXX=g++ CGO_LDFLAGS="-static" go build -tags netgo -o noah cmd/noah/main.go
+RUN CGO_ENABLED=1 go build -o noah cmd/noah/main.go
 
 FROM golang:1.22-alpine
 WORKDIR /app
 
-# 安装 Nginx
-RUN apk add --no-cache nginx && \
-    rm -rf /var/cache/apk/*
-
 # 复制 Go 应用到最终镜像
 COPY --from=builder /app /app
-
-# 缓存client 依赖
-RUN cd client && go mod download
 
 # 设置执行权限
 RUN chmod +x ./noah
 
-# 复制前端文件
-COPY web/dist /usr/share/nginx/html
-COPY deploy/nginx.conf /etc/nginx/http.d/default.conf
+# 缓存client 依赖
+RUN cd client && go mod download
 
 # 环境变量
 ENV ADMIN_PASSWORD ${ADMIN_PASSWORD}
 
 # 暴露端口
-EXPOSE 9527
+EXPOSE 8080
 
 # 运行
-CMD ["sh", "-c", "nginx -g 'daemon off;' & ./noah"]
+CMD ["sh", "-c", "./noah"]
