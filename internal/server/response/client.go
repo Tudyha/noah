@@ -39,8 +39,8 @@ type GetClientRes struct {
 	CpuCores       int32       `json:"cpuCores"`
 	CpuModelName   string      `json:"cpuModelName"`
 	CpuFamily      string      `json:"cpuFamily"`
-	MemoryTotal    float64     `json:"memoryTotal"`
-	DiskTotal      float64     `json:"diskTotal"`
+	MemoryTotal    string      `json:"memoryTotal"`
+	DiskTotal      string      `json:"diskTotal"`
 	RemoteIp       string      `json:"remoteIp"`
 	LocalIp        string      `json:"localIp"`
 	Status         int8        `json:"status" comment:"0-offline 1-online"`

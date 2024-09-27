@@ -3,30 +3,32 @@
     <el-header class="header" height="80px">
       <el-card>
         <el-row>
-              <el-col :span="8">{{ hostname }}</el-col>
-              <el-col :span="8">CPU: {{ cpuCores }}核<br />内存: {{ memoryTotal }}G</el-col>
-              <el-col :span="8">内网IP: {{ localIp }}<br />公网IP: {{ remoteIp }}</el-col>
+          <el-col :span="8">{{ hostname }}</el-col>
+          <el-col :span="8">CPU: {{ cpuCores }}核<br>内存: {{ memoryTotal }}</el-col>
+          <el-col :span="8">内网IP: {{ localIp }}<br>公网IP: {{ remoteIp }}</el-col>
         </el-row>
       </el-card>
     </el-header>
     <el-container style="padding: 20px">
       <el-aside width="200px" class="sidebar">
-<!--        <el-card>-->
-          <el-card class="menu-card">
-            <el-button v-for="(item, index) in menuItems"
-                       :key="index"
-                       :class="{ active: item.index === currentComponent }"
-                       :icon="item.icon"
-                       @click="changeContent(item.index)">
-              {{ item.label }}
-            </el-button>
-          </el-card>
-<!--        </el-card>-->
+        <!--        <el-card>-->
+        <el-card class="menu-card">
+          <el-button
+            v-for="(item, index) in menuItems"
+            :key="index"
+            :class="{ active: item.index === currentComponent }"
+            :icon="item.icon"
+            @click="changeContent(item.index)"
+          >
+            {{ item.label }}
+          </el-button>
+        </el-card>
+        <!--        </el-card>-->
       </el-aside>
       <el-main class="content">
         <el-card class="main-card">
           <keep-alive>
-            <component :is="currentComponent" :id="id"></component>
+            <component :is="currentComponent" :id="id" />
           </keep-alive>
         </el-card>
       </el-main>
@@ -69,32 +71,32 @@ export default {
         { index: 'file', label: '文件管理', icon: 'el-icon-folder-opened' },
         { index: 'channel', label: '隧道代理', icon: 'el-icon-connection' },
         { index: 'app', label: '应用管理', icon: 'el-icon-s-grid' }
-      ],
-    };
+      ]
+    }
   },
   created() {
-    this.id = +this.$route.query.id;
-    this.fetchSystemInfo();
+    this.id = +this.$route.query.id
+    this.fetchSystemInfo()
   },
   methods: {
     async fetchSystemInfo() {
       try {
-        const response = await getClient(this.id);
-        const { hostname, cpuCores, memoryTotal, localIp, remoteIp } = response.data;
-        this.hostname = hostname;
-        this.cpuCores = cpuCores;
-        this.memoryTotal = memoryTotal;
-        this.localIp = localIp;
-        this.remoteIp = remoteIp;
+        const response = await getClient(this.id)
+        const { hostname, cpuCores, memoryTotal, localIp, remoteIp } = response.data
+        this.hostname = hostname
+        this.cpuCores = cpuCores
+        this.memoryTotal = memoryTotal
+        this.localIp = localIp
+        this.remoteIp = remoteIp
       } catch (error) {
-        console.error('Error fetching system info:', error);
+        console.error('Error fetching system info:', error)
       }
     },
     changeContent(selected) {
-      this.currentComponent = selected;
-    },
-  },
-};
+      this.currentComponent = selected
+    }
+  }
+}
 </script>
 
 <style scoped>

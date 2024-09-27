@@ -27,8 +27,8 @@ type Client struct {
 	CpuCores       int32       `gorm:"comment:cpu核心数"`
 	CpuModelName   string      `gorm:"comment:cpuModelName"`
 	CpuFamily      string      `gorm:"comment:CpuFamily"`
-	MemoryTotal    float64     `gorm:"comment:内存大小"`
-	DiskTotal      float64     `gorm:"comment:磁盘大小"`
+	MemoryTotal    uint64      `gorm:"comment:内存大小"`
+	DiskTotal      uint64      `gorm:"comment:磁盘大小"`
 	RemoteIp       string      `gorm:"comment:公网ip"`
 	LocalIp        string      `gorm:"comment:内网ip"`
 	Port           string      `gorm:"comment:端口号"`

@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/user"
 	"runtime"
+	"time"
 
 	"github.com/docker/docker/client"
 	"noah/client/app/utils/network"
@@ -23,6 +24,12 @@ import (
 
 type Service struct {
 }
+
+var (
+	LastNetworkStatsTime time.Time
+	LastNetworkBytesRecv uint64
+	LastNetworkBytesSent uint64
+)
 
 func NewService() service.Information {
 	return &Service{}
@@ -56,7 +63,7 @@ func (i Service) LoadClientSpecs() (*entitie.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	diskTotal := coverToGb(usage.Total)
+	diskTotal := usage.Total
 
 	return &entitie.Client{
 		Hostname:     hostname,
@@ -70,7 +77,7 @@ func (i Service) LoadClientSpecs() (*entitie.Client, error) {
 		CpuCores:     cpu0.Cores,
 		CpuModelName: cpu0.ModelName,
 		CpuFamily:    cpu0.Family,
-		MemoryTotal:  coverToGb(memStats.Total),
+		MemoryTotal:  memStats.Total,
 		DiskTotal:    diskTotal,
 	}, nil
 }
@@ -95,47 +102,43 @@ func (i Service) GetSystemInfo() (*entitie.SystemInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	sysInfo.MemoryTotal = coverToGb(memStats.Total)
-	sysInfo.MemoryUsed = coverToGb(memStats.Used)
-	sysInfo.MemoryFree = coverToGb(memStats.Free)
-	sysInfo.MemoryAvailable = coverToGb(memStats.Available)
+	sysInfo.MemoryTotal = memStats.Total
+	sysInfo.MemoryUsed = memStats.Used
+	sysInfo.MemoryFree = memStats.Free
+	sysInfo.MemoryAvailable = memStats.Available
 	sysInfo.MemoryUsedPercent = roundToTwoDecimals(memStats.UsedPercent)
 
 	// 获取磁盘信息
-	usage, err := disk.Usage("/")
+	usage, err := disk.Usage(".")
 	if err != nil {
 		return nil, err
 	}
-	sysInfo.DiskTotal = coverToGb(usage.Total)
-	sysInfo.DiskUsed = coverToGb(usage.Used)
-	sysInfo.DiskFree = coverToGb(usage.Free)
+	sysInfo.DiskTotal = usage.Total
+	sysInfo.DiskUsed = usage.Used
+	sysInfo.DiskFree = usage.Free
 
 	// 获取带宽信息
-	bandwidth, err := net.IOCounters(true)
+	bandwidth, err := net.IOCounters(false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get network bandwidth: %w", err)
 	}
-	var totalRxBytes, totalTxBytes uint64
+	var totalBytesRecv, totalBytesSent uint64
 	for _, stats := range bandwidth {
-		totalRxBytes += stats.BytesRecv
-		totalTxBytes += stats.BytesSent
+		totalBytesRecv += stats.BytesRecv
+		totalBytesSent += stats.BytesSent
 	}
-
-	// 计算总带宽
-	rxBytesPerSec := float64(totalRxBytes) / 1024 / 1024
-	txBytesPerSec := float64(totalTxBytes) / 1024 / 1024
-
-	// 转换为Mbps
-	sysInfo.BandwidthIn = roundToTwoDecimals(rxBytesPerSec)
-	sysInfo.BandwidthOut = roundToTwoDecimals(txBytesPerSec)
+	if LastNetworkStatsTime.IsZero() {
+		sysInfo.BandwidthIn = 0
+		sysInfo.BandwidthOut = 0
+	} else {
+		sysInfo.BandwidthIn = float64(totalBytesRecv-LastNetworkBytesRecv) / time.Since(LastNetworkStatsTime).Seconds()
+		sysInfo.BandwidthOut = float64(totalBytesSent-LastNetworkBytesSent) / time.Since(LastNetworkStatsTime).Seconds()
+	}
+	LastNetworkStatsTime = time.Now()
+	LastNetworkBytesRecv = totalBytesRecv
+	LastNetworkBytesSent = totalBytesSent
 
 	return sysInfo, nil
-}
-
-// coverToGb 将字节数转换为GB, 保留两位小数
-func coverToGb(b uint64) float64 {
-	f := float64(b) / (1024 * 1024 * 1024)
-	return roundToTwoDecimals(f)
 }
 
 // roundToTwoDecimals 将浮点数保留两位小数

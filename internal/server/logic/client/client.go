@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/copier"
+	"math"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
 	"noah/internal/server/request"
@@ -176,6 +177,9 @@ func (c Service) GetClient(id uint) (response.GetClientRes, error) {
 	}
 	var res response.GetClientRes
 	copier.Copy(&res, client)
+
+	res.MemoryTotal = fmt.Sprintf("%.0f GB", coverToGb(client.MemoryTotal))
+	res.DiskTotal = fmt.Sprintf("%.0f GB", coverToGb(client.DiskTotal))
 	return res, nil
 }
 
@@ -200,9 +204,42 @@ func (c Service) GetSystemInfo(id uint, start time.Time, end time.Time) ([]respo
 	if len(clientInfoList) == 0 {
 		return make([]response.GetSystemInfoRes, 0), nil
 	}
-	var result []response.GetSystemInfoRes
-	copier.Copy(&result, clientInfoList)
+	result := make([]response.GetSystemInfoRes, 0)
+	for _, clientInfo := range clientInfoList {
+		var res response.GetSystemInfoRes
+		copier.Copy(&res, clientInfo)
+
+		res.MemoryTotal = coverToGb(clientInfo.MemoryTotal)
+		res.MemoryFree = coverToGb(clientInfo.MemoryFree)
+		res.MemoryUsed = coverToGb(clientInfo.MemoryUsed)
+		res.MemoryAvailable = coverToGb(clientInfo.MemoryAvailable)
+		res.DiskTotal = coverToGb(clientInfo.DiskTotal)
+		res.DiskFree = coverToGb(clientInfo.DiskFree)
+		res.DiskUsed = coverToGb(clientInfo.DiskUsed)
+
+		res.BandwidthIn = coverToKb(clientInfo.BandwidthIn)
+		res.BandwidthOut = coverToKb(clientInfo.BandwidthOut)
+		result = append(result, res)
+	}
+
 	return result, nil
+}
+
+// coverToGb 将字节数转换为GB, 保留两位小数
+func coverToGb(b uint64) float64 {
+	f := float64(b) / (1024 * 1024 * 1024)
+	return roundToTwoDecimals(f)
+}
+
+// coverToGb 将字节数转换为GB, 保留两位小数
+func coverToKb(b float64) float64 {
+	f := float64(b) / (1024)
+	return roundToTwoDecimals(f)
+}
+
+// roundToTwoDecimals 将浮点数保留两位小数
+func roundToTwoDecimals(f float64) float64 {
+	return math.Round(f*100) / 100
 }
 
 func (c Service) CleanSystemInfo() error {
