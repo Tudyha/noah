@@ -53,10 +53,14 @@
         <el-dialog title="新增隧道" :visible.sync="dialogVisible" width="30%">
             <el-form :model="form">
                 <el-form-item label="模式">
-                    <el-select v-model="form.channelType" placeholder="请选择">
-                        <el-option label="TCP" :value="2"></el-option>
-                        <el-option label="UDP" :value="3"></el-option>
-                    </el-select>
+                  <el-select v-model="form.channelType" placeholder="请选择">
+                    <el-option
+                      v-for="item in m.channelTypeOptions"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="+item.value"
+                    />
+                  </el-select>
                 </el-form-item>
                 <el-form-item label="端口">
                     <el-input v-model.number="form.serverPort" autocomplete="off"></el-input>

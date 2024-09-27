@@ -6,6 +6,8 @@ const (
 	UnknownChannelType ChannelType = iota
 	Pty
 	Tcp
+	Udp
+	Http
 )
 
 type ChannelStatus int8

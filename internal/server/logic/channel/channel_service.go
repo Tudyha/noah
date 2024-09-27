@@ -35,17 +35,6 @@ func NewChannelService(gateway *gateway.Gateway) *Service {
 	// 恢复channel
 	s.recoverChannel()
 
-	// health check
-	//go func() {
-	//	for {
-	//		log.Info("channel health check", map[string]interface{}{
-	//			"channelConns": s.channelConns,
-	//		})
-	//
-	//		time.Sleep(time.Second * 10)
-	//	}
-	//}()
-
 	return s
 }
 
@@ -313,4 +302,17 @@ func (conn *Conn) write(c Service) {
 		}
 	}
 	close(ch)
+}
+
+func (c Service) healthCheck() {
+	// health check
+	//go func() {
+	//	for {
+	//		log.Info("channel health check", map[string]interface{}{
+	//			"channelConns": s.channelConns,
+	//		})
+	//
+	//		time.Sleep(time.Second * 10)
+	//	}
+	//}()
 }
