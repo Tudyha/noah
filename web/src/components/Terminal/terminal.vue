@@ -1,5 +1,5 @@
 <template>
-  <div id="terminal" ref="terminal" />
+  <div :id="terminalId" ref="terminal" />
 </template>
 
 <script>
@@ -18,6 +18,10 @@ export default {
     shellType: {
       type: Number,
       default: 2
+    },
+    terminalId: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -43,14 +47,14 @@ export default {
       this.terminal = new Terminal(options)
       const fitAddon = new FitAddon()
       this.terminal.loadAddon(fitAddon)
-      this.terminal.open(document.getElementById('terminal'))
+      this.terminal.open(document.getElementById(this.terminalId))
       fitAddon.fit()
 
       if (this.shellType === 1) {
-        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/shell/ws/' + this.id + "?token=" + getToken())
+        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/shell/ws/' + this.id + '?token=' + getToken())
       }
       if (this.shellType === 2) {
-        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/pty/ws/' + this.id + "?token=" + getToken())
+        this.webSocket = new WebSocket(process.env.VUE_APP_WS_ADDR + '/pty/ws/' + this.id + '?token=' + getToken())
       }
 
       this.webSocket.onmessage = (event) => {
@@ -58,7 +62,7 @@ export default {
       }
 
       this.terminal.onData((data) => {
-        const blob = new Blob([JSON.stringify({type: 'data', data: data})], { type: 'application/json' })
+        const blob = new Blob([JSON.stringify({ type: 'data', data: data })], { type: 'application/json' })
         this.webSocket.send(blob)
       })
 

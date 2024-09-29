@@ -10,7 +10,7 @@
       <el-button plain type="text" icon="el-icon-refresh" @click="refreshData">刷新</el-button>
     </div>
     <keep-alive>
-      <component :is="currentComponent" :id="id" ref="currentComponent"></component>
+      <component :is="currentComponent" :id="id" ref="currentComponent" />
     </keep-alive>
   </div>
 </template>

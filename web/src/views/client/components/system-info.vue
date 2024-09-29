@@ -77,7 +77,7 @@ export default {
   },
   mounted() {
     this.initCharts()
-    this.fetchData()
+    // this.fetchData()
   },
   beforeDestroy() {
     if (this.cpuChart) {
@@ -95,12 +95,14 @@ export default {
   },
   methods: {
     initCharts() {
-      this.cpuChart = echarts.init(this.$refs.cpuChart)
-      this.memoryChart = echarts.init(this.$refs.memoryChart)
-      this.diskChart = echarts.init(this.$refs.diskChart)
-      this.bandwidthChart = echarts.init(this.$refs.bandwidthChart)
+      setTimeout(() => {
+        this.cpuChart = echarts.init(this.$refs.cpuChart)
+        this.memoryChart = echarts.init(this.$refs.memoryChart)
+        this.diskChart = echarts.init(this.$refs.diskChart)
+        this.bandwidthChart = echarts.init(this.$refs.bandwidthChart)
 
-      this.updateCharts()
+        this.fetchData()
+      }, 500)
     },
     fetchData() {
       this.clearData()

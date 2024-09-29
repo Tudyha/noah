@@ -73,27 +73,12 @@
               <i class="el-icon-more" />
             </el-button>
             <el-dropdown-menu slot="dropdown">
-<!--              <el-dropdown-item @click.native="handleSystemInfo(row)">-->
-<!--                <i class="el-icon-info" /> 系统信息-->
-<!--              </el-dropdown-item>-->
-<!--              <el-dropdown-item @click.native="handleFile(row)">-->
-<!--                <i class="el-icon-document" /> 文件管理-->
-<!--              </el-dropdown-item>-->
-<!--              <el-dropdown-item @click.native="handleCmd(row)">-->
-<!--                <i class="el-icon-s-promotion" /> 执行命令-->
-<!--              </el-dropdown-item>-->
-<!--              <el-dropdown-item @click.native="handlePtyShell(row)">-->
-<!--                <i class="el-icon-setting" /> Shell-->
-<!--              </el-dropdown-item>-->
               <el-dropdown-item @click.native="handleUpdateClient(row)">
                 <i class="el-icon-s-tools" /> 更新客户端
               </el-dropdown-item>
               <el-dropdown-item @click.native="handleDelete(row)">
                 <i class="el-icon-delete" /> 删除
               </el-dropdown-item>
-<!--              <el-dropdown-item @click.native="handleSshShell(row)">-->
-<!--                <i class="el-icon-edit" /> SSH Shell-->
-<!--              </el-dropdown-item>-->
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -124,7 +109,6 @@
 
 <script>
 import { fetchList, deleteClient } from '@/api/client'
-import Shell from '@/components/Shell'
 import Pagination from '@/components/Pagination'
 import CollapseFilter from '@/components/CollapseFilter/index.vue'
 import Cmd from './components/cmd.vue'
@@ -138,7 +122,7 @@ import CommonDialog from '@/components/CommonDialog/index.vue'
 export default {
   name: 'Client',
 
-  components: { CollapseFilter, Shell, Pagination, Cmd, FileManager, UpdateClient, CommonDialog },
+  components: { CollapseFilter, Pagination, Cmd, FileManager, UpdateClient, CommonDialog },
   filters: {
     statusFilter(status) {
       const statusMap = {
@@ -230,7 +214,7 @@ export default {
       this.$confirm('是否确认删除：' + row.hostname, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning',
+        type: 'warning'
       }).then(() => {
         deleteClient(row.id).then((res) => {
           if (res.code === 0) {
@@ -242,7 +226,7 @@ export default {
         })
       }).catch(() => {
 
-      });
+      })
     }
   }
 }

@@ -10,27 +10,19 @@
       </el-card>
     </el-header>
     <el-container style="padding: 20px">
-      <el-aside width="200px" class="sidebar">
-        <!--        <el-card>-->
-        <el-card class="menu-card">
-          <el-button
+      <el-main class="content">
+        <el-tabs v-model="currentComponent" tab-position="left" @tab-click="handleTagClick">
+          <el-tab-pane
             v-for="(item, index) in menuItems"
             :key="index"
-            :class="{ active: item.index === currentComponent }"
+            :label="item.label"
+            :name="item.index"
             :icon="item.icon"
-            @click="changeContent(item.index)"
-          >
-            {{ item.label }}
-          </el-button>
-        </el-card>
-        <!--        </el-card>-->
-      </el-aside>
-      <el-main class="content">
-        <el-card class="main-card">
+          />
           <keep-alive>
             <component :is="currentComponent" :id="id" />
           </keep-alive>
-        </el-card>
+        </el-tabs>
       </el-main>
     </el-container>
   </el-container>
@@ -40,7 +32,7 @@
 import Load from './components/system-info.vue'
 import Status from './components/system-status.vue'
 import { getClient } from '@/api/client'
-import Shell from '@/components/Shell'
+import Terminal from '@/components/Terminal'
 import File from '@/components/FileTree'
 import Channel from './components/chennel.vue'
 import App from './components/app.vue'
@@ -50,7 +42,7 @@ export default {
   components: {
     Load,
     Status,
-    Shell,
+    Terminal,
     File,
     Channel,
     App
@@ -67,7 +59,7 @@ export default {
       menuItems: [
         { index: 'load', label: '资源负载', icon: 'el-icon-cpu' },
         { index: 'status', label: '系统状态', icon: 'el-icon-monitor' },
-        { index: 'shell', label: '在线终端', icon: 'el-icon-s-promotion' },
+        { index: 'terminal', label: '在线终端', icon: 'el-icon-s-promotion' },
         { index: 'file', label: '文件管理', icon: 'el-icon-folder-opened' },
         { index: 'channel', label: '隧道代理', icon: 'el-icon-connection' },
         { index: 'app', label: '应用管理', icon: 'el-icon-s-grid' }
@@ -92,6 +84,9 @@ export default {
         console.error('Error fetching system info:', error)
       }
     },
+    handleTagClick(tab) {
+      this.changeContent(tab.name)
+    },
     changeContent(selected) {
       this.currentComponent = selected
     }
@@ -105,39 +100,6 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.sidebar {
-  background-color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-}
-
-.menu-card {
-  padding: 10px;
-  margin-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.menu-card .el-button {
-  width: 100%;
-  margin-bottom: 10px;
-  background-color: aliceblue;
-  color: rgba(3, 1, 1, 0.77);
-  border: none;
-  font-size: 16px;
-  font-weight: 500;
-  text-align: center;
-  margin-left: 0;
-}
-
-.menu-card .el-button.active {
-  background-color: #78c6ee;
-  color: #fff;
 }
 
 .content {
