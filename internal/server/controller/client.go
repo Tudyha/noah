@@ -303,3 +303,23 @@ func (c ClientController) GetClientDockerContainerList(ctx *gin.Context) {
 	}
 	Success(ctx, containerList)
 }
+
+// Health 心跳检测
+func (c ClientController) Health(ctx *gin.Context) {
+	id, _ := strconv.Atoi(ctx.Param("id"))
+	var systemInfo request.CreateSystemInfoReq
+	if err := ctx.ShouldBindJSON(&systemInfo); err != nil {
+		Fail(ctx, 400, "")
+		return
+	}
+	service.GetClientService().UpdateStatus(uint(id), enum.DEVICE_ONLINE)
+
+	if systemInfo.CpuUsage != 0 {
+		err := service.GetClientService().SaveSystemInfo(uint(id), systemInfo)
+		if err != nil {
+			Fail(ctx, 400, "")
+			return
+		}
+	}
+	Success(ctx, nil)
+}

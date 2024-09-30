@@ -112,3 +112,9 @@ func (d ClientDao) Delete(id uint) error {
 	d.Db.Unscoped().Delete(&Client{}, id)
 	return nil
 }
+
+func (d ClientDao) Count() (online int64, offline int64) {
+	d.Db.Where("status = ?", enum.DEVICE_ONLINE).Model(&Client{}).Count(&online)
+	d.Db.Where("status = ?", enum.DEVICE_OFFLINE).Model(&Client{}).Count(&offline)
+	return online, offline
+}

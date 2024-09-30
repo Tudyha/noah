@@ -18,4 +18,5 @@ type IClientService interface {
 	SaveSystemInfo(id uint, systemInfo request.CreateSystemInfoReq) error
 	GetSystemInfo(id uint, start time.Time, end time.Time) ([]response.GetSystemInfoRes, error)
 	CleanSystemInfo() error
+	Count() (online int64, offline int64)
 }

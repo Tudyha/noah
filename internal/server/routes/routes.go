@@ -56,6 +56,7 @@ func (r *Router) LoadRoutes() {
 	clientController := handlers.GetClientController()
 	channelController := handlers.GetChannelController()
 	fileController := handlers.GetFileController()
+	adminController := handlers.GetAdminController()
 
 	{
 		//前端静态文件
@@ -75,14 +76,14 @@ func (r *Router) LoadRoutes() {
 		api.GET("/refresh_token", authMiddleware.RefreshHandler)
 	}
 
-	authGroup := api.Group("", authMiddleware.MiddlewareFunc())
+	apiAuthGroup := api.Group("", authMiddleware.MiddlewareFunc())
 	{
-		clientGroup := authGroup.Group("client")
+		clientGroup := apiAuthGroup.Group("client")
 		clientGroup.POST("/", clientController.CreateClient)
 		clientGroup.GET("/:id", clientController.GetClient)
 		clientGroup.GET("/page", clientController.GetClientPage)
 		clientGroup.DELETE("/:id", clientController.DeleteClient)
-		clientGroup.POST("/:id/health", handlers.Health)
+		clientGroup.POST("/:id/health", clientController.Health)
 		clientGroup.POST("/cmd", clientController.SendCommandHandler)
 		clientGroup.POST("/generate", clientController.Generate)
 		clientGroup.POST("/:id/update", clientController.Update)
@@ -92,7 +93,7 @@ func (r *Router) LoadRoutes() {
 		clientGroup.GET("/:id/network", clientController.GetClientNetworkList)
 		clientGroup.GET("/:id/docker/container", clientController.GetClientDockerContainerList)
 
-		fileGroup := authGroup.Group("/client/:id/file")
+		fileGroup := apiAuthGroup.Group("/client/:id/file")
 		fileGroup.GET("", fileController.GetFileList)
 		fileGroup.GET("/content", fileController.GetFileContent)
 		fileGroup.POST("/rename", fileController.RenameFile)
@@ -101,7 +102,7 @@ func (r *Router) LoadRoutes() {
 		fileGroup.POST("", fileController.UploadFile)
 		fileGroup.POST("/dir", fileController.NewDir)
 
-		userGroup := authGroup.Group("user")
+		userGroup := apiAuthGroup.Group("user")
 		userGroup.GET("info", func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{
 				"code": 0,
@@ -114,13 +115,13 @@ func (r *Router) LoadRoutes() {
 			})
 		})
 
-		chGroup := authGroup.Group("/client/:id/channel")
+		chGroup := apiAuthGroup.Group("/client/:id/channel")
 		chGroup.POST("", channelController.NewChannel)
 		chGroup.GET("", channelController.GetChannelList)
 		chGroup.DELETE("/:channelId", channelController.DeleteChannel)
 
 		// 下载文件
-		api.GET("/file/download/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
+		apiAuthGroup.GET("/file/download/:filename", func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename
@@ -139,7 +140,7 @@ func (r *Router) LoadRoutes() {
 		})
 
 		// 删除文件
-		api.DELETE("/file/:filename", authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
+		apiAuthGroup.DELETE("/file/:filename", func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename
@@ -162,6 +163,9 @@ func (r *Router) LoadRoutes() {
 
 			c.Status(http.StatusOK)
 		})
+
+		//dashboard
+		apiAuthGroup.GET("/dashboard", adminController.Dashboard)
 	}
 
 	// websocket接口
