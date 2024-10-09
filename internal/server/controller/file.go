@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/samber/do/v2"
 	"io"
 	"net/http"
 	"noah/internal/server/enum"
@@ -19,9 +20,9 @@ type FileController struct {
 	gateway *gateway.Gateway
 }
 
-func NewFileController(gateway *gateway.Gateway) *FileController {
+func NewFileController(i do.Injector) *FileController {
 	return &FileController{
-		gateway: gateway,
+		gateway: do.MustInvoke[*gateway.Gateway](i),
 	}
 }
 

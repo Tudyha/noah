@@ -1,25 +1,25 @@
 package service
 
 import (
-	"noah/internal/server/gateway"
+	"github.com/samber/do/v2"
 	"noah/internal/server/logic/channel"
 	"noah/internal/server/logic/client"
 )
 
 var (
-	channelService        IChannelService
-	clientServiceInstance IClientService
+	injector do.Injector
 )
 
-func LoadService(gateway *gateway.Gateway) {
-	clientServiceInstance = client.NewClientService()
-	channelService = channel.NewChannelService(gateway)
+func LoadService(i do.Injector) {
+	injector = i
+	do.Provide(i, client.NewClientService)
+	do.Provide(i, channel.NewChannelService)
 }
 
 func GetChannelService() IChannelService {
-	return channelService
+	return do.MustInvoke[*channel.Service](injector)
 }
 
 func GetClientService() IClientService {
-	return clientServiceInstance
+	return do.MustInvoke[*client.Service](injector)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/jinzhu/copier"
+	"github.com/samber/do/v2"
 	"net"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
@@ -24,18 +25,18 @@ type Service struct {
 	gateway      *gateway.Gateway
 }
 
-func NewChannelService(gateway *gateway.Gateway) *Service {
+func NewChannelService(i do.Injector) (*Service, error) {
 	s := &Service{
 		mu:           &sync.Mutex{},
 		channelConns: make(map[string]*Conn),
 		channelClose: make(map[uint]chan struct{}),
-		gateway:      gateway,
+		gateway:      do.MustInvoke[*gateway.Gateway](i),
 	}
 
 	// 恢复channel
 	s.recoverChannel()
 
-	return s
+	return s, nil
 }
 
 type Conn struct {

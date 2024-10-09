@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
+	"github.com/samber/do/v2"
 	"noah/internal/server/enum"
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/request"
@@ -26,7 +27,7 @@ type messageSubscriber struct {
 	f         func(message request.Message)
 }
 
-func NewGateway() *Gateway {
+func NewGateway(i do.Injector) (*Gateway, error) {
 	g := &Gateway{
 		mu:                 &sync.Mutex{},
 		clients:            make(map[uint]*websocket.Conn),
@@ -44,7 +45,7 @@ func NewGateway() *Gateway {
 	//		time.Sleep(time.Second * 10)
 	//	}
 	//}()
-	return g
+	return g, nil
 }
 
 // NewClientWebsocketConn 新增ws连接

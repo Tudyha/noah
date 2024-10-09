@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/golang-module/carbon/v2"
 	"github.com/jinzhu/copier"
+	"github.com/samber/do/v2"
 	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/dao"
@@ -26,9 +27,9 @@ type ClientController struct {
 	gateway *gateway.Gateway
 }
 
-func NewClientController(gateway *gateway.Gateway) *ClientController {
+func NewClientController(i do.Injector) *ClientController {
 	return &ClientController{
-		gateway: gateway,
+		gateway: do.MustInvoke[*gateway.Gateway](i),
 	}
 }
 

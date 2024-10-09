@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/copier"
+	"github.com/samber/do/v2"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
 	"noah/internal/server/request"
@@ -27,8 +28,8 @@ const (
 	buildStr       = `CGO_ENABLED=0 GOOS=%s GOARCH=amd64 go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
 )
 
-func NewClientService() *Service {
-	return &Service{}
+func NewClientService(i do.Injector) (*Service, error) {
+	return &Service{}, nil
 }
 
 type ClientConfig struct {

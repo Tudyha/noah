@@ -1,10 +1,10 @@
 package routes
 
 import (
+	"github.com/samber/do/v2"
 	"log"
 	"net/http"
 	"noah/internal/server/controller"
-	"noah/internal/server/gateway"
 	"noah/internal/server/middleware"
 	"noah/internal/server/utils"
 	"os"
@@ -17,14 +17,12 @@ import (
 type Router struct {
 	Gin      *gin.Engine
 	handlers *controller.Controller
-	gateway  *gateway.Gateway
 }
 
-func NewRouter(g *gin.Engine, gate *gateway.Gateway) *Router {
+func NewRouter(g *gin.Engine, i do.Injector) *Router {
 	return &Router{
 		Gin:      g,
-		handlers: controller.NewController(gate),
-		gateway:  gate,
+		handlers: controller.NewController(i),
 	}
 }
 

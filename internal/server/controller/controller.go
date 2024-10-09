@@ -1,8 +1,6 @@
 package controller
 
-import (
-	"noah/internal/server/gateway"
-)
+import "github.com/samber/do/v2"
 
 type Controller struct {
 	ClientController  *ClientController
@@ -14,13 +12,13 @@ type Controller struct {
 	adminController   *AdminController
 }
 
-func NewController(gateway *gateway.Gateway) *Controller {
+func NewController(i do.Injector) *Controller {
 	return &Controller{
-		clientController:  NewClientController(gateway),
+		clientController:  NewClientController(i),
 		shellController:   NewShellController(),
 		channelController: NewChannelController(),
 		userController:    NewUserController(),
-		fileController:    NewFileController(gateway),
+		fileController:    NewFileController(i),
 		adminController:   NewAdminController(),
 	}
 }

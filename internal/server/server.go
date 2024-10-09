@@ -1,7 +1,9 @@
 package server
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/golang-module/carbon/v2"
+	"github.com/samber/do/v2"
 	"noah/internal/server/dao"
 	"noah/internal/server/environment"
 	"noah/internal/server/gateway"
@@ -9,8 +11,6 @@ import (
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/routes"
 	"noah/internal/server/service"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -19,7 +19,6 @@ type Server struct {
 }
 
 func NewServer() *Server {
-
 	//加载配置文件
 	env, err := environment.LoadEnvironment()
 	if err != nil {
@@ -28,18 +27,18 @@ func NewServer() *Server {
 
 	middleware.SetAdminPassword(env.Admin.Password)
 
-	logger := log.SetupLogger()
-
-	//gateway
-	gate := gateway.NewGateway()
+	// 依赖注入
+	injector := do.New()
+	Inject(injector)
 
 	gin.SetMode(gin.ReleaseMode)
 	g := gin.New()
-	//log
+	//logger
+	logger := log.SetupLogger()
 	g.Use(log.Logger(logger))
 
 	//init routes
-	r := routes.NewRouter(g, gate)
+	r := routes.NewRouter(g, injector)
 	r.LoadRoutes()
 
 	// panic recovery
@@ -50,12 +49,6 @@ func NewServer() *Server {
 	if dbError != nil {
 		panic(dbError)
 	}
-
-	//load service
-	service.LoadService(gate)
-
-	//cron
-	middleware.LoadCron()
 
 	//时间统一配置
 	carbon.SetDefault(carbon.Default{
@@ -69,6 +62,15 @@ func NewServer() *Server {
 		Gin: g,
 		Env: env,
 	}
+}
+
+func Inject(i do.Injector) {
+	//gateway
+	do.Provide(i, gateway.NewGateway)
+	//load service
+	service.LoadService(i)
+	//cron
+	middleware.LoadCron()
 }
 
 func (s *Server) Run() {
