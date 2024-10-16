@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/jinzhu/copier"
-	"github.com/samber/do/v2"
 	"net"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
@@ -16,6 +13,11 @@ import (
 	"noah/internal/server/response"
 	"noah/internal/server/utils"
 	"sync"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/jinzhu/copier"
+	"github.com/samber/do/v2"
 )
 
 type Service struct {
@@ -307,13 +309,13 @@ func (conn *Conn) write(c Service) {
 
 func (c Service) healthCheck() {
 	// health check
-	//go func() {
-	//	for {
-	//		log.Info("channel health check", map[string]interface{}{
-	//			"channelConns": s.channelConns,
-	//		})
-	//
-	//		time.Sleep(time.Second * 10)
-	//	}
-	//}()
+	go func() {
+		for {
+			log.Info("channel health check", map[string]interface{}{
+				"channelConns": c.channelConns,
+			})
+
+			time.Sleep(time.Second * 10)
+		}
+	}()
 }
