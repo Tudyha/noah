@@ -1,6 +1,11 @@
 package controller
 
-import "github.com/samber/do/v2"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/samber/do/v2"
+)
 
 type Controller struct {
 	ClientController  *ClientController
@@ -8,14 +13,12 @@ type Controller struct {
 	channelController *ChannelController
 	userController    *UserController
 	fileController    *FileController
-	shellController   *ShellController
 	adminController   *AdminController
 }
 
 func NewController(i do.Injector) *Controller {
 	return &Controller{
 		clientController:  NewClientController(i),
-		shellController:   NewShellController(),
 		channelController: NewChannelController(),
 		userController:    NewUserController(),
 		fileController:    NewFileController(i),
@@ -25,10 +28,6 @@ func NewController(i do.Injector) *Controller {
 
 func (c Controller) GetClientController() *ClientController {
 	return c.clientController
-}
-
-func (c Controller) GetShellController() *ShellController {
-	return c.shellController
 }
 
 func (c Controller) GetChannelController() *ChannelController {
@@ -45,4 +44,26 @@ func (c Controller) GetFileController() *FileController {
 
 func (c Controller) GetAdminController() *AdminController {
 	return c.adminController
+}
+
+type Response struct {
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
+}
+
+func Success(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusOK, Response{
+		Code: 0,
+		Msg:  "success",
+		Data: data,
+	})
+}
+
+func Fail(c *gin.Context, code int, msg string) {
+	c.JSON(http.StatusOK, Response{
+		Code: code,
+		Msg:  msg,
+		Data: nil,
+	})
 }

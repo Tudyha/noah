@@ -64,10 +64,10 @@
         <el-form-item label="端口">
           <el-input v-model.number="form.serverPort" autocomplete="off" />
         </el-form-item>
-        <el-form-item label="目标IP">
+        <el-form-item v-if="form.channelType === 2" label="目标IP">
           <el-input v-model="form.clientIp" autocomplete="off" />
         </el-form-item>
-        <el-form-item label="目标端口">
+        <el-form-item v-if="form.channelType === 2" label="目标端口">
           <el-input v-model.number="form.clientPort" autocomplete="off" />
         </el-form-item>
       </el-form>

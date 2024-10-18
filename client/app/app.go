@@ -49,12 +49,12 @@ func (a *App) Run() {
 	g, _ := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
-		a.Handler.KeepConnection()
+		a.Handler.Ping()
 		return nil
 	})
 
 	g.Go(func() error {
-		a.Handler.HandleCommand()
+		a.Handler.WebsocketConnection()
 		return nil
 	})
 

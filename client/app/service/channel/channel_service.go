@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
@@ -99,8 +100,9 @@ func (t *Service) NewChannel(channelId string, cType int, wsc *websocket.Conn, a
 	}
 
 	if channelType == Tcp {
-		conn, err := net.Dial("tcp", addr)
+		conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 		if err != nil {
+			fmt.Println("Error dialing TCP:", err)
 			return err
 		}
 

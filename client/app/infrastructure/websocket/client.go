@@ -8,8 +8,13 @@ import (
 	"noah/client/app/entitie"
 	"noah/client/app/environment"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
+)
+
+var (
+	mu sync.Mutex = sync.Mutex{}
 )
 
 func NewConnection(configuration *environment.Configuration, path string) (*websocket.Conn, error) {
@@ -38,6 +43,8 @@ func NewConnection(configuration *environment.Configuration, path string) (*webs
 }
 
 func WriteMessage(conn *websocket.Conn, messageId string, messageType entitie.MessageType, data any, errMsg string) (err error) {
+	mu.Lock()
+	defer mu.Unlock()
 	var d []byte
 	switch data.(type) {
 	case []byte:

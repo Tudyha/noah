@@ -1,19 +1,21 @@
 package channel
 
 import (
-	"encoding/json"
-	"errors"
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
+	"net/url"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
 	"noah/internal/server/gateway"
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/request"
 	"noah/internal/server/response"
-	"noah/internal/server/utils"
-	"sync"
-	"time"
+	"noah/pkg/conn"
+	"strings"
 
 	"github.com/gorilla/websocket"
 	"github.com/jinzhu/copier"
@@ -21,51 +23,40 @@ import (
 )
 
 type Service struct {
-	mu           *sync.Mutex
-	channelConns map[string]*Conn       // channel连接
 	channelClose map[uint]chan struct{} // channel关闭
 	gateway      *gateway.Gateway
 }
 
+// NewChannelService 初始化
 func NewChannelService(i do.Injector) (*Service, error) {
 	s := &Service{
-		mu:           &sync.Mutex{},
-		channelConns: make(map[string]*Conn),
 		channelClose: make(map[uint]chan struct{}),
 		gateway:      do.MustInvoke[*gateway.Gateway](i),
 	}
 
-	// 恢复channel
+	// 恢复channel fixme 用到service才初始化，channel恢复不及时
 	s.recoverChannel()
 
 	return s, nil
 }
 
-type Conn struct {
-	clientId uint       // 客户端id
-	connId   string     // 连接id
-	conn     Connection // 连接
-}
-
 // NewChannel 新建channel
-func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, conn *websocket.Conn) (err error) {
+func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, wsconn *websocket.Conn) (err error) {
 	channelType := channelReq.ChannelType
 	serverPort := channelReq.ServerPort
 	clientIp := channelReq.ClientIp
 	clientPort := channelReq.ClientPort
 
 	if channelType == enum.Pty {
-		channel, err := c.NewChannelConn(id, &WebSocketConnection{conn: conn}, enum.Pty, clientIp, clientPort)
+		// pty模式，web -> websocket -> server -> websocket -> client
+		clientConn, err := c.NewChannelConn(id, enum.Pty, clientIp, clientPort)
 		if err != nil {
-			log.Error("NewChannelConn error", map[string]interface{}{"clientId": id, "error": err})
 			return err
 		}
-		go channel.read(c)
-		go channel.write(c)
-		return nil
+		go copy(clientConn, &conn.WebSocketReaderWriterCloser{Conn: wsconn})
 	}
 
-	// channel配置信息写进数据库，服务重启后可以从数据恢复
+	// channel配置信息写进数据库，服务重启后可以从数据库恢复
 	channel := dao.Channel{
 		ChannelType: channelType,
 		ClientId:    id,
@@ -79,7 +70,7 @@ func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, conn *
 		return err
 	}
 
-	if channelType == enum.Tcp {
+	if channelType == enum.Tcp || channelType == enum.Http {
 		// 服务端需要监听新端口
 		go func() {
 			err := c.listen(channelId)
@@ -134,7 +125,7 @@ func (c Service) recoverChannel() {
 	}
 
 	for _, channel := range list {
-		if channel.ChannelType == enum.Tcp && channel.Status == enum.ChannelStatusConnected {
+		if (channel.ChannelType == enum.Tcp || channel.ChannelType == enum.Http) && channel.Status == enum.ChannelStatusConnected {
 			go func() {
 				err := c.listen(channel.ID)
 				if err != nil {
@@ -147,47 +138,18 @@ func (c Service) recoverChannel() {
 }
 
 // NewChannelConn 新建channel连接
-func (c Service) NewChannelConn(id uint, conn Connection, channelType enum.ChannelType, clientIp string, clientPort int) (*Conn, error) {
-	channelConn := &Conn{
-		clientId: id,
-		connId:   utils.RandString(16),
-		conn:     conn,
+func (c Service) NewChannelConn(clientId uint, channelType enum.ChannelType, clientIp string, clientPort int) (*conn.Conn, error) {
+	network := ""
+	switch channelType {
+	case enum.Pty:
+		network = "pty"
+	case enum.Tcp:
+		network = "tcp"
+	case enum.Http:
+		network = "tcp"
+
 	}
-
-	// 通知客户端打开对应通道
-	_, err := c.gateway.ClientWebsocketWrite(id, channelConn.connId, enum.MessageTypeChannel, &request.ChannelRequest{
-		Action:      "open",
-		ChannelId:   channelConn.connId,
-		ChannelType: channelType,
-		ChannelData: nil,
-		LocalIp:     clientIp,
-		LocalPort:   clientPort,
-	})
-	if err != nil {
-		log.Error("NewChannelConn open error", map[string]interface{}{"clientId": id, "error": err})
-		return nil, err
-	}
-
-	c.channelConns[channelConn.connId] = channelConn
-	return channelConn, nil
-}
-
-func (c Service) closeChannelConn(connId string) error {
-	conn, ok := c.channelConns[connId]
-	if !ok {
-		return errors.New("channel conn not found")
-	}
-
-	if conn.conn != nil {
-		err := conn.conn.Close()
-		if err != nil {
-			return err
-		}
-	}
-
-	delete(c.channelConns, conn.connId)
-
-	return nil
+	return c.gateway.NewClientConn(clientId, network, fmt.Sprintf("%s:%d", clientIp, clientPort))
 }
 
 func (c Service) listen(channelId uint) error {
@@ -226,96 +188,88 @@ func (c Service) listen(channelId uint) error {
 				continue
 			}
 
-			channelCoon, err := c.NewChannelConn(channel.ClientId, &TCPConnection{conn: conn}, enum.Tcp, channel.ClientIp, channel.ClientPort)
+			// _, addr, rb, err, r := GetHost(conn)
+			// if err != nil {
+			// 	return err
+			// }
+			// if r.Method == "CONNECT" {
+			// 	conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
+			// 	rb = nil
+			// }
+			// if channel.ChannelType == enum.Http {
+			// 	channel.ClientIp = strings.Split(addr, ":")[0]
+			// 	channel.ClientPort, _ = strconv.Atoi(strings.Split(addr, ":")[1])
+			// }
+
+			clientConn, err := c.NewChannelConn(channel.ClientId, enum.Tcp, channel.ClientIp, channel.ClientPort)
 			if err != nil {
-				log.Error("NewChannelConn error", map[string]interface{}{"error": err})
-				continue
+				return err
 			}
-
-			go channelCoon.read(c)
-			go channelCoon.write(c)
+			go copy(clientConn, conn)
 		}
 	}
 }
 
-// read 从连接中读取数据，并转发给客户端
-func (conn *Conn) read(c Service) {
+func copy(conn1, conn2 io.ReadWriteCloser) {
 	defer func() {
-		err := c.closeChannelConn(conn.connId)
-		if err != nil {
-			log.Error("closeChannelConn error", map[string]interface{}{"error": err})
-			return
-		}
+		conn1.Close()
+		conn2.Close()
 	}()
+	go io.Copy(conn1, conn2)
+	io.Copy(conn2, conn1)
+}
+
+func GetHost(conn net.Conn) (method, address string, rb []byte, err error, r *http.Request) {
+	var b [32 * 1024]byte
+	var n int
+	if n, err = readRequest(conn, b[:]); err != nil {
+		return
+	}
+	rb = b[:n]
+	r, err = http.ReadRequest(bufio.NewReader(bytes.NewReader(rb)))
+	if err != nil {
+		return
+	}
+	hostPortURL, err := url.Parse(r.Host)
+	if err != nil {
+		address = r.Host
+		err = nil
+		return
+	}
+	if hostPortURL.Opaque == "443" {
+		if strings.Index(r.Host, ":") == -1 {
+			address = r.Host + ":443"
+		} else {
+			address = r.Host
+		}
+	} else {
+		if strings.Index(r.Host, ":") == -1 {
+			address = r.Host + ":80"
+		} else {
+			address = r.Host
+		}
+	}
+	return
+}
+
+func readRequest(conn net.Conn, buf []byte) (n int, err error) {
+	var rd int
 	for {
-		buffer, err := conn.conn.ReadMessage()
+		rd, err = conn.Read(buf[n:])
 		if err != nil {
 			return
 		}
-
-		wsData := request.ChannelRequest{
-			Action:      "write",
-			ChannelId:   conn.connId,
-			ChannelData: buffer,
+		n += rd
+		if n < 4 {
+			continue
 		}
-		_, err = c.gateway.ClientWebsocketWrite(conn.clientId, conn.connId, enum.MessageTypeChannel, wsData)
-		if err != nil {
+		if string(buf[n-4:n]) == "\r\n\r\n" {
+			return
+		}
+		// buf is full, can't contain the request
+		if n == cap(buf) {
+			err = io.ErrUnexpectedEOF
 			return
 		}
 	}
-}
-
-// write 从客户端读取数据，并转发给连接
-func (conn *Conn) write(c Service) {
-	defer func() {
-		c.gateway.UnSubscribeMessage(conn.clientId, conn.connId)
-
-		err := c.closeChannelConn(conn.connId)
-		if err != nil {
-			return
-		}
-	}()
-
-	ch := make(chan request.Message, 32)
-
-	c.gateway.SubscribeMessage(conn.clientId, conn.connId, func(message request.Message) {
-		ch <- message
-	})
-
-	for message := range ch {
-		var channelRequest request.ChannelRequest
-		err := json.Unmarshal(message.Data, &channelRequest)
-		if err != nil {
-			continue
-		}
-
-		if channelRequest.ChannelId != conn.connId {
-			log.Warn("channelId not match", nil)
-			continue
-		}
-
-		if channelRequest.Action != "write" {
-			log.Warn("action not match", nil)
-			continue
-		}
-
-		if err := conn.conn.WriteMessage(channelRequest.ChannelData); err != nil {
-			log.Error("Error writing to TCP:"+err.Error(), nil)
-			break
-		}
-	}
-	close(ch)
-}
-
-func (c Service) healthCheck() {
-	// health check
-	go func() {
-		for {
-			log.Info("channel health check", map[string]interface{}{
-				"channelConns": c.channelConns,
-			})
-
-			time.Sleep(time.Second * 10)
-		}
-	}()
 }

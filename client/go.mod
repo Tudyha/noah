@@ -1,13 +1,16 @@
 module noah/client
 
-go 1.22.0
+go 1.22.3
+
+replace noah/pkg => ../pkg
 
 require (
-	github.com/creack/pty v1.1.21
+	github.com/creack/pty v1.1.23
 	github.com/docker/docker v27.2.1+incompatible
 	github.com/gorilla/websocket v1.5.3
 	github.com/jinzhu/copier v0.4.0
 	golang.org/x/sync v0.7.0
+	noah/pkg v0.0.0-00010101000000-000000000000
 )
 
 require (

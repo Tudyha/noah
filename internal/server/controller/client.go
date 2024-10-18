@@ -3,9 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"github.com/golang-module/carbon/v2"
-	"github.com/jinzhu/copier"
-	"github.com/samber/do/v2"
 	"net/http"
 	"noah/internal/server/config"
 	"noah/internal/server/dao"
@@ -19,6 +16,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/golang-module/carbon/v2"
+	"github.com/jinzhu/copier"
+	"github.com/samber/do/v2"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,6 +75,7 @@ func (c ClientController) GetClientPage(ctx *gin.Context) {
 	})
 }
 
+// GetClient 获取客户端信息
 func (c ClientController) GetClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
