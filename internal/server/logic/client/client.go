@@ -25,6 +25,7 @@ const (
 	clientBaseDir  = "client/"
 	buildBaseDir   = "build/"
 	configFileName = "config.json"
+	pkgDir         = "pkg/"
 	buildStr       = `CGO_ENABLED=0 GOOS=%s GOARCH=amd64 go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
 )
 
@@ -43,7 +44,7 @@ func (c Service) Generate(serverAddr string, port string, osType int8, token str
 	if err != nil {
 		return "", err
 	}
-	defer utils.RemoveDir(buildPath)
+	//defer utils.RemoveDir(buildPath)
 	filename = buildFilename(enum.OSType(osType), filename)
 	buildCmd := fmt.Sprintf(buildStr, getOSBuildParam(enum.OSType(osType)), getRunHiddenBuildParam(false), "dev", filename)
 
@@ -79,6 +80,11 @@ func (c Service) PrepareBuildSession(serverAddr string, port string, token strin
 	buildPath := fmt.Sprint(buildBaseDir, sessionID, "/")
 
 	err := utils.CopyDir(clientBaseDir, buildPath, configFileName)
+	if err != nil {
+		return "", err
+	}
+
+	err = utils.CopyDir(pkgDir, buildBaseDir+"pkg/", configFileName)
 	if err != nil {
 		return "", err
 	}
