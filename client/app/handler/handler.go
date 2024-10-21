@@ -11,6 +11,7 @@ import (
 	"noah/client/app/environment"
 	"noah/client/app/service"
 	"noah/pkg/conn"
+	"noah/pkg/utils"
 	"os"
 	"os/exec"
 	"runtime"
@@ -111,7 +112,7 @@ func (h *Handler) ServerIsAvailable() error {
 
 func (h *Handler) WebsocketConnection() {
 retry:
-	time.Sleep(time.Second * 30)
+	time.Sleep(time.Second * 3)
 	wsconn, err := ws.NewConnection(h.Configuration, fmt.Sprintf("/client/%d/ws", h.ClientID))
 	if err != nil {
 		h.Log("[!] Error connecting to server: ", err.Error())
@@ -131,13 +132,12 @@ retry:
 }
 
 func (h *Handler) handleConn(srcConn *conn.Conn) {
-	defer func() {
-		srcConn.Close()
-	}()
+	defer srcConn.Close()
 	lk := srcConn.GetLk()
 	if lk.Network == "" {
 		return
 	}
+	var target io.ReadWriteCloser
 	switch lk.Network {
 	case "pty":
 		var cmd *exec.Cmd
@@ -156,56 +156,50 @@ func (h *Handler) handleConn(srcConn *conn.Conn) {
 			h.Log("Error starting PTY:", err)
 			return
 		}
-		defer ptmx.Close()
 
-		rwo := &conn.PtyReaderWriterCloser{IO: ptmx}
-
-		go io.Copy(srcConn, rwo)
-		io.Copy(rwo, srcConn)
+		target = &conn.PtyReaderWriterCloser{IO: ptmx}
 	case "tcp":
-		targetConn, err := net.DialTimeout(lk.Network, lk.Addr, time.Second*5)
+		t, err := net.DialTimeout(lk.Network, lk.Addr, time.Second*5)
 		if err != nil {
 			return
 		}
-		defer targetConn.Close()
-		go io.Copy(srcConn, targetConn)
-		io.Copy(targetConn, srcConn)
+		target = t
+	case "cmd":
+		var cmd entitie.MessageType
+		// 字符串转MessageType
+		cmd = entitie.MessageTypeFromString(lk.Addr)
+		data := make([]byte, 1024)
+		n, err := srcConn.Read(data)
+		if err != nil {
+			return
+		}
+		res, err := h.handleMessage(cmd, data[:n])
+		if err != nil {
+			res = err.Error()
+		}
+		b, err := utils.AnyToBytes(res)
+		if err != nil {
+			b = []byte(err.Error())
+		}
+		srcConn.Write(b)
 	}
-
+	if target != nil {
+		defer target.Close()
+		srcConn.Copy(target)
+	}
 }
 
-func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (response any, err error) {
-	switch message.MessageType {
+func (h *Handler) handleMessage(messageType entitie.MessageType, data []byte) (response any, err error) {
+	switch messageType {
 	case entitie.MessageTypeCommand:
 		var commandRequest entitie.CommandReq
-		if err := json.Unmarshal(message.Data, &commandRequest); err != nil {
+		if err := json.Unmarshal(data, &commandRequest); err != nil {
 			return nil, err
 		}
 		return h.Services.Command.Run(commandRequest.Command)
-	case entitie.MessageTypeChannel:
-		var channelRequest entitie.ChannelReq
-		if err := json.Unmarshal(message.Data, &channelRequest); err != nil {
-			fmt.Println("Error unmarshalling channel request:", err.Error())
-			return nil, err
-		}
-		switch channelRequest.Action {
-		case "open":
-			addr := fmt.Sprintf("%s:%d", channelRequest.LocalIp, channelRequest.LocalPort)
-			err := h.Services.Channel.NewChannel(channelRequest.ChannelId, channelRequest.ChannelType, h.Connection, addr)
-			if err != nil {
-				fmt.Println("Error opening channel:", err.Error())
-				return nil, err
-			}
-		case "write":
-			err := h.Services.Channel.Write(wsMessageType, channelRequest.ChannelId, channelRequest.ChannelData)
-			if err != nil {
-				fmt.Println("Error writing to channel:", err)
-				return nil, err
-			}
-		}
 	case entitie.MessageTypeDownload:
 		var downloadParams entitie.DownloadReq
-		err := json.Unmarshal(message.Data, &downloadParams)
+		err := json.Unmarshal(data, &downloadParams)
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +210,7 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 			return nil, err
 		}
 	case entitie.MessageTypeUpdate:
-		filename := string(message.Data)
+		filename := string(data)
 
 		// 下载文件
 		filepath := "/tmp/" + filename
@@ -250,7 +244,7 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 		os.Exit(0)
 	case entitie.MessageTypeFileExplorer:
 		var fileExplorerQuery entitie.FileExplorerQuery
-		err := json.Unmarshal(message.Data, &fileExplorerQuery)
+		err := json.Unmarshal(data, &fileExplorerQuery)
 		if err != nil {
 			return nil, err
 		}
@@ -294,7 +288,7 @@ func (h *Handler) handleMessage(wsMessageType int, message entitie.Message) (res
 		}
 	case entitie.MessageTypeSystemInfo:
 		var systemInfoReq entitie.SystemInfoReq
-		err := json.Unmarshal(message.Data, &systemInfoReq)
+		err := json.Unmarshal(data, &systemInfoReq)
 		if err != nil {
 			return nil, err
 		}

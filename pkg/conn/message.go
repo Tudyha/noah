@@ -13,9 +13,17 @@ const (
 	newConn flag = iota
 	newConnOk
 	data
+	connClose
 )
 
 type LinkInfo struct {
 	Network string `json:"network"`
 	Addr    string `json:"addr"`
+}
+
+type ptyData struct {
+	Type  string `json:"type"`
+	Data  any    `json:"data"`
+	High  int    `json:"high"`
+	Width int    `json:"width"`
 }

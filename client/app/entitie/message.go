@@ -14,6 +14,24 @@ const (
 	MessageTypeChannel
 )
 
+func MessageTypeFromString(s string) MessageType {
+	switch s {
+	case "1":
+		return MessageTypeCommand
+	case "3":
+		return MessageTypeDownload
+	case "4":
+		return MessageTypeUpdate
+	case "5":
+		return MessageTypeExit
+	case "6":
+		return MessageTypeFileExplorer
+	case "7":
+		return MessageTypeSystemInfo
+	}
+	return MessageTypeUnknown
+}
+
 type Message struct {
 	MessageId   string      `json:"messageId"`
 	MessageType MessageType `json:"messageType,omitempty"`

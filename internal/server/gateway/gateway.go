@@ -2,8 +2,10 @@ package gateway
 
 import (
 	"errors"
+	"fmt"
 	"noah/internal/server/enum"
 	"noah/pkg/conn"
+	"noah/pkg/utils"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -53,5 +55,27 @@ func (g Gateway) NewClientConn(clientId uint, network string, addr string) (*con
 
 // SendCommand 执行命令
 func (g Gateway) SendCommand(clientId uint, messageType enum.MessageType, data any, needResult bool) (string, error) {
-	return "", nil
+	addr := rune(messageType)
+	srcConn, err := g.NewClientConn(clientId, "cmd", fmt.Sprintf("%d", addr))
+	if err != nil {
+		return "", err
+	}
+	defer srcConn.Close()
+
+	b, err := utils.AnyToBytes(data)
+	if err != nil {
+		return "", err
+	}
+	_, err = srcConn.Write(b)
+	if err != nil {
+		return "", err
+	}
+	if !needResult {
+		return "", nil
+	}
+	res, err := srcConn.ReadFull()
+	if err != nil {
+		return "", err
+	}
+	return string(res), err
 }

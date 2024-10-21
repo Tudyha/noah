@@ -20,11 +20,7 @@ func (w *WebSocketReaderWriterCloser) Read(p []byte) (n int, err error) {
 }
 
 func (w *WebSocketReaderWriterCloser) Write(p []byte) (n int, err error) {
-	writer, err := w.Conn.NextWriter(websocket.BinaryMessage)
-	if err != nil {
-		return
-	}
-	return writer.Write(p)
+	return len(p), w.Conn.WriteMessage(websocket.TextMessage, p)
 }
 
 func (w *WebSocketReaderWriterCloser) Close() error {
@@ -39,14 +35,8 @@ func (w *PtyReaderWriterCloser) Read(p []byte) (n int, err error) {
 	return w.IO.Read(p)
 }
 
-type ptyData struct {
-	Type  string `json:"type"`
-	Data  any    `json:"data"`
-	High  int    `json:"high"`
-	Width int    `json:"width"`
-}
-
 func (w *PtyReaderWriterCloser) Write(p []byte) (n int, err error) {
+	n = len(p)
 	var ptyData ptyData
 	err = json.Unmarshal(p, &ptyData)
 	if err != nil {
@@ -61,7 +51,7 @@ func (w *PtyReaderWriterCloser) Write(p []byte) (n int, err error) {
 			return
 		}
 	case "data":
-		return w.IO.Write([]byte(ptyData.Data.(string)))
+		_, err = w.IO.Write([]byte(ptyData.Data.(string)))
 	}
 	return
 }

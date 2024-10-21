@@ -15,6 +15,7 @@ import (
 	"noah/internal/server/request"
 	"noah/internal/server/response"
 	"noah/pkg/conn"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -53,7 +54,9 @@ func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, wsconn
 		if err != nil {
 			return err
 		}
-		go copy(clientConn, &conn.WebSocketReaderWriterCloser{Conn: wsconn})
+		target := &conn.WebSocketReaderWriterCloser{Conn: wsconn}
+		go copy(clientConn, target)
+		return nil
 	}
 
 	// channel配置信息写进数据库，服务重启后可以从数据库恢复
@@ -82,6 +85,12 @@ func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, wsconn
 	}
 
 	return nil
+}
+
+func copy(src *conn.Conn, target io.ReadWriteCloser) {
+	defer src.Close()
+	defer target.Close()
+	src.Copy(target)
 }
 
 // GetChannelList 获取channel列表
@@ -188,35 +197,37 @@ func (c Service) listen(channelId uint) error {
 				continue
 			}
 
-			// _, addr, rb, err, r := GetHost(conn)
-			// if err != nil {
-			// 	return err
-			// }
-			// if r.Method == "CONNECT" {
-			// 	conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
-			// 	rb = nil
-			// }
-			// if channel.ChannelType == enum.Http {
-			// 	channel.ClientIp = strings.Split(addr, ":")[0]
-			// 	channel.ClientPort, _ = strconv.Atoi(strings.Split(addr, ":")[1])
-			// }
+			var rb []byte
+			rb = nil
+			if channel.ChannelType == enum.Http {
+				_, addr, b, err, r := GetHost(conn)
+				if err != nil {
+					continue
+				}
+				if r.Method == "CONNECT" {
+					conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
+					b = nil
+				}
+				if channel.ChannelType == enum.Http {
+					channel.ClientIp = strings.Split(addr, ":")[0]
+					channel.ClientPort, _ = strconv.Atoi(strings.Split(addr, ":")[1])
+				}
+				rb = b
+			}
 
 			clientConn, err := c.NewChannelConn(channel.ClientId, enum.Tcp, channel.ClientIp, channel.ClientPort)
 			if err != nil {
-				return err
+				continue
+			}
+			if rb != nil {
+				_, err = clientConn.Write(rb)
+				if err != nil {
+					continue
+				}
 			}
 			go copy(clientConn, conn)
 		}
 	}
-}
-
-func copy(conn1, conn2 io.ReadWriteCloser) {
-	defer func() {
-		conn1.Close()
-		conn2.Close()
-	}()
-	go io.Copy(conn1, conn2)
-	io.Copy(conn2, conn1)
 }
 
 func GetHost(conn net.Conn) (method, address string, rb []byte, err error, r *http.Request) {

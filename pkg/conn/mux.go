@@ -35,6 +35,7 @@ func NewMux(c *websocket.Conn) *Mux {
 
 	go m.read()
 	go m.write()
+	go m.healthCheck()
 
 	return m
 }
@@ -107,7 +108,11 @@ func (m *Mux) read() {
 			}
 		case data:
 			if conn, ok := m.conns[message.ConnId]; ok {
-				conn.recieve(message.Data)
+				conn.receive(message.Data)
+			}
+		case connClose:
+			if conn, ok := m.conns[message.ConnId]; ok {
+				conn.Close()
 			}
 		}
 
@@ -168,7 +173,7 @@ func (m *Mux) removeConn(id uint32) {
 
 func (m *Mux) healthCheck() {
 	for {
-		time.Sleep(time.Second * 5)
-		fmt.Println("mux health check", m.conns)
+		time.Sleep(time.Second * 30)
+		fmt.Println("mux health check: ", m.conns)
 	}
 }
