@@ -21,6 +21,7 @@ type Mux struct {
 	sendMessageQueue chan Message     // 发送消息队列
 	once             sync.Once
 	Closed           bool
+	connsMutex       sync.RWMutex // 保护 conns 地图的锁
 }
 
 // NewMux 基于websocket连接的多路复用器
@@ -31,11 +32,12 @@ func NewMux(c *websocket.Conn) *Mux {
 		conns:            make(map[uint32]*Conn, 32),
 		sendMessageQueue: make(chan Message, 32),
 		once:             sync.Once{},
+		connsMutex:       sync.RWMutex{},
 	}
 
 	go m.read()
 	go m.write()
-	go m.healthCheck()
+	//go m.healthCheck()
 
 	return m
 }
@@ -49,12 +51,12 @@ func (m *Mux) Accept() (net.Conn, error) {
 	return c, nil
 }
 
-// close mux
+// Close mux
 func (m *Mux) Close() error {
 	m.once.Do(func() {
 		m.conn.Close()
+		close(m.waitConnQueue)
 		m.Closed = true
-		// close(m.waitConnQueue)
 	})
 	return nil
 }
@@ -76,11 +78,11 @@ func (m *Mux) read() {
 	for {
 		_, b, err := m.conn.ReadMessage()
 		if err != nil {
-			// if err == io.EOF {
-			// 	// log
-			// } else {
-			// 	// log
-			// }
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				fmt.Printf("read error: %v\n", err)
+			} else {
+				fmt.Printf("unexpected read error: %v\n", err)
+			}
 			return
 		}
 
@@ -88,6 +90,7 @@ func (m *Mux) read() {
 
 		err = json.Unmarshal(b, &message)
 		if err != nil {
+			fmt.Printf("unmarshal error: %v\n", err)
 			continue
 		}
 		switch message.Flag {
@@ -95,27 +98,35 @@ func (m *Mux) read() {
 			var lk LinkInfo
 			err := json.Unmarshal(message.Data, &lk)
 			if err != nil {
+				fmt.Printf("unmarshal link info error: %v\n", err)
 				continue
 			}
 			c := NewConn(message.ConnId, m)
 			c.lk = lk
+			m.connsMutex.Lock()
 			m.conns[c.connId] = c
+			m.connsMutex.Unlock()
 			m.waitConnQueue <- c
 			m.writeMsg(newConnOk, message.ConnId, nil)
 		case newConnOk:
+			m.connsMutex.RLock()
 			if conn, ok := m.conns[message.ConnId]; ok {
 				conn.connStatusOkCh <- struct{}{}
 			}
+			m.connsMutex.RUnlock()
 		case data:
+			m.connsMutex.RLock()
 			if conn, ok := m.conns[message.ConnId]; ok {
 				conn.receive(message.Data)
 			}
+			m.connsMutex.RUnlock()
 		case connClose:
+			m.connsMutex.Lock()
 			if conn, ok := m.conns[message.ConnId]; ok {
 				conn.Close()
 			}
+			m.connsMutex.Unlock()
 		}
-
 	}
 }
 
@@ -123,8 +134,17 @@ func (m *Mux) write() {
 	defer m.Close()
 
 	for message := range m.sendMessageQueue {
-		b, _ := json.Marshal(message)
+		b, err := json.Marshal(message)
+		if err != nil {
+			fmt.Printf("marshal error: %v\n", err)
+			continue
+		}
 		if err := m.conn.WriteMessage(websocket.BinaryMessage, b); err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				fmt.Printf("write error: %v\n", err)
+			} else {
+				fmt.Printf("unexpected write error: %v\n", err)
+			}
 			return
 		}
 	}
@@ -132,8 +152,10 @@ func (m *Mux) write() {
 
 func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
 	conn := NewConn(m.getConnId(), m)
-	//it must be Set before send
+	// it must be Set before send
+	m.connsMutex.Lock()
 	m.conns[conn.connId] = conn
+	m.connsMutex.Unlock()
 	lk := LinkInfo{
 		Addr:    addr,
 		Network: network,
@@ -142,8 +164,10 @@ func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.writeMsg(newConn, conn.connId, data)
-	//Set a timer timeout 120 second
+	if err := m.writeMsg(newConn, conn.connId, data); err != nil {
+		return nil, err
+	}
+	// Set a timer timeout 120 second
 	timer := time.NewTimer(time.Minute * 2)
 	defer timer.Stop()
 	select {
@@ -154,11 +178,16 @@ func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
 	return nil, errors.New("create connection fail, the server refused the connection")
 }
 
-func (m *Mux) writeMsg(flag flag, connId uint32, b []byte) {
-	m.sendMessageQueue <- Message{
+func (m *Mux) writeMsg(flag flag, connId uint32, b []byte) error {
+	select {
+	case m.sendMessageQueue <- Message{
 		Flag:   flag,
 		ConnId: connId,
 		Data:   b,
+	}:
+		return nil
+	default:
+		return errors.New("send message queue is full")
 	}
 }
 
@@ -168,12 +197,14 @@ func (m *Mux) getConnId() (id uint32) {
 }
 
 func (m *Mux) removeConn(id uint32) {
+	m.connsMutex.Lock()
 	delete(m.conns, id)
+	m.connsMutex.Unlock()
 }
 
 func (m *Mux) healthCheck() {
 	for {
 		time.Sleep(time.Second * 30)
-		fmt.Println("mux health check: ", m.conns)
+		fmt.Println("mux health check: ", len(m.conns))
 	}
 }

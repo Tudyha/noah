@@ -112,7 +112,7 @@ func (h *Handler) ServerIsAvailable() error {
 
 func (h *Handler) WebsocketConnection() {
 retry:
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 5)
 	wsconn, err := ws.NewConnection(h.Configuration, fmt.Sprintf("/client/%d/ws", h.ClientID))
 	if err != nil {
 		h.Log("[!] Error connecting to server: ", err.Error())

@@ -84,10 +84,7 @@ func (c Service) PrepareBuildSession(serverAddr string, port string, token strin
 		return "", err
 	}
 
-	err = utils.CopyDir(pkgDir, buildBaseDir+"pkg/", configFileName)
-	if err != nil {
-		return "", err
-	}
+	utils.CopyDir(pkgDir, buildBaseDir+"pkg/", configFileName)
 
 	clientConfiguration, err := c.BuildClientConfiguration(serverAddr, port, token)
 	if err != nil {
