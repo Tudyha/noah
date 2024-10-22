@@ -14,14 +14,13 @@ import (
 
 type Mux struct {
 	net.Listener
-	conn             *websocket.Conn  // websocket连接
-	waitConnQueue    chan *Conn       // 等待处理的连接
-	conns            map[uint32]*Conn // 连接池
-	connId           uint32           // 自增连接id
-	sendMessageQueue chan Message     // 发送消息队列
+	conn             *websocket.Conn // websocket连接
+	waitConnQueue    chan *Conn      // 等待处理的连接
+	conns            sync.Map
+	connId           uint32       // 自增连接id
+	sendMessageQueue chan Message // 发送消息队列
 	once             sync.Once
 	Closed           bool
-	connsMutex       sync.RWMutex // 保护 conns 地图的锁
 }
 
 // NewMux 基于websocket连接的多路复用器
@@ -29,10 +28,9 @@ func NewMux(c *websocket.Conn) *Mux {
 	m := &Mux{
 		conn:             c,
 		waitConnQueue:    make(chan *Conn),
-		conns:            make(map[uint32]*Conn, 32),
+		conns:            sync.Map{},
 		sendMessageQueue: make(chan Message, 32),
 		once:             sync.Once{},
-		connsMutex:       sync.RWMutex{},
 	}
 
 	go m.read()
@@ -56,6 +54,11 @@ func (m *Mux) Close() error {
 	m.once.Do(func() {
 		m.conn.Close()
 		close(m.waitConnQueue)
+
+		m.conns.Range(func(key, value interface{}) bool {
+			value.(*Conn).Close()
+			return true
+		})
 		m.Closed = true
 	})
 	return nil
@@ -103,29 +106,21 @@ func (m *Mux) read() {
 			}
 			c := NewConn(message.ConnId, m)
 			c.lk = lk
-			m.connsMutex.Lock()
-			m.conns[c.connId] = c
-			m.connsMutex.Unlock()
+			m.conns.Store(c.connId, c)
 			m.waitConnQueue <- c
 			m.writeMsg(newConnOk, message.ConnId, nil)
 		case newConnOk:
-			m.connsMutex.RLock()
-			if conn, ok := m.conns[message.ConnId]; ok {
-				conn.connStatusOkCh <- struct{}{}
+			if conn, ok := m.conns.Load(message.ConnId); ok {
+				conn.(*Conn).connStatusOkCh <- struct{}{}
 			}
-			m.connsMutex.RUnlock()
 		case data:
-			m.connsMutex.RLock()
-			if conn, ok := m.conns[message.ConnId]; ok {
-				conn.receive(message.Data)
+			if conn, ok := m.conns.Load(message.ConnId); ok {
+				conn.(*Conn).receive(message.Data)
 			}
-			m.connsMutex.RUnlock()
 		case connClose:
-			m.connsMutex.Lock()
-			if conn, ok := m.conns[message.ConnId]; ok {
-				conn.Close()
+			if conn, ok := m.conns.Load(message.ConnId); ok {
+				conn.(*Conn).Close()
 			}
-			m.connsMutex.Unlock()
 		}
 	}
 }
@@ -153,9 +148,7 @@ func (m *Mux) write() {
 func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
 	conn := NewConn(m.getConnId(), m)
 	// it must be Set before send
-	m.connsMutex.Lock()
-	m.conns[conn.connId] = conn
-	m.connsMutex.Unlock()
+	m.conns.Store(conn.connId, conn)
 	lk := LinkInfo{
 		Addr:    addr,
 		Network: network,
@@ -197,14 +190,11 @@ func (m *Mux) getConnId() (id uint32) {
 }
 
 func (m *Mux) removeConn(id uint32) {
-	m.connsMutex.Lock()
-	delete(m.conns, id)
-	m.connsMutex.Unlock()
+	m.conns.Delete(id)
 }
 
 func (m *Mux) healthCheck() {
 	for {
 		time.Sleep(time.Second * 30)
-		fmt.Println("mux health check: ", len(m.conns))
 	}
 }
