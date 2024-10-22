@@ -16,7 +16,7 @@ type Mux struct {
 	net.Listener
 	conn             *websocket.Conn // websocket连接
 	waitConnQueue    chan *Conn      // 等待处理的连接
-	conns            sync.Map
+	conns            *SafeMap
 	connId           uint32       // 自增连接id
 	sendMessageQueue chan Message // 发送消息队列
 	once             sync.Once
@@ -28,7 +28,7 @@ func NewMux(c *websocket.Conn) *Mux {
 	m := &Mux{
 		conn:             c,
 		waitConnQueue:    make(chan *Conn),
-		conns:            sync.Map{},
+		conns:            NewSafeMap(),
 		sendMessageQueue: make(chan Message, 32),
 		once:             sync.Once{},
 	}
@@ -54,11 +54,6 @@ func (m *Mux) Close() error {
 	m.once.Do(func() {
 		m.conn.Close()
 		close(m.waitConnQueue)
-
-		m.conns.Range(func(key, value interface{}) bool {
-			value.(*Conn).Close()
-			return true
-		})
 		m.Closed = true
 	})
 	return nil
@@ -106,20 +101,20 @@ func (m *Mux) read() {
 			}
 			c := NewConn(message.ConnId, m)
 			c.lk = lk
-			m.conns.Store(c.connId, c)
+			m.conns.Set(c.connId, c)
 			m.waitConnQueue <- c
 			m.writeMsg(newConnOk, message.ConnId, nil)
 		case newConnOk:
-			if conn, ok := m.conns.Load(message.ConnId); ok {
-				conn.(*Conn).connStatusOkCh <- struct{}{}
+			if conn, ok := m.conns.Get(message.ConnId); ok {
+				conn.connStatusOkCh <- struct{}{}
 			}
 		case data:
-			if conn, ok := m.conns.Load(message.ConnId); ok {
-				conn.(*Conn).receive(message.Data)
+			if conn, ok := m.conns.Get(message.ConnId); ok {
+				conn.receive(message.Data)
 			}
 		case connClose:
-			if conn, ok := m.conns.Load(message.ConnId); ok {
-				conn.(*Conn).Close()
+			if conn, ok := m.conns.Get(message.ConnId); ok {
+				conn.Close()
 			}
 		}
 	}
@@ -148,7 +143,7 @@ func (m *Mux) write() {
 func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
 	conn := NewConn(m.getConnId(), m)
 	// it must be Set before send
-	m.conns.Store(conn.connId, conn)
+	m.conns.Set(conn.connId, conn)
 	lk := LinkInfo{
 		Addr:    addr,
 		Network: network,
@@ -157,9 +152,7 @@ func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := m.writeMsg(newConn, conn.connId, data); err != nil {
-		return nil, err
-	}
+	m.writeMsg(newConn, conn.connId, data)
 	// Set a timer timeout 120 second
 	timer := time.NewTimer(time.Minute * 2)
 	defer timer.Stop()
@@ -171,16 +164,11 @@ func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
 	return nil, errors.New("create connection fail, the server refused the connection")
 }
 
-func (m *Mux) writeMsg(flag flag, connId uint32, b []byte) error {
-	select {
-	case m.sendMessageQueue <- Message{
+func (m *Mux) writeMsg(flag flag, connId uint32, b []byte) {
+	m.sendMessageQueue <- Message{
 		Flag:   flag,
 		ConnId: connId,
 		Data:   b,
-	}:
-		return nil
-	default:
-		return errors.New("send message queue is full")
 	}
 }
 
