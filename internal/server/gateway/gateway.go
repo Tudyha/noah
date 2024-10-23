@@ -35,7 +35,7 @@ func (g Gateway) NewClientWebsocketConn(clientId uint, connection *websocket.Con
 	defer g.mu.Unlock()
 
 	// 更新或添加新连接
-	m := conn.NewMux(connection)
+	m := conn.NewMux(clientId, connection)
 	g.clients[clientId] = m
 
 	return nil

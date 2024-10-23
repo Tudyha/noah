@@ -14,6 +14,8 @@ const (
 	newConnOk
 	data
 	connClose
+	ping
+	pong
 )
 
 type LinkInfo struct {

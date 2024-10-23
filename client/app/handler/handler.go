@@ -118,7 +118,16 @@ retry:
 		h.Log("[!] Error connecting to server: ", err.Error())
 		goto retry
 	}
-	listen := conn.NewMux(wsconn)
+	listen := conn.NewMux(h.ClientID, wsconn)
+
+	go func() {
+		for {
+			listen.Ping()
+
+			time.Sleep(time.Second * 30)
+		}
+	}()
+
 	for {
 		srcConn, err := listen.Accept()
 		if err != nil {

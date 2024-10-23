@@ -21,16 +21,18 @@ type Mux struct {
 	sendMessageQueue chan Message // 发送消息队列
 	once             sync.Once
 	Closed           bool
+	clientId         uint
 }
 
 // NewMux 基于websocket连接的多路复用器
-func NewMux(c *websocket.Conn) *Mux {
+func NewMux(clientId uint, c *websocket.Conn) *Mux {
 	m := &Mux{
 		conn:             c,
 		waitConnQueue:    make(chan *Conn),
 		conns:            NewSafeMap(),
 		sendMessageQueue: make(chan Message, 32),
 		once:             sync.Once{},
+		clientId:         clientId,
 	}
 
 	go m.read()
@@ -116,6 +118,11 @@ func (m *Mux) read() {
 			if conn, ok := m.conns.Get(message.ConnId); ok {
 				conn.Close()
 			}
+		case ping:
+			fmt.Println(m.clientId, " ping")
+			m.Pong()
+		case pong:
+			fmt.Println("pong")
 		}
 	}
 }
@@ -185,4 +192,12 @@ func (m *Mux) healthCheck() {
 	for {
 		time.Sleep(time.Second * 30)
 	}
+}
+
+func (m *Mux) Ping() {
+	m.writeMsg(ping, 0, nil)
+}
+
+func (m *Mux) Pong() {
+	m.writeMsg(pong, 0, nil)
 }
