@@ -2,11 +2,12 @@ package websocket
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"net/url"
 	"noah/client/app/environment"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 func NewConnection(configuration *environment.Configuration, path string) (*websocket.Conn, error) {
@@ -28,7 +29,7 @@ func NewConnection(configuration *environment.Configuration, path string) (*webs
 
 	header := http.Header{}
 	// header.Set("x-client", clientID)
-	header.Set("Authorization", configuration.Connection.Token)
+	header.Set("Token", configuration.Connection.Token)
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	return conn, err

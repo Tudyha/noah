@@ -1,15 +1,17 @@
 package controller
 
 import (
+	"net/http"
+	"noah/internal/server/middleware"
+	"noah/internal/server/response"
+	"noah/internal/server/service"
+	"noah/internal/server/utils"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
-	"net/http"
-	"noah/internal/server/response"
-	"noah/internal/server/service"
-	"noah/internal/server/utils"
 )
 
 type AdminController struct {
@@ -56,4 +58,8 @@ func (c AdminController) Dashboard(ctx *gin.Context) {
 	dashboardRes.ClientOfflineCount = offline
 
 	Success(ctx, dashboardRes)
+}
+
+func (c AdminController) GenerateClientToken(ctx *gin.Context) {
+	Success(ctx, middleware.GenerateClientToken())
 }

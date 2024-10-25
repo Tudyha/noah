@@ -1,9 +1,6 @@
 package server
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/golang-module/carbon/v2"
-	"github.com/samber/do/v2"
 	"noah/internal/server/dao"
 	"noah/internal/server/environment"
 	"noah/internal/server/gateway"
@@ -11,6 +8,10 @@ import (
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/routes"
 	"noah/internal/server/service"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-module/carbon/v2"
+	"github.com/samber/do/v2"
 )
 
 type Server struct {
@@ -24,12 +25,10 @@ func NewServer() *Server {
 	if err != nil {
 		panic(err)
 	}
-
-	middleware.SetAdminPassword(env.Admin.Password)
-
 	// 依赖注入
 	injector := do.New()
 	Inject(injector)
+	do.ProvideValue(injector, env)
 
 	gin.SetMode(gin.ReleaseMode)
 	g := gin.New()
@@ -43,12 +42,6 @@ func NewServer() *Server {
 
 	// panic recovery
 	g.Use(gin.Recovery())
-
-	//init db
-	dbError := dao.InitDb(env.Database)
-	if dbError != nil {
-		panic(dbError)
-	}
 
 	//时间统一配置
 	carbon.SetDefault(carbon.Default{
@@ -65,6 +58,11 @@ func NewServer() *Server {
 }
 
 func Inject(i do.Injector) {
+	//init db
+	dbError := dao.Init(i)
+	if dbError != nil {
+		panic(dbError)
+	}
 	//gateway
 	do.Provide(i, gateway.NewGateway)
 	//load service

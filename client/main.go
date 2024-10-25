@@ -15,5 +15,5 @@ func main() {
 
 	// ui.ShowMenu(Version, config.ServerAddress, config.Port)
 
-	app.New(environment.Load(config.ServerAddress, config.ServerPort, config.Token)).Run()
+	app.New(environment.Load(config.ServerAddress, config.ServerPort, config.Token, config.RefreshToken)).Run()
 }

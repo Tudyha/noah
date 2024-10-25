@@ -1,12 +1,20 @@
 package dao
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"github.com/samber/do/v2"
+	"gorm.io/gorm"
 )
 
 type ClientInfoDao struct {
 	Db *gorm.DB
+}
+
+func NewClientInfoDao(i do.Injector) (*ClientInfoDao, error) {
+	return &ClientInfoDao{
+		Db: do.MustInvoke[*gorm.DB](i),
+	}, nil
 }
 
 type ClientInfo struct {

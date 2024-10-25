@@ -28,7 +28,7 @@ func (c Gateway) NewRequest(method string, url string, body []byte) (*gateway.Ht
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", c.Configuration.Connection.Token)
+	req.Header.Set("Token", c.Configuration.Connection.Token)
 
 	res, err := c.HttpClient.Do(req)
 	if err != nil {
@@ -63,8 +63,7 @@ func (c Gateway) NewRequest(method string, url string, body []byte) (*gateway.Ht
 }
 
 func (c Gateway) refreshToken() error {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprint(c.Configuration.Server.Url, "/refresh_token"), nil)
-	req.Header.Set("Authorization", c.Configuration.Connection.Token)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprint(c.Configuration.Server.Url, "/refresh_token?refreshToken=", c.Configuration.Connection.RefreshToken), nil)
 	if err != nil {
 		return err
 	}
@@ -84,13 +83,25 @@ func (c Gateway) refreshToken() error {
 		return err
 	}
 
-	var response map[string]any
+	var response gateway.HttpResponse
 
 	if err := json.Unmarshal(bodyBytes, &response); err != nil {
 		return err
 	}
 
-	c.Configuration.Connection.Token = fmt.Sprint("Bearer ", response["token"].(string))
+	if response.Code != 0 {
+		return fmt.Errorf("failed refresh token")
+	}
+
+	if data, ok := response.Data.(map[string]interface{}); ok {
+		if data["token"] == nil || data["refreshToken"] == nil {
+			return fmt.Errorf("failed refresh token")
+		}
+		c.Configuration.Connection.Token = data["token"].(string)
+		c.Configuration.Connection.RefreshToken = data["refreshToken"].(string)
+	} else {
+		return fmt.Errorf("failed refresh token")
+	}
 
 	return nil
 }
@@ -104,7 +115,7 @@ func (c Gateway) NewFileDownloadRequest(method string, url string, body []byte) 
 		fmt.Printf("Error creating request: %v\n", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", c.Configuration.Connection.Token)
+	req.Header.Set("Token", c.Configuration.Connection.Token)
 
 	c.HttpClient.Timeout = 0
 

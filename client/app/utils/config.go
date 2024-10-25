@@ -11,6 +11,7 @@ type Config struct {
 	ServerPort    string `json:"server_port"`
 	ServerAddress string `json:"server_address"`
 	Token         string `json:"token"`
+	RefreshToken  string `json:"refresh_token"`
 }
 
 func ReadConfigFile(configFile []byte) *Config {

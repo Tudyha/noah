@@ -3,8 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jinzhu/copier"
-	"github.com/samber/do/v2"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
 	"noah/internal/server/request"
@@ -13,12 +11,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/copier"
+	"github.com/samber/do/v2"
+
 	"noah/internal/server/utils"
 
 	"github.com/google/uuid"
 )
 
 type Service struct {
+	clientDao     *dao.ClientDao
+	clientInfoDao *dao.ClientInfoDao
 }
 
 const (
@@ -29,8 +32,11 @@ const (
 	buildStr       = `CGO_ENABLED=0 GOOS=%s GOARCH=amd64 go build -ldflags '%s -s -w -X main.Version=%s -extldflags "-static"' -o ../../temp/%s main.go`
 )
 
-func NewClientService(i do.Injector) (*Service, error) {
-	return &Service{}, nil
+func NewClientService(i do.Injector) *Service {
+	return &Service{
+		clientDao:     do.MustInvoke[*dao.ClientDao](i),
+		clientInfoDao: do.MustInvoke[*dao.ClientInfoDao](i),
+	}
 }
 
 type ClientConfig struct {
@@ -139,18 +145,18 @@ func buildFilename(os enum.OSType, filename string) string {
 
 func (c Service) Save(client dao.Client) (id uint, err error) {
 
-	old := dao.GetClientDao().GetByMacAddress(client.MacAddress)
+	old := c.clientDao.GetByMacAddress(client.MacAddress)
 	if old.ID != 0 {
 		// 已存在，更新数据即可
 		client.ID = old.ID
-		err = dao.GetClientDao().Update(client)
+		err = c.clientDao.Update(client)
 		if err != nil {
 			return 0, err
 		}
 		return old.ID, nil
 	}
 
-	id, err = dao.GetClientDao().Save(client)
+	id, err = c.clientDao.Save(client)
 	if err != nil {
 		return 0, err
 	}
@@ -158,11 +164,11 @@ func (c Service) Save(client dao.Client) (id uint, err error) {
 }
 
 func (c Service) UpdateStatus(id uint, status int8) {
-	dao.GetClientDao().UpdateStatus(id, status)
+	c.clientDao.UpdateStatus(id, status)
 }
 
 func (c Service) GetClientPage(query request.ListClientQueryReq) (int64, []response.ListClientRes) {
-	total, clients := dao.GetClientDao().Page(query)
+	total, clients := c.clientDao.Page(query)
 
 	if total == 0 {
 		return 0, make([]response.ListClientRes, 0)
@@ -174,7 +180,7 @@ func (c Service) GetClientPage(query request.ListClientQueryReq) (int64, []respo
 }
 
 func (c Service) GetClient(id uint) (response.GetClientRes, error) {
-	client, err := dao.GetClientDao().GetById(id)
+	client, err := c.clientDao.GetById(id)
 	if err != nil {
 		return response.GetClientRes{}, err
 	}
@@ -187,23 +193,23 @@ func (c Service) GetClient(id uint) (response.GetClientRes, error) {
 }
 
 func (c Service) ScheduleUpdateStatus() error {
-	dao.GetClientDao().ScheduleUpdateStatus()
+	c.clientDao.ScheduleUpdateStatus()
 	return nil
 }
 
 func (c Service) Delete(id uint) error {
-	return dao.GetClientDao().Delete(id)
+	return c.clientDao.Delete(id)
 }
 
 func (c Service) SaveSystemInfo(id uint, systemInfo request.CreateSystemInfoReq) error {
 	var clientInfo dao.ClientInfo
 	copier.Copy(&clientInfo, systemInfo)
 	clientInfo.ClientID = id
-	return dao.GetClientInfoDao().Create(clientInfo)
+	return c.clientInfoDao.Create(clientInfo)
 }
 
 func (c Service) GetSystemInfo(id uint, start time.Time, end time.Time) ([]response.GetSystemInfoRes, error) {
-	clientInfoList := dao.GetClientInfoDao().GetByClientId(id, start, end)
+	clientInfoList := c.clientInfoDao.GetByClientId(id, start, end)
 	if len(clientInfoList) == 0 {
 		return make([]response.GetSystemInfoRes, 0), nil
 	}
@@ -229,10 +235,10 @@ func (c Service) GetSystemInfo(id uint, start time.Time, end time.Time) ([]respo
 }
 
 func (c Service) CleanSystemInfo() error {
-	dao.GetClientInfoDao().Clean()
+	c.clientInfoDao.Clean()
 	return nil
 }
 
 func (c Service) Count() (online int64, offline int64) {
-	return dao.GetClientDao().Count()
+	return c.clientDao.Count()
 }

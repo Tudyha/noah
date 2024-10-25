@@ -1,15 +1,15 @@
 package utils
 
 import (
-	"crypto/rand"
-	"encoding/base64"
+	"math/rand"
 )
 
 func RandString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		return ""
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
 	}
-	return base64.URLEncoding.EncodeToString(b)[:n]
+	return string(b)
 }

@@ -7,11 +7,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
 type ClientDao struct {
 	Db *gorm.DB
+}
+
+func NewClientDao(i do.Injector) (*ClientDao, error) {
+	return &ClientDao{
+		Db: do.MustInvoke[*gorm.DB](i),
+	}, nil
 }
 
 type Client struct {

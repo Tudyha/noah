@@ -5,10 +5,11 @@ import (
 	"strings"
 )
 
-func Load(serverAddress, httpPort, token string) *Configuration {
+func Load(serverAddress, httpPort, token string, refreshToken string) *Configuration {
 	return &Configuration{
 		Connection: Connection{
-			Token:           fmt.Sprint("Bearer ", token),
+			Token:           token,
+			RefreshToken:    refreshToken,
 			ContextDeadline: 5,
 		},
 		Server: Server{

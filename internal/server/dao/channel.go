@@ -1,12 +1,20 @@
 package dao
 
 import (
-	"gorm.io/gorm"
 	"noah/internal/server/enum"
+
+	"github.com/samber/do/v2"
+	"gorm.io/gorm"
 )
 
 type ChannelDao struct {
 	Db *gorm.DB
+}
+
+func NewChannelDao(i do.Injector) (*ChannelDao, error) {
+	return &ChannelDao{
+		Db: do.MustInvoke[*gorm.DB](i),
+	}, nil
 }
 
 type Channel struct {

@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"github.com/samber/do/v2"
 	"log"
 	"net/http"
 	"noah/internal/server/controller"
@@ -11,18 +10,22 @@ import (
 	"path/filepath"
 
 	"github.com/gin-contrib/cors"
+	"github.com/samber/do/v2"
+
 	"github.com/gin-gonic/gin"
 )
 
 type Router struct {
 	Gin      *gin.Engine
 	handlers *controller.Controller
+	i        do.Injector
 }
 
 func NewRouter(g *gin.Engine, i do.Injector) *Router {
 	return &Router{
 		Gin:      g,
 		handlers: controller.NewController(i),
+		i:        i,
 	}
 }
 
@@ -32,29 +35,18 @@ func (r *Router) LoadRoutes() {
 	// ----- CORS -----
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
-	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Token"}
 	router.Use(cors.New(config))
-	// ----- CORS -----
 
-	// -----  jwt  -----
-	authMiddleware, err := middleware.RegisterJwtMiddleWare()
-	if err != nil {
-		panic(err)
-	}
-	router.Use(func(context *gin.Context) {
-		errInit := authMiddleware.MiddlewareInit()
-		if errInit != nil {
-			log.Fatal("authMiddleware.MiddlewareInit() Error:" + errInit.Error())
-		}
-	})
-	// -----  jwt  -----
+	authMiddleware := middleware.NewAuthMiddleware(r.i)
+	do.ProvideValue(r.i, authMiddleware)
 
 	handlers := r.handlers
-
 	clientController := handlers.GetClientController()
 	channelController := handlers.GetChannelController()
 	fileController := handlers.GetFileController()
 	adminController := handlers.GetAdminController()
+	userController := handlers.GetUserController()
 
 	{
 		//前端静态文件
@@ -70,18 +62,24 @@ func (r *Router) LoadRoutes() {
 	api := router.Group("/api")
 	{
 		//免登录接口
-		api.POST("/login", authMiddleware.LoginHandler)
-		api.GET("/refresh_token", authMiddleware.RefreshHandler)
+		api.POST("/login", userController.Login)
+		api.POST("/refresh_token", userController.RefreshToken)
 	}
 
-	apiAuthGroup := api.Group("", authMiddleware.MiddlewareFunc())
+	// 客户端接口
 	{
-		clientGroup := apiAuthGroup.Group("client")
+		clientGroup := api.Group("client", middleware.ClientAuthMiddlewareFunc())
 		clientGroup.POST("/", clientController.CreateClient)
+		clientGroup.POST("/:id/health", clientController.Health)
+	}
+
+	// 管理员接口
+	{
+		adminGroup := api.Group("", middleware.AdminAuthMiddlewareFunc())
+		clientGroup := adminGroup.Group("client")
 		clientGroup.GET("/:id", clientController.GetClient)
 		clientGroup.GET("/page", clientController.GetClientPage)
 		clientGroup.DELETE("/:id", clientController.DeleteClient)
-		clientGroup.POST("/:id/health", clientController.Health)
 		clientGroup.POST("/cmd", clientController.SendCommandHandler)
 		clientGroup.POST("/generate", clientController.Generate)
 		clientGroup.POST("/:id/update", clientController.Update)
@@ -91,7 +89,7 @@ func (r *Router) LoadRoutes() {
 		clientGroup.GET("/:id/network", clientController.GetClientNetworkList)
 		clientGroup.GET("/:id/docker/container", clientController.GetClientDockerContainerList)
 
-		fileGroup := apiAuthGroup.Group("/client/:id/file")
+		fileGroup := adminGroup.Group("/client/:id/file")
 		fileGroup.GET("", fileController.GetFileList)
 		fileGroup.GET("/content", fileController.GetFileContent)
 		fileGroup.POST("/rename", fileController.RenameFile)
@@ -100,7 +98,7 @@ func (r *Router) LoadRoutes() {
 		fileGroup.POST("", fileController.UploadFile)
 		fileGroup.POST("/dir", fileController.NewDir)
 
-		userGroup := apiAuthGroup.Group("user")
+		userGroup := adminGroup.Group("user")
 		userGroup.GET("info", func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{
 				"code": 0,
@@ -113,13 +111,20 @@ func (r *Router) LoadRoutes() {
 			})
 		})
 
-		chGroup := apiAuthGroup.Group("/client/:id/channel")
+		chGroup := adminGroup.Group("/client/:id/channel")
 		chGroup.POST("", channelController.NewChannel)
 		chGroup.GET("", channelController.GetChannelList)
 		chGroup.DELETE("/:channelId", channelController.DeleteChannel)
 
+		// dashboard
+		adminGroup.GET("/dashboard", adminController.Dashboard)
+		adminGroup.GET("/generateClientToken", adminController.GenerateClientToken)
+	}
+	{
+		// 通用接口
+		commonGroup := api.Group("", middleware.AuthMiddlewareFunc())
 		// 下载文件
-		apiAuthGroup.GET("/file/download/:filename", func(c *gin.Context) {
+		commonGroup.GET("/file/download/:filename", func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename
@@ -138,7 +143,7 @@ func (r *Router) LoadRoutes() {
 		})
 
 		// 删除文件
-		apiAuthGroup.DELETE("/file/:filename", func(c *gin.Context) {
+		commonGroup.DELETE("/file/:filename", func(c *gin.Context) {
 			filename := c.Param("filename")
 			sanitizedFilename := filepath.Base(filename)
 			filePath := "temp/" + sanitizedFilename
@@ -161,13 +166,10 @@ func (r *Router) LoadRoutes() {
 
 			c.Status(http.StatusOK)
 		})
-
-		//dashboard
-		apiAuthGroup.GET("/dashboard", adminController.Dashboard)
 	}
 
 	// websocket接口
-	wsApi := router.Group("/ws-api", authMiddleware.MiddlewareFunc())
+	wsApi := router.Group("/ws-api", middleware.AuthMiddlewareFunc())
 	{
 		wsApi.GET("/client/:id/ws", clientController.NewWsClient)
 		ptyGroup := wsApi.Group("pty")

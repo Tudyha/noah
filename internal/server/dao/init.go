@@ -1,25 +1,17 @@
 package dao
 
 import (
-	"noah/internal/server/environment"
 	"os"
 
-	"gorm.io/driver/mysql"
+	"github.com/samber/do/v2"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-var (
-	db            *gorm.DB
-	clientDao     *ClientDao
-	clientInfoDao *ClientInfoDao
-	channelDao    *ChannelDao
-)
-
-func InitDb(dbConfig environment.DatabaseConfig) (err error) {
+func Init(i do.Injector) (err error) {
 	//db, err = openMysqlDb(fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 	//	dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.Port, dbConfig.DBName))
-	db, err = openSqlLiteDb()
+	db, err := openSqlLiteDb()
 	if err != nil {
 		panic(err)
 	}
@@ -27,20 +19,24 @@ func InitDb(dbConfig environment.DatabaseConfig) (err error) {
 		panic(db.Error)
 	}
 
+	do.ProvideValue(i, db)
+
 	_ = db.AutoMigrate(&Client{})
 	_ = db.AutoMigrate(&ClientInfo{})
 	_ = db.AutoMigrate(&Channel{})
+	_ = db.AutoMigrate(&Token{})
 
-	clientDao = &ClientDao{db}
-	clientInfoDao = &ClientInfoDao{db}
-	channelDao = &ChannelDao{db}
+	do.Provide(i, NewClientDao)
+	do.Provide(i, NewClientInfoDao)
+	do.Provide(i, NewChannelDao)
+	do.Provide(i, NewTokenDao)
 
 	return nil
 }
 
-func openMysqlDb(connectStr string) (*gorm.DB, error) {
-	return gorm.Open(mysql.Open(connectStr), &gorm.Config{})
-}
+// func openMysqlDb(connectStr string) (*gorm.DB, error) {
+// 	return gorm.Open(mysql.Open(connectStr), &gorm.Config{})
+// }
 
 func openSqlLiteDb() (*gorm.DB, error) {
 	// 确保 data 目录存在
@@ -48,16 +44,4 @@ func openSqlLiteDb() (*gorm.DB, error) {
 		return nil, err
 	}
 	return gorm.Open(sqlite.Open("data/noah.db"), &gorm.Config{})
-}
-
-func GetClientDao() *ClientDao {
-	return clientDao
-}
-
-func GetClientInfoDao() *ClientInfoDao {
-	return clientInfoDao
-}
-
-func GetChannelDao() *ChannelDao {
-	return channelDao
 }

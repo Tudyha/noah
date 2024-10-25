@@ -5,7 +5,6 @@ go 1.22.3
 replace noah/pkg => ./pkg
 
 require (
-	github.com/appleboy/gin-jwt/v2 v2.9.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-module/carbon/v2 v2.3.12
 	github.com/robfig/cron/v3 v3.0.1
@@ -16,37 +15,20 @@ require (
 )
 
 require (
-	github.com/cilium/ebpf v0.16.0 // indirect
-	github.com/cosiner/argv v0.1.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/creack/pty v1.1.23 // indirect
-	github.com/derekparker/trie v0.0.0-20230829180723-39f4de51ef7d // indirect
-	github.com/go-delve/delve v1.23.1 // indirect
-	github.com/go-delve/liner v1.2.3-0.20231231155935-4726ab1d7f62 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-sql-driver/mysql v1.7.0 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
-	github.com/google/go-dap v0.12.0 // indirect
-	github.com/hashicorp/golang-lru v1.0.2 // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/samber/go-type-to-string v1.4.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/spf13/cobra v1.8.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.starlark.net v0.0.0-20240925182052-1207426daebd // indirect
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
 )
 
 require (
@@ -70,6 +52,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/muesli/cache2go v0.0.0-20221011235721-518229cd8021
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -81,6 +64,5 @@ require (
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.11
 )

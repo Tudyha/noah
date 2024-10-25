@@ -26,19 +26,21 @@ import (
 type Service struct {
 	channelClose map[uint]chan struct{} // channel关闭
 	gateway      *gateway.Gateway
+	channelDao   *dao.ChannelDao
 }
 
 // NewChannelService 初始化
-func NewChannelService(i do.Injector) (*Service, error) {
+func NewChannelService(i do.Injector) *Service {
 	s := &Service{
 		channelClose: make(map[uint]chan struct{}),
 		gateway:      do.MustInvoke[*gateway.Gateway](i),
+		channelDao:   do.MustInvoke[*dao.ChannelDao](i),
 	}
 
 	// 恢复channel fixme 用到service才初始化，channel恢复不及时
 	s.recoverChannel()
 
-	return s, nil
+	return s
 }
 
 // NewChannel 新建channel
@@ -67,7 +69,7 @@ func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, wsconn
 		ClientPort:  clientPort,
 		ServerPort:  serverPort,
 	}
-	channelId, err := dao.GetChannelDao().Save(channel)
+	channelId, err := c.channelDao.Save(channel)
 	if err != nil {
 		log.Error("Save channel error", map[string]interface{}{"clientId": id, "error": err})
 		return err
@@ -78,7 +80,7 @@ func (c Service) NewChannel(id uint, channelReq request.CreateChannelReq, wsconn
 		go func() {
 			err := c.listen(channelId)
 			if err != nil {
-				dao.GetChannelDao().UpdateStatus(channelId, enum.ChannelStatusDisconnected, err.Error())
+				c.channelDao.UpdateStatus(channelId, enum.ChannelStatusDisconnected, err.Error())
 				return
 			}
 		}()
@@ -95,7 +97,7 @@ func copy(src *conn.Conn, target io.ReadWriteCloser) {
 
 // GetChannelList 获取channel列表
 func (c Service) GetChannelList(clientId uint) (res []response.GetChannelListRes, err error) {
-	list, err := dao.GetChannelDao().List(clientId)
+	list, err := c.channelDao.List(clientId)
 	if err != nil {
 		return nil, err
 	}
@@ -105,11 +107,11 @@ func (c Service) GetChannelList(clientId uint) (res []response.GetChannelListRes
 
 // DeleteChannel 删除channel
 func (c Service) DeleteChannel(id uint) (err error) {
-	channel, err := dao.GetChannelDao().GetById(id)
+	channel, err := c.channelDao.GetById(id)
 	if err != nil {
 		return err
 	}
-	err = dao.GetChannelDao().Delete(id)
+	err = c.channelDao.Delete(id)
 	if err != nil {
 		return err
 	}
@@ -128,7 +130,7 @@ func (c Service) DeleteChannel(id uint) (err error) {
 
 // recoverChannel 恢复channel
 func (c Service) recoverChannel() {
-	list, err := dao.GetChannelDao().List(0)
+	list, err := c.channelDao.List(0)
 	if err != nil {
 		return
 	}
@@ -138,7 +140,7 @@ func (c Service) recoverChannel() {
 			go func() {
 				err := c.listen(channel.ID)
 				if err != nil {
-					dao.GetChannelDao().UpdateStatus(channel.ID, enum.ChannelStatusDisconnected, err.Error())
+					c.channelDao.UpdateStatus(channel.ID, enum.ChannelStatusDisconnected, err.Error())
 					return
 				}
 			}()
@@ -162,7 +164,7 @@ func (c Service) NewChannelConn(clientId uint, channelType enum.ChannelType, cli
 }
 
 func (c Service) listen(channelId uint) error {
-	channel, err := dao.GetChannelDao().GetById(channelId)
+	channel, err := c.channelDao.GetById(channelId)
 	if err != nil {
 		log.Error("channel listen GetById error", map[string]interface{}{"channelId": channelId, "error": err})
 		return err
@@ -176,7 +178,7 @@ func (c Service) listen(channelId uint) error {
 
 	c.channelClose[channelId] = make(chan struct{})
 
-	dao.GetChannelDao().UpdateStatus(channelId, enum.ChannelStatusConnected, "")
+	c.channelDao.UpdateStatus(channelId, enum.ChannelStatusConnected, "")
 
 	// 监听连接
 	for {

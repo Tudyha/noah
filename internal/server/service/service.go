@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/samber/do/v2"
 	"noah/internal/server/logic/channel"
 	"noah/internal/server/logic/client"
+
+	"github.com/samber/do/v2"
 )
 
 var (
@@ -12,8 +13,11 @@ var (
 
 func LoadService(i do.Injector) {
 	injector = i
-	do.Provide(i, client.NewClientService)
-	do.Provide(i, channel.NewChannelService)
+	clientService := client.NewClientService(i)
+	do.ProvideValue(i, clientService)
+
+	channelService := channel.NewChannelService(i)
+	do.ProvideValue(i, channelService)
 }
 
 func GetChannelService() IChannelService {

@@ -168,12 +168,9 @@ func generate(req request.ClientGenerateReq) (string, error) {
 		return "", errors.New("port is empty")
 	}
 
-	token, err := middleware.GetToken()
-	if err != nil {
-		return "", err
-	}
+	auth := middleware.GenerateClientToken()
 
-	filename, err := service.GetClientService().Generate(req.ServerAddr, req.Port, req.OsType, token, req.Filename)
+	filename, err := service.GetClientService().Generate(req.ServerAddr, req.Port, req.OsType, auth.Token, req.Filename)
 	if err != nil {
 		return "", err
 	}

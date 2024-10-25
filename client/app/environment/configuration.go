@@ -9,6 +9,7 @@ type Configuration struct {
 
 type Connection struct {
 	Token           string
+	RefreshToken    string
 	ContextDeadline time.Duration
 }
 

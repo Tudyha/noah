@@ -20,7 +20,7 @@ func NewController(i do.Injector) *Controller {
 	return &Controller{
 		clientController:  NewClientController(i),
 		channelController: NewChannelController(),
-		userController:    NewUserController(),
+		userController:    NewUserController(i),
 		fileController:    NewFileController(i),
 		adminController:   NewAdminController(),
 	}
