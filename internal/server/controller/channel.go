@@ -2,8 +2,9 @@ package controller
 
 import (
 	"net/http"
-	"noah/internal/server/config"
 	"noah/internal/server/enum"
+	"noah/internal/server/gateway"
+	"noah/internal/server/middleware/log"
 	"noah/internal/server/request"
 	"noah/internal/server/service"
 	"strconv"
@@ -23,7 +24,7 @@ func (h ChannelController) NewPtyChannel(c *gin.Context) {
 	uintId := uint(id)
 
 	//建立与前端的websocket连接
-	conn, err := config.Upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := gateway.UpgradeWebsocket(c)
 	if err != nil {
 		Fail(c, 500, "Upgrade fail")
 		return
@@ -33,12 +34,10 @@ func (h ChannelController) NewPtyChannel(c *gin.Context) {
 		ChannelType: enum.Pty,
 	}, conn)
 	if err != nil {
-		Fail(c, 500, "NewChannel fail")
-		return
-	}
+		log.Error("open pty fail", map[string]interface{}{"err": err.Error()})
 
-	if err != nil {
-		Fail(c, 500, "NewPtyClient fail")
+		// 断开与前端的websocket连接
+		conn.Close()
 		return
 	}
 }

@@ -19,13 +19,29 @@ const (
 )
 
 type LinkInfo struct {
-	Network string `json:"network"`
-	Addr    string `json:"addr"`
+	Network Network `json:"network"`
+	Addr    string  `json:"addr"`
+	CmdInfo CmdInfo `json:"data"`
 }
 
-type ptyData struct {
-	Type  string `json:"type"`
-	Data  any    `json:"data"`
-	High  int    `json:"high"`
-	Width int    `json:"width"`
+type Network string
+
+const (
+	NetworkTcp Network = "tcp"
+	NetworkCmd Network = "cmd"
+	NetworkPty Network = "pty"
+)
+
+type CmdInfo struct {
+	Cmd  string `json:"cmd"`
+	Data []byte `json:"data"`
 }
+
+var (
+	Command      = "command"
+	Exit         = "exit"
+	Update       = "update"
+	Download     = "download"
+	FileExplorer = "fileExplorer"
+	SystemInfo   = "systemInfo"
+)

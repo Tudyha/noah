@@ -35,6 +35,13 @@ func (w *PtyReaderWriterCloser) Read(p []byte) (n int, err error) {
 	return w.IO.Read(p)
 }
 
+type ptyData struct {
+	Type  string `json:"type"`
+	Data  any    `json:"data"`
+	High  int    `json:"high"`
+	Width int    `json:"width"`
+}
+
 func (w *PtyReaderWriterCloser) Write(p []byte) (n int, err error) {
 	n = len(p)
 	var ptyData ptyData

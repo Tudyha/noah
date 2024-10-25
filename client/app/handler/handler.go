@@ -22,8 +22,6 @@ import (
 	ws "noah/client/app/infrastructure/websocket"
 
 	"noah/client/app/entitie"
-
-	"github.com/gorilla/websocket"
 )
 
 type Handler struct {
@@ -32,7 +30,6 @@ type Handler struct {
 	Services      *service.Services
 	ClientID      uint
 	Connected     bool
-	Connection    *websocket.Conn
 }
 
 func NewHandler(
@@ -148,7 +145,7 @@ func (h *Handler) handleConn(srcConn *conn.Conn) {
 	}
 	var target io.ReadWriteCloser
 	switch lk.Network {
-	case "pty":
+	case conn.NetworkPty:
 		var cmd *exec.Cmd
 		switch runtime.GOOS {
 		case `linux`:
@@ -167,22 +164,14 @@ func (h *Handler) handleConn(srcConn *conn.Conn) {
 		}
 
 		target = &conn.PtyReaderWriterCloser{IO: ptmx}
-	case "tcp":
-		t, err := net.DialTimeout(lk.Network, lk.Addr, time.Second*5)
+	case conn.NetworkTcp:
+		t, err := net.DialTimeout("tcp", lk.Addr, time.Second*5)
 		if err != nil {
 			return
 		}
 		target = t
-	case "cmd":
-		var cmd entitie.MessageType
-		// 字符串转MessageType
-		cmd = entitie.MessageTypeFromString(lk.Addr)
-		data := make([]byte, 1024)
-		n, err := srcConn.Read(data)
-		if err != nil {
-			return
-		}
-		res, err := h.handleMessage(cmd, data[:n])
+	case conn.NetworkCmd:
+		res, err := h.handleMessage(lk.CmdInfo.Cmd, lk.CmdInfo.Data)
 		if err != nil {
 			res = err.Error()
 		}
@@ -198,15 +187,15 @@ func (h *Handler) handleConn(srcConn *conn.Conn) {
 	}
 }
 
-func (h *Handler) handleMessage(messageType entitie.MessageType, data []byte) (response any, err error) {
-	switch messageType {
-	case entitie.MessageTypeCommand:
+func (h *Handler) handleMessage(cmd string, data []byte) (response any, err error) {
+	switch cmd {
+	case conn.Command:
 		var commandRequest entitie.CommandReq
 		if err := json.Unmarshal(data, &commandRequest); err != nil {
 			return nil, err
 		}
 		return h.Services.Command.Run(commandRequest.Command)
-	case entitie.MessageTypeDownload:
+	case conn.Download:
 		var downloadParams entitie.DownloadReq
 		err := json.Unmarshal(data, &downloadParams)
 		if err != nil {
@@ -218,7 +207,7 @@ func (h *Handler) handleMessage(messageType entitie.MessageType, data []byte) (r
 		if err != nil {
 			return nil, err
 		}
-	case entitie.MessageTypeUpdate:
+	case conn.Update:
 		filename := string(data)
 
 		// 下载文件
@@ -249,9 +238,9 @@ func (h *Handler) handleMessage(messageType entitie.MessageType, data []byte) (r
 
 		// 确保新进程已经启动后再退出当前进程
 		os.Exit(0)
-	case entitie.MessageTypeExit:
+	case conn.Exit:
 		os.Exit(0)
-	case entitie.MessageTypeFileExplorer:
+	case conn.FileExplorer:
 		var fileExplorerQuery entitie.FileExplorerQuery
 		err := json.Unmarshal(data, &fileExplorerQuery)
 		if err != nil {
@@ -295,7 +284,7 @@ func (h *Handler) handleMessage(messageType entitie.MessageType, data []byte) (r
 				return nil, err
 			}
 		}
-	case entitie.MessageTypeSystemInfo:
+	case conn.SystemInfo:
 		var systemInfoReq entitie.SystemInfoReq
 		err := json.Unmarshal(data, &systemInfoReq)
 		if err != nil {

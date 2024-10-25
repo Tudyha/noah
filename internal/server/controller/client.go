@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"noah/internal/server/config"
 	"noah/internal/server/dao"
 	"noah/internal/server/enum"
 	"noah/internal/server/gateway"
@@ -13,6 +12,7 @@ import (
 	"noah/internal/server/request"
 	"noah/internal/server/response"
 	"noah/internal/server/service"
+	"noah/pkg/conn"
 	"strconv"
 	"strings"
 	"time"
@@ -92,7 +92,7 @@ func (c ClientController) GetClient(ctx *gin.Context) {
 func (c ClientController) DeleteClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	//发送命令让客户端退出
-	c.gateway.SendCommand(uint(id), enum.MessageTypeExit, nil, false)
+	c.gateway.SendCommand(uint(id), conn.Exit, nil, false)
 
 	//删除客户端
 	err := service.GetClientService().Delete(uint(id))
@@ -104,16 +104,11 @@ func (c ClientController) DeleteClient(ctx *gin.Context) {
 	Success(ctx, nil)
 }
 
-// NewWsClient 新建客户端ws连接，主要用来让客户端执行命令
+// NewWsClient 新建客户端ws连接，保持与客户端的长连接
 func (c ClientController) NewWsClient(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	ws, err := config.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
-	if err != nil {
-		Fail(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
 
-	err = c.gateway.NewClientWebsocketConn(uint(id), ws)
+	err := c.gateway.NewClientWebsocketConn(uint(id), ctx)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -137,7 +132,7 @@ func (c ClientController) SendCommandHandler(ctx *gin.Context) {
 		Command: form.Command,
 	}
 
-	res, err := c.gateway.SendCommand(id, enum.MessageTypeCommand, command, true)
+	res, err := c.gateway.SendCommand(id, conn.Command, command, true)
 	if err != nil {
 		Fail(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -203,7 +198,7 @@ func (c ClientController) Update(ctx *gin.Context) {
 	}
 
 	//发送命令让客户端升级
-	c.gateway.SendCommand(uint(id), enum.MessageTypeUpdate, filename, false)
+	c.gateway.SendCommand(uint(id), conn.Update, filename, false)
 	Success(ctx, "success")
 }
 
@@ -233,7 +228,7 @@ func (c ClientController) GetClientInfo(ctx *gin.Context) {
 
 func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	result, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	result, err := c.gateway.SendCommand(uint(id), conn.SystemInfo, request.SystemInfoReq{
 		SystemInfoType: "process",
 		Action:         "list",
 		Params:         "",
@@ -254,8 +249,8 @@ func (c ClientController) GetClientProcessList(ctx *gin.Context) {
 
 func (c ClientController) KillClientProcess(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	pid := ctx.Param("id")
-	_, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	pid := ctx.Param("pid")
+	_, err := c.gateway.SendCommand(uint(id), conn.SystemInfo, request.SystemInfoReq{
 		SystemInfoType: "process",
 		Action:         "kill",
 		Params:         pid,
@@ -269,7 +264,7 @@ func (c ClientController) KillClientProcess(ctx *gin.Context) {
 
 func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	res, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	res, err := c.gateway.SendCommand(uint(id), conn.SystemInfo, request.SystemInfoReq{
 		SystemInfoType: "net",
 		Action:         "list",
 		Params:         "",
@@ -289,7 +284,7 @@ func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 
 func (c ClientController) GetClientDockerContainerList(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
-	res, err := c.gateway.SendCommand(uint(id), enum.MessageTypeProcess, request.SystemInfoReq{
+	res, err := c.gateway.SendCommand(uint(id), conn.SystemInfo, request.SystemInfoReq{
 		SystemInfoType: "docker",
 		Action:         "containerList",
 		Params:         "",

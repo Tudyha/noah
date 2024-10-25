@@ -2,74 +2,94 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
-	"noah/internal/server/enum"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	"github.com/samber/do/v2"
+	"net/http"
 	"noah/pkg/conn"
 	"noah/pkg/utils"
 	"sync"
+)
 
-	"github.com/gorilla/websocket"
-	"github.com/samber/do/v2"
+var (
+	maxMessageSize = 32 * 1024
+	upgrader       = websocket.Upgrader{
+		ReadBufferSize:  maxMessageSize,
+		WriteBufferSize: maxMessageSize,
+		// 解决跨域问题
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 )
 
 type Gateway struct {
-	mu      *sync.Mutex
-	clients map[uint]*conn.Mux
+	clients sync.Map
 }
 
 func NewGateway(i do.Injector) (*Gateway, error) {
 	g := &Gateway{
-		mu:      &sync.Mutex{},
-		clients: make(map[uint]*conn.Mux),
+		clients: sync.Map{},
 	}
 	return g, nil
 }
 
+func UpgradeWebsocket(ctx *gin.Context) (*websocket.Conn, error) {
+	return upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+}
+
 // NewClientWebsocketConn 新增ws连接
-func (g Gateway) NewClientWebsocketConn(clientId uint, connection *websocket.Conn) error {
-	// 验证连接是否有效
-	if connection == nil || connection.RemoteAddr() == nil {
-		return errors.New("invalid connection")
+func (g *Gateway) NewClientWebsocketConn(clientId uint, ctx *gin.Context) error {
+	connection, err := UpgradeWebsocket(ctx)
+	if err != nil {
+		return errors.New("upgrade error")
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
+
+	// 删除旧的连接
+	g.DelClient(clientId)
 
 	// 更新或添加新连接
 	m := conn.NewMux(clientId, connection)
-	g.clients[clientId] = m
+	g.clients.Store(clientId, m)
 
 	return nil
 }
 
-func (g Gateway) NewClientConn(clientId uint, network string, addr string) (*conn.Conn, error) {
-	if client, ok := g.clients[clientId]; ok {
+func (g *Gateway) DelClient(clientId uint) {
+	if client, ok := g.clients.Load(clientId); ok {
+		mux := client.(*conn.Mux)
+		mux.Close()
+
+		g.clients.Delete(clientId)
+	}
+}
+
+// NewClientConn 新建客户端连接
+func (g *Gateway) NewClientConn(clientId uint, network conn.Network, addr string, cmd conn.CmdInfo) (*conn.Conn, error) {
+	if client, ok := g.clients.Load(clientId); ok {
+		client := client.(*conn.Mux)
 		if client.Closed {
-			delete(g.clients, clientId)
-			return nil, errors.New("client connection closed")
+			g.DelClient(clientId)
+			return nil, errors.New("client disconnect")
 		}
-		return client.NewConn(network, addr)
+		return client.NewConn(network, addr, cmd)
 	} else {
 		return nil, errors.New("client not found")
 	}
 }
 
 // SendCommand 执行命令
-func (g Gateway) SendCommand(clientId uint, messageType enum.MessageType, data any, needResult bool) (string, error) {
-	addr := rune(messageType)
-	srcConn, err := g.NewClientConn(clientId, "cmd", fmt.Sprintf("%d", addr))
+func (g *Gateway) SendCommand(clientId uint, cmd string, data any, needResult bool) (string, error) {
+	b, err := utils.AnyToBytes(data)
+	if err != nil {
+		return "", err
+	}
+	srcConn, err := g.NewClientConn(clientId, conn.NetworkCmd, "", conn.CmdInfo{Cmd: cmd, Data: b})
 	if err != nil {
 		return "", err
 	}
 	defer srcConn.Close()
 
-	b, err := utils.AnyToBytes(data)
-	if err != nil {
-		return "", err
-	}
-	_, err = srcConn.Write(b)
-	if err != nil {
-		return "", err
-	}
 	if !needResult {
 		return "", nil
 	}

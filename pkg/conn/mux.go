@@ -147,13 +147,14 @@ func (m *Mux) write() {
 	}
 }
 
-func (m *Mux) NewConn(network string, addr string) (*Conn, error) {
+func (m *Mux) NewConn(network Network, addr string, cmd CmdInfo) (*Conn, error) {
 	conn := NewConn(m.getConnId(), m)
 	// it must be Set before send
 	m.conns.Set(conn.connId, conn)
 	lk := LinkInfo{
 		Addr:    addr,
 		Network: network,
+		CmdInfo: cmd,
 	}
 	data, err := json.Marshal(lk)
 	if err != nil {

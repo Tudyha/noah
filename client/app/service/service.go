@@ -3,8 +3,6 @@ package service
 import (
 	"errors"
 	"noah/client/app/entitie"
-
-	"github.com/gorilla/websocket"
 )
 
 var (
@@ -15,7 +13,6 @@ var (
 type Services struct {
 	Information
 	Command
-	Channel
 	Download
 	FileExplorer
 }
@@ -31,11 +28,6 @@ type Information interface {
 
 type Command interface {
 	Run(command string) ([]byte, error)
-}
-
-type Channel interface {
-	NewChannel(channelId string, cType int, wsc *websocket.Conn, addr string) error
-	Write(wsMessageType int, channelId string, data []byte) error
 }
 
 type Download interface {

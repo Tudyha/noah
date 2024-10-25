@@ -148,17 +148,17 @@ func (c Service) recoverChannel() {
 
 // NewChannelConn 新建channel连接
 func (c Service) NewChannelConn(clientId uint, channelType enum.ChannelType, clientIp string, clientPort int) (*conn.Conn, error) {
-	network := ""
+	var network conn.Network
 	switch channelType {
 	case enum.Pty:
-		network = "pty"
+		network = conn.NetworkPty
 	case enum.Tcp:
-		network = "tcp"
+		network = conn.NetworkTcp
 	case enum.Http:
-		network = "tcp"
+		network = conn.NetworkTcp
 
 	}
-	return c.gateway.NewClientConn(clientId, network, fmt.Sprintf("%s:%d", clientIp, clientPort))
+	return c.gateway.NewClientConn(clientId, network, fmt.Sprintf("%s:%d", clientIp, clientPort), conn.CmdInfo{})
 }
 
 func (c Service) listen(channelId uint) error {

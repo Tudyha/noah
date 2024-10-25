@@ -7,7 +7,6 @@ import (
 	"noah/client/app/gateway/client"
 	"noah/client/app/handler"
 	"noah/client/app/service"
-	"noah/client/app/service/channel"
 	"noah/client/app/service/command"
 	"noah/client/app/service/download"
 	"noah/client/app/service/explorer"
@@ -28,7 +27,6 @@ func New(configuration *environment.Configuration) *App {
 	clientServices := &service.Services{
 		Information:  information.NewService(),
 		Command:      command.NewService(),
-		Channel:      channel.NewService(),
 		Download:     download.NewService(clientGateway),
 		FileExplorer: explorer.NewService(),
 	}
