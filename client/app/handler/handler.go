@@ -92,7 +92,7 @@ retry:
 }
 
 func (h *Handler) connect() error {
-	conn, err := net.Dial("tcp", "127.0.0.1:12344")
+	conn, err := net.Dial("tcp", h.gateway.Env.Server.TcpAddr)
 	if err != nil {
 		return err
 	}

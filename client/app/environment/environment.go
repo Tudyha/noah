@@ -5,5 +5,6 @@ type Environment struct {
 }
 
 type ServerConfig struct {
-	Host string `yaml:"host"`
+	HttpAddr string `yaml:"httpPort"`
+	TcpAddr  string `yaml:"tcpPort"`
 }

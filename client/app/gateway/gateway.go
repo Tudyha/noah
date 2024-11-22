@@ -23,7 +23,7 @@ func NewGateway(i do.Injector) (Gateway, error) {
 }
 
 func (c Gateway) NewRequest(method string, url string, body []byte) ([]byte, error) {
-	req, err := http.NewRequest(method, fmt.Sprint(c.Env.Server.Host, url), bytes.NewBuffer(body))
+	req, err := http.NewRequest(method, fmt.Sprint(c.Env.Server.HttpAddr, url), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}

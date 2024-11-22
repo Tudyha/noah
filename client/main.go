@@ -1,15 +1,10 @@
+/*
+Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+*/
 package main
 
-import (
-	"noah/client/app"
-	"noah/client/app/environment"
-)
+import "noah/client/cmd"
 
 func main() {
-	env := environment.Environment{
-		Server: environment.ServerConfig{
-			Host: "http://127.0.0.1:8080",
-		}}
-	c := app.NewClient(&env)
-	c.Start()
+	cmd.Execute()
 }
