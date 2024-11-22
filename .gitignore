@@ -1,0 +1,13 @@
+.idea
+
+.DS_Store
+
+.vscode
+
+
+data
+
+build
+temp
+/web/node_modules
+#/web/dist
