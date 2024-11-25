@@ -19,7 +19,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "noah client",
 	Short: "Noah client command-line tool",
-	Long:  `Noah client is a powerful command-line tool for interacting with Noah server.`,
+	Long:  ``,
 }
 
 var runCmd = &cobra.Command{
@@ -72,5 +72,5 @@ func init() {
 
 	runCmd.Flags().BoolVarP(&daemon, "daemon", "d", false, "Run as a daemon")
 	runCmd.Flags().StringVarP(&host, "host", "", "127.0.0.1", "Server host")
-	runCmd.Flags().IntVarP(&port, "tcp", "t", 8080, "Server port")
+	runCmd.Flags().IntVarP(&port, "port", "p", 8080, "Server port")
 }
