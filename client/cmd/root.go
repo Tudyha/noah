@@ -11,19 +11,17 @@ import (
 )
 
 var (
-	daemon      bool
-	httpAddress string
-	tcpAddress  string
+	daemon bool
+	host   string
+	port   int
 )
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "noah client",
 	Short: "Noah client command-line tool",
 	Long:  `Noah client is a powerful command-line tool for interacting with Noah server.`,
 }
 
-// runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run the Noah client",
@@ -44,8 +42,8 @@ var runCmd = &cobra.Command{
 		}
 		env := environment.Environment{
 			Server: environment.ServerConfig{
-				HttpAddr: httpAddress,
-				TcpAddr:  tcpAddress,
+				Host: host,
+				Port: port,
 			},
 		}
 		c := app.NewClient(&env)
@@ -63,8 +61,6 @@ func RemoveString(slice []string, s string) []string {
 	return result
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -72,17 +68,9 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.client.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
 	rootCmd.AddCommand(runCmd)
 
 	runCmd.Flags().BoolVarP(&daemon, "daemon", "d", false, "Run as a daemon")
-	runCmd.Flags().StringVarP(&httpAddress, "http", "", "http://127.0.0.1:8080", "HTTP server address")
-	runCmd.Flags().StringVarP(&tcpAddress, "tcp", "t", "127.0.0.1:1234", "TCP server address")
+	runCmd.Flags().StringVarP(&host, "host", "", "127.0.0.1", "Server host")
+	runCmd.Flags().IntVarP(&port, "tcp", "t", 8080, "Server port")
 }

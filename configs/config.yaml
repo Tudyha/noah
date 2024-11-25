@@ -1,6 +1,5 @@
 # config.yaml
 server:
   host: 0.0.0.0
-  http-port: 8080
-  tcp-port: 12344
+  port: 8080
 

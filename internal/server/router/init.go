@@ -34,7 +34,7 @@ func Init(router *gin.Engine, i do.Injector) {
 	api.POST("/login", userController.Login)
 	// api.POST("/refresh_token", userController.RefreshToken)
 
-	api.POST("/client", clientController.CreateClient)
+	api.POST("/client/connect", clientController.Connect)
 
 	authApi := api.Group("", authMiddleware.AuthMiddlewareFunc())
 

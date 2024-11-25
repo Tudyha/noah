@@ -32,10 +32,6 @@ func NewServer(env *environment.Environment) *Server {
 	}
 	do.ProvideValue(i, &gate)
 
-	go func() {
-		gate.Start()
-	}()
-
 	gin.SetMode(gin.ReleaseMode)
 
 	g := gin.New()
@@ -79,7 +75,7 @@ func Inject() do.Injector {
 }
 
 func (s *Server) Run() {
-	addr := fmt.Sprintf("%s:%d", s.Env.Server.Host, s.Env.Server.HttpPort)
+	addr := fmt.Sprintf("%s:%d", s.Env.Server.Host, s.Env.Server.Port)
 	err := s.Gin.Run(addr)
 	if err != nil {
 		panic(err)

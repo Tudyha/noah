@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
+	"noah/client/app/environment"
 	"noah/client/app/gateway"
 	"noah/client/app/service"
 	"noah/pkg/enum"
@@ -13,6 +17,7 @@ import (
 	"noah/pkg/mux/message"
 	"noah/pkg/response"
 	"noah/pkg/utils"
+	"noah/pkg/utils/network"
 	"os"
 	"os/exec"
 	"runtime"
@@ -30,11 +35,11 @@ var (
 )
 
 type Handler struct {
-	clientId            uint32
 	gateway             gateway.Gateway
 	informationService  service.IInformationService
 	downloadService     service.IDownloadService
 	fileExplorerService service.IFileExplorerService
+	Env                 *environment.Environment
 }
 
 func NewHandler(i do.Injector) (Handler, error) {
@@ -43,46 +48,14 @@ func NewHandler(i do.Injector) (Handler, error) {
 		informationService:  do.MustInvoke[service.IInformationService](i),
 		downloadService:     do.MustInvoke[service.IDownloadService](i),
 		fileExplorerService: do.MustInvoke[service.IFileExplorerService](i),
+		Env:                 do.MustInvoke[*environment.Environment](i),
 	}, nil
-}
-
-func (h *Handler) getClientId() (uint32, error) {
-	gw := h.gateway
-	informationService := h.informationService
-	data, err := informationService.LoadClientSpecs()
-	if err != nil {
-		return 0, err
-	}
-	b, err := json.Marshal(data)
-	if err != nil {
-		return 0, err
-	}
-
-	res, err := gw.NewRequest("POST", "/api/client", b)
-	if err != nil {
-		log.Printf("Failed to send client specs: %v", err)
-		return 0, err
-	}
-	var response response.Response
-	err = json.Unmarshal(res, &response)
-	if err != nil || response.Code != 0 {
-		log.Printf("Failed to send client specs: %v", err)
-		return 0, err
-	}
-	return uint32(response.Data.(float64)), nil
 }
 
 func (h *Handler) Connect() {
 retry:
-	clientId, err := h.getClientId()
-	if err != nil {
-		time.Sleep(interval)
-		goto retry
-	}
-	h.clientId = clientId
-
 	//tcp 长连接
-	err = h.connect()
+	err := h.connect()
 	if err != nil {
 		log.Printf("Failed to connect to server: %v", err)
 		time.Sleep(interval)
@@ -92,23 +65,60 @@ retry:
 }
 
 func (h *Handler) connect() error {
-	conn, err := net.Dial("tcp", h.gateway.Env.Server.TcpAddr)
+	addr := fmt.Sprintf("%s:%d", h.Env.Server.Host, h.Env.Server.Port)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	data, err := json.Marshal(map[string]interface{}{
-		"clientId": h.clientId,
-	})
+	data, err := h.informationService.LoadClientSpecs()
 	if err != nil {
 		return err
 	}
-	p, err := mux.BuildFirstPacket(data)
+	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	conn.Write(p)
+
+	url := fmt.Sprintf("http://%s/api/client/connect", addr)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Length", strconv.Itoa(len(b)))
+
+	_, err = conn.Write([]byte(network.ConvertRequestToString(req)))
+	if err != nil {
+		log.Printf("Failed to write data to server: %v", err)
+		return err
+	}
+
+	res, err := http.ReadResponse(bufio.NewReader(conn), req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != 200 {
+		return fmt.Errorf("failed to connect to server: %s", res.Status)
+	}
+
+	contentLength := res.ContentLength
+
+	body := make([]byte, contentLength)
+
+	_, err = io.ReadFull(res.Body, body)
+	if err != nil {
+		return err
+	}
+	var response response.Response
+	if err = json.Unmarshal(body, &response); err != nil {
+		return err
+	}
+	if response.Code != 0 {
+		return fmt.Errorf("failed to connect to server: %v", response.Msg)
+	}
 
 	m := mux.NewMux(conn, conn)
 

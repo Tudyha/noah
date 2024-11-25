@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"noah/internal/server/gateway"
@@ -107,7 +108,6 @@ func (c ClientController) DeleteClient(ctx *gin.Context) {
 	Success(ctx, nil)
 }
 
-// NewPtyChannel 新建pty通道
 func (c ClientController) OpenPty(ctx *gin.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
@@ -241,4 +241,58 @@ func (c ClientController) GetClientDockerContainerList(ctx *gin.Context) {
 		return
 	}
 	Success(ctx, containerList)
+}
+
+func (c ClientController) Connect(ctx *gin.Context) {
+	var body request.CreateClientReq
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		fmt.Println(err.Error())
+		Fail(ctx, errcode.ErrInvalidParameter)
+		return
+	}
+
+	var client model.Client
+	copier.Copy(&client, body)
+
+	client.RemoteIp = ctx.RemoteIP()
+	client.OsType = enum.DetectOS(body.OSName)
+	client.LocalIp = body.IPAddress
+
+	id, err := c.clientService.Save(client)
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+	hj, ok := ctx.Writer.(http.Hijacker)
+	if !ok {
+		Fail(ctx, errcode.ErrInternalError)
+		return
+	}
+	conn, _, err := hj.Hijack()
+	if err != nil {
+		Fail(ctx, errcode.ErrInternalError)
+		return
+	}
+
+	data, err := json.Marshal(response.Response{
+		Code: 0,
+		Msg:  "",
+		Data: gin.H{"id": id},
+	})
+	if err != nil {
+		Fail(ctx, errcode.ErrInternalError)
+		return
+	}
+	contentLength := len(data)
+
+	response := `HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: %d
+
+%s`
+
+	conn.Write([]byte(fmt.Sprintf(response, contentLength, data)))
+
+	// write success response
+	go c.gateway.HanderConn(uint32(id), conn)
 }
