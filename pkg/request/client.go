@@ -45,11 +45,9 @@ type SendCommandReq struct {
 }
 
 // ClientGenerateReq 生成客户端请求
-type ClientGenerateReq struct {
-	ServerAddr string `json:"serverAddr" binding:"required" description:"服务器地址"`
-	Port       string `json:"port" binding:"required" description:"端口号"`
-	OsType     int8   `json:"osType,omitempty" description:"操作系统类型"`
-	Filename   string `json:"filename,omitempty" description:"文件名"`
+type GenerateClientReq struct {
+	Goos   string `form:"goos" binding:"required" description:"操作系统"`
+	Goarch string `form:"goarch" binding:"required" description:"CPU架构"`
 }
 
 // ClientFileRenameReq 重命名文件请求

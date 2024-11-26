@@ -48,3 +48,8 @@ func (d UserDao) UpdateToken(id uint, token string, refreshToken string, expireT
 func (d UserDao) UpdatePassword(id uint, password string) error {
 	return d.db.Model(&model.User{}).Where("id = ?", id).Update("password", password).Error
 }
+
+func (d UserDao) QueryAll() (users []model.User, err error) {
+	err = d.db.Find(&users).Error
+	return
+}

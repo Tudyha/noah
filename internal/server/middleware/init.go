@@ -12,5 +12,5 @@ func Init(i do.Injector) {
 		panic(err)
 	}
 
-	do.ProvideValue(i, &authMiddleware)
+	do.ProvideValue(i, authMiddleware)
 }

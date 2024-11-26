@@ -39,12 +39,6 @@ func (c UserController) Login(ctx *gin.Context) {
 
 	authResult := c.authMiddleware.GenerateToken(user.ID)
 
-	err = c.userService.UpdateToken(user.ID, authResult.Token, authResult.RefreshToken, authResult.ExpireTime, authResult.RefreshExpireTime)
-	if err != nil {
-		Fail(ctx, err)
-		return
-	}
-
 	Success(ctx, response.LoginResp{
 		AuthResult: authResult,
 	})

@@ -5,9 +5,8 @@
 修改配置文件configs/config.yaml
 ```yaml
 server:
+  host: 0.0.0.0
   port: 8080
-admin:
-  password: 123456
 ```
 ```shell
 chmod +x noah && ./noah
@@ -23,10 +22,9 @@ docker run -d -p 8080:8080 -e ADMIN_PASSWORD=123456 -v ./data:/app/data --name n
 ```
 说明：
 1. 8080为服务端端口
-2. ADMIN_PASSWORD 为管理密码，默认为123456
-3. /app/data数据文件夹, 最好挂载到宿主机，避免数据丢失
+2. /app/data数据文件夹, 最好挂载到宿主机，避免数据丢失
 
-### 访问地址：http://localhost:8080
+### 访问地址：http://localhost:8080 (默认用户名密码：admin/123456)
 
 ## TODO
 1. 流量加密（紧急）

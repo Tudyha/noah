@@ -8,6 +8,6 @@
 data
 
 build
-temp
+# temp
 /web/node_modules
 #/web/dist

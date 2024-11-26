@@ -68,12 +68,12 @@ export const constantRoutes = [
         component: () => import('@/views/client/index'),
         meta: { title: '客户端列表', icon: 'el-icon-s-platform' }
       },
-      {
-        path: 'generate',
-        name: '生成客户端',
-        component: () => import('@/views/client/generate'),
-        meta: { title: '生成客户端', icon: 'el-icon-s-tools' }
-      },
+      // {
+      //   path: 'generate',
+      //   name: '生成客户端',
+      //   component: () => import('@/views/client/generate'),
+      //   meta: { title: '生成客户端', icon: 'el-icon-s-tools' }
+      // },
       {
         path: 'console',
         name: '客户端工作台',

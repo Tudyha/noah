@@ -84,3 +84,10 @@ export function getClient(id) {
     method: 'get'
   })
 }
+
+export function getClientInstallScript() {
+  return request({
+    url: `/client/install_script`,
+    method: 'get'
+  })
+}

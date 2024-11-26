@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"noah/internal/server/environment"
 	"noah/internal/server/gateway"
+	"noah/internal/server/middleware/auth"
 	"noah/internal/server/model"
 	"noah/internal/server/service"
 	"noah/pkg/enum"
 	"noah/pkg/errcode"
 	"noah/pkg/mux"
 	"noah/pkg/request"
+	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -23,20 +27,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-module/carbon"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/jinzhu/copier"
 	"github.com/samber/do/v2"
 )
 
 type ClientController struct {
-	clientService service.IClientService
-	gateway       *gateway.Gateway
+	clientService  service.IClientService
+	gateway        *gateway.Gateway
+	authMiddleware *auth.AuthMiddleware
+	env            *environment.Environment
 }
 
 func NewClientController(i do.Injector) (ClientController, error) {
 	return ClientController{
-		clientService: do.MustInvoke[service.IClientService](i),
-		gateway:       do.MustInvoke[*gateway.Gateway](i),
+		clientService:  do.MustInvoke[service.IClientService](i),
+		gateway:        do.MustInvoke[*gateway.Gateway](i),
+		authMiddleware: do.MustInvoke[*auth.AuthMiddleware](i),
+		env:            do.MustInvoke[*environment.Environment](i),
 	}, nil
 }
 
@@ -246,7 +255,6 @@ func (c ClientController) GetClientDockerContainerList(ctx *gin.Context) {
 func (c ClientController) Connect(ctx *gin.Context) {
 	var body request.CreateClientReq
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		fmt.Println(err.Error())
 		Fail(ctx, errcode.ErrInvalidParameter)
 		return
 	}
@@ -295,4 +303,43 @@ Content-Length: %d
 
 	// write success response
 	go c.gateway.HanderConn(uint32(id), conn)
+}
+
+func (c ClientController) GenerateClient(ctx *gin.Context) {
+	var req request.GenerateClientReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		Fail(ctx, errcode.ErrInvalidParameter)
+		return
+	}
+	id, err := uuid.NewUUID()
+	if err != nil {
+		Fail(ctx, errcode.ErrInternalError)
+		return
+	}
+	clientBasePath := "client"
+	buildStr := `GOOS=%s GOARCH=%s go build -o %s main.go`
+
+	buildCmd := fmt.Sprintf(buildStr, req.Goos, req.Goarch, id.String())
+
+	cmd := exec.Command("sh", "-c", buildCmd)
+	cmd.Dir = clientBasePath
+
+	_, err = cmd.CombinedOutput()
+
+	if err != nil {
+		Fail(ctx, errcode.ErrInternalError)
+		return
+	}
+
+	defer func() {
+		os.Remove(clientBasePath + "/" + id.String())
+	}()
+
+	ctx.File(clientBasePath + "/" + id.String())
+}
+
+func (c ClientController) GetInstallScript(ctx *gin.Context) {
+	r := c.authMiddleware.GenerateTempToken()
+	Success(ctx, fmt.Sprintf("curl -kfsSL 'http://%s:%d/api/file/download/install-cli?token=%s' | bash -s -- %s %d %s",
+		c.env.Server.Host, c.env.Server.Port, r.Token, c.env.Server.Host, c.env.Server.Port, r.Token))
 }

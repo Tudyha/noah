@@ -17,6 +17,7 @@ func InitClientRouter(api *gin.RouterGroup, i do.Injector) {
 	clientGroup.DELETE("/:id", clientController.DeleteClient)
 	clientGroup.GET("/:id/pty", clientController.OpenPty)
 	clientGroup.GET("/:id/systemInfo", clientController.GetClientStat)
+	clientGroup.GET("/install_script", clientController.GetInstallScript)
 
 	clientGroup.GET("/:id/process", clientController.GetClientProcessList)
 	clientGroup.DELETE("/:id/process/:pid", clientController.KillClientProcess)

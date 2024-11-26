@@ -47,3 +47,7 @@ func (s userService) GetUserPage(page, size int) (total int64, users []model.Use
 func (s userService) UpdatePassword(id uint, password string) error {
 	return s.userDao.UpdatePassword(id, password)
 }
+
+func (s userService) GetUserList() (users []model.User, err error) {
+	return s.userDao.QueryAll()
+}
