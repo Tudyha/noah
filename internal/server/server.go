@@ -75,7 +75,7 @@ func Inject() do.Injector {
 }
 
 func (s *Server) Run() {
-	addr := fmt.Sprintf("%s:%d", s.Env.Server.Host, s.Env.Server.Port)
+	addr := fmt.Sprintf(":%d", s.Env.Server.Port)
 	err := s.Gin.Run(addr)
 	if err != nil {
 		panic(err)
