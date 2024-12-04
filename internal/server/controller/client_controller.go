@@ -340,6 +340,5 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 
 func (c ClientController) GetInstallScript(ctx *gin.Context) {
 	r := c.authMiddleware.GenerateTempToken()
-	Success(ctx, fmt.Sprintf("curl -kfsSL 'http://%s:%d/api/file/download/install-cli?token=%s' | bash -s -- %s %d %s",
-		c.env.Server.Host, c.env.Server.Port, r.Token, c.env.Server.Host, c.env.Server.Port, r.Token))
+	Success(ctx, r.Token)
 }

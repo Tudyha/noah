@@ -13,7 +13,20 @@ type UserDao struct {
 }
 
 func NewUserDao(i do.Injector) (UserDao, error) {
-	return UserDao{db: do.MustInvoke[*gorm.DB](i)}, nil
+	d := UserDao{db: do.MustInvoke[*gorm.DB](i)}
+
+	d.execInitSql()
+
+	return d, nil
+}
+
+func (d UserDao) execInitSql() {
+	u, err := d.QueryById(1)
+	if err == nil && u.ID == 1 {
+		return
+	}
+	sql := "insert into user(id, username, password, name, avatar) values (1, 'admin', '123456', '管理员', 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif')"
+	d.db.Exec(sql)
 }
 
 func (d UserDao) QueryByUsername(username string) (user model.User, err error) {

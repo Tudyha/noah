@@ -30,8 +30,6 @@ func Init(i do.Injector) {
 	db.AutoMigrate(&model.Client{})
 	db.AutoMigrate(&model.ClientStat{})
 	db.AutoMigrate(&model.Tunnel{})
-
-	execInitSql(db)
 }
 
 // func openMysqlDb(connectStr string) (*gorm.DB, error) {
@@ -44,11 +42,6 @@ func openSqlLiteDb() (*gorm.DB, error) {
 		return nil, err
 	}
 	return gorm.Open(sqlite.Open("data/noah.db"), &gorm.Config{})
-}
-
-func execInitSql(db *gorm.DB) {
-	sql := "insert into user(id, username, password, name, avatar) values (1, 'admin', '123456', '管理员', 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif')"
-	db.Exec(sql)
 }
 
 func Paginate(page int, size int) func(db *gorm.DB) *gorm.DB {

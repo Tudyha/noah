@@ -75,7 +75,7 @@
     <el-dialog title="绑定主机" :visible.sync="bindDialogShow" width="50%">
       <el-tabs type="border-card">
         <el-tab-pane label="Linux">
-          <el-input v-model="command" type="textarea" :rows="5" readonly/>
+          <el-input v-model="command" type="textarea" :rows="5" readonly />
         </el-tab-pane>
         <!-- <el-tab-pane label="Windows">Windows</el-tab-pane> -->
       </el-tabs>
@@ -176,7 +176,13 @@ export default {
     },
     async handleBind() {
       const res = await getClientInstallScript()
-      this.command = res.data
+      const tempToken = res.data
+      let ip, port
+
+      ip = window.location.hostname
+      port = window.location.port
+
+      this.command = `curl -kfsSL 'http://${ip}:${port}/api/file/download/install-cli?token=${tempToken}' | bash -s -- ${ip} ${port} ${tempToken}`
       this.bindDialogShow = true
     }
   }

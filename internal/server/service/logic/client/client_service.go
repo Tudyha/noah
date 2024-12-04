@@ -6,12 +6,14 @@ import (
 	"noah/internal/server/dao"
 	"noah/internal/server/gateway"
 	"noah/internal/server/model"
+	"noah/pkg/enum"
 	"noah/pkg/request"
 	"noah/pkg/response"
 	"noah/pkg/utils"
 	"time"
 
 	"github.com/jinzhu/copier"
+	"github.com/robfig/cron/v3"
 	"github.com/samber/do/v2"
 )
 
@@ -35,7 +37,10 @@ func NewClientService(i do.Injector) (clientService, error) {
 			return
 		}
 		s.SaveClientStat(uint(clientId), clientStat)
+		s.clientDao.UpdateStatus(uint(clientId), enum.DEVICE_ONLINE)
 	})
+
+	s.runScheduleTask()
 
 	return s, nil
 }
@@ -125,4 +130,29 @@ func (c clientService) GetClientStat(id uint, start time.Time, end time.Time) ([
 	}
 
 	return result, nil
+}
+
+func (c clientService) Count() (online int64, offline int64) {
+	return c.clientDao.Count()
+}
+
+func (c clientService) runScheduleTask() {
+	cr := cron.New()
+	_, err := cr.AddFunc("* * * * *", func() {
+		c.clientDao.ScheduleUpdateStatus()
+	})
+	if err != nil {
+		return
+	}
+
+	//每天0点执行一次
+	_, err = cr.AddFunc("0 0 * * *", func() {
+		c.clientStatDao.Clean()
+	})
+
+	if err != nil {
+		return
+	}
+
+	cr.Start()
 }

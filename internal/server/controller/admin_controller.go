@@ -59,9 +59,9 @@ func (c AdminController) Dashboard(ctx *gin.Context) {
 	dashboardRes.DiskFree = utils.CoverToGb(usage.Free)
 
 	// 获取客户端信息
-	// online, offline := c.clientService.Count()
-	// dashboardRes.ClientOnlineCount = online
-	// dashboardRes.ClientOfflineCount = offline
+	online, offline := c.clientService.Count()
+	dashboardRes.ClientOnlineCount = online
+	dashboardRes.ClientOfflineCount = offline
 
 	Success(ctx, dashboardRes)
 }

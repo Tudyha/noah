@@ -6,8 +6,7 @@ type Environment struct {
 }
 
 type ServerConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
+	Port int `yaml:"port"`
 }
 
 type DatabaseConfig struct {
