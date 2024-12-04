@@ -16,14 +16,9 @@
               {{ scope.row.serverPort }}
             </template>
           </el-table-column>
-          <el-table-column label="目标IP">
+          <el-table-column label="目标地址">
             <template slot-scope="scope">
-              {{ scope.row.clientIp }}
-            </template>
-          </el-table-column>
-          <el-table-column label="目标端口">
-            <template slot-scope="scope">
-              {{ scope.row.clientPort }}
+              {{ scope.row.targetAddr }}
             </template>
           </el-table-column>
           <el-table-column label="服务端状态">
@@ -53,22 +48,14 @@
       <el-form :model="form">
         <el-form-item label="模式">
           <el-select v-model="form.tunnelType" placeholder="请选择">
-            <el-option
-              v-for="item in m.tunnelTypeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="+item.value"
-            />
+            <el-option v-for="item in m.tunnelTypeOptions" :key="item.value" :label="item.label" :value="+item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="端口">
           <el-input v-model.number="form.serverPort" autocomplete="off" />
         </el-form-item>
-        <el-form-item v-if="form.tunnelType === 1" label="目标IP">
-          <el-input v-model="form.clientIp" autocomplete="off" />
-        </el-form-item>
-        <el-form-item v-if="form.tunnelType === 1" label="目标端口">
-          <el-input v-model.number="form.clientPort" autocomplete="off" />
+        <el-form-item v-if="form.tunnelType === 1" label="目标地址">
+          <el-input v-model="form.targetAddr" autocomplete="off" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -100,8 +87,7 @@ export default {
       form: {
         tunnelType: null,
         serverPort: null,
-        clientIp: null,
-        clientPort: null
+        targetAddr: ""
       }
     }
   },

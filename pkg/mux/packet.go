@@ -13,7 +13,6 @@ const (
 )
 
 type packet struct {
-	// ClientId    uint32
 	Flag        flag
 	Data        []byte
 	MagicNumber uint32
@@ -64,13 +63,6 @@ func readPacket(reader io.Reader) (*packet, error) {
 		return nil, errors.New("error reading flag: " + err.Error())
 	}
 
-	// 读取客户端ID
-	// var clientId uint32
-	// err = binary.Read(reader, binary.BigEndian, &clientId)
-	// if err != nil {
-	// 	return nil, errors.New("error reading client ID: " + err.Error())
-	// }
-
 	// 读取连接ID
 	var connId uint32
 	err = binary.Read(reader, binary.BigEndian, &connId)
@@ -81,7 +73,6 @@ func readPacket(reader io.Reader) (*packet, error) {
 	// 读取数据内容
 	data := make([]byte, length)
 	_, err = io.ReadFull(reader, data)
-	//_, err = reader.Read(data)
 	if err != nil {
 		return nil, errors.New("error reading data: " + err.Error())
 	}
@@ -99,9 +90,8 @@ func readPacket(reader io.Reader) (*packet, error) {
 		Version:     version,
 		Length:      length,
 		Flag:        flag,
-		// ClientId:    clientId,
-		Data:   data,
-		ConnId: connId,
+		Data:        data,
+		ConnId:      connId,
 	}, nil
 }
 
@@ -112,9 +102,8 @@ func buildPacket(flag flag, connId uint32, data []byte) ([]byte, error) {
 		Version:     VERSION,
 		Length:      uint32(len(data)),
 		Flag:        flag,
-		// ClientId:    clientId,
-		Data:   data,
-		ConnId: connId,
+		Data:        data,
+		ConnId:      connId,
 	}
 
 	buf := new(bytes.Buffer)
@@ -134,10 +123,6 @@ func buildPacket(flag flag, connId uint32, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// err = binary.Write(buf, binary.BigEndian, packet.ClientId)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	err = binary.Write(buf, binary.BigEndian, packet.ConnId)
 	if err != nil {
 		return nil, err

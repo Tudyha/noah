@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -110,7 +109,6 @@ func (m *Mux) read() error {
 	for {
 		packet, err := readPacket(buf)
 		if err != nil {
-			fmt.Printf("read error: %v\n", err)
 			return err
 		}
 
@@ -158,16 +156,13 @@ func (m *Mux) write() error {
 	for p := range m.sendPacketQueue {
 		d, err := buildPacket(p.Flag, p.ConnId, p.Data)
 		if err != nil {
-			fmt.Printf("build packet error: %v\n", err)
 			continue
 		}
 		n, err := m.writer.Write(d)
 		if err != nil {
-			fmt.Printf("write error: %v\n", err)
 			return err
 		}
 		if n != len(d) {
-			fmt.Printf("write error: %v\n", err)
 			return err
 		}
 	}
