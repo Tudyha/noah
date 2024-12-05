@@ -227,7 +227,7 @@ func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 	var networkList []response.GetClientNetworkInfoRes
 	err = json.Unmarshal([]byte(res), &networkList)
 	if err != nil {
-		log.Error("error", map[string]interface{}{"res": res})
+		log.Error("error", map[string]interface{}{"res": string(res)})
 		Fail(ctx, err)
 		return
 	}
