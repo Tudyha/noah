@@ -8,6 +8,7 @@ import (
 	"noah/internal/server/environment"
 	"noah/internal/server/gateway"
 	"noah/internal/server/middleware/auth"
+	"noah/internal/server/middleware/log"
 	"noah/internal/server/model"
 	"noah/internal/server/service"
 	"noah/pkg/enum"
@@ -226,6 +227,7 @@ func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 	var networkList []response.GetClientNetworkInfoRes
 	err = json.Unmarshal([]byte(res), &networkList)
 	if err != nil {
+		log.Error("error", map[string]interface{}{"res": res})
 		Fail(ctx, err)
 		return
 	}
