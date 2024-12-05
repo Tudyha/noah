@@ -182,6 +182,14 @@ export default {
       ip = window.location.hostname
       port = window.location.port
 
+      if (port === '') {
+        if (window.location.protocol === 'http:') {
+          port = 80
+        } else {
+          port = 443
+        }
+      }
+
       this.command = `curl -kfsSL '${window.location.protocol}//${window.location.host}/api/file/download/install-cli?token=${tempToken}' | bash -s -- ${ip} ${port} ${tempToken}`
       this.bindDialogShow = true
     }
