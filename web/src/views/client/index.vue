@@ -182,7 +182,7 @@ export default {
       ip = window.location.hostname
       port = window.location.port
 
-      this.command = `curl -kfsSL 'http://${ip}:${port}/api/file/download/install-cli?token=${tempToken}' | bash -s -- ${ip} ${port} ${tempToken}`
+      this.command = `curl -kfsSL '${window.location.protocol}//${window.location.host}/api/file/download/install-cli?token=${tempToken}' | bash -s -- ${ip} ${port} ${tempToken}`
       this.bindDialogShow = true
     }
   }
