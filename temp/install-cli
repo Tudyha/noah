@@ -61,4 +61,4 @@ fi
 chmod +x noah-cli
 
 # 执行文件
-./noah-cli
+nohup ./noah-cli > output.log 2>&1 &
