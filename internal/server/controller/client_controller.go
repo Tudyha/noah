@@ -220,13 +220,13 @@ func (c ClientController) GetClientNetworkList(ctx *gin.Context) {
 		Params:         "",
 	}, true)
 	if err != nil {
-		Fail(ctx, errcode.ErrInternalError)
+		Fail(ctx, err)
 		return
 	}
 	var networkList []response.GetClientNetworkInfoRes
 	err = json.Unmarshal([]byte(res), &networkList)
 	if err != nil {
-		Fail(ctx, errcode.ErrInternalError)
+		Fail(ctx, err)
 		return
 	}
 	Success(ctx, networkList)
