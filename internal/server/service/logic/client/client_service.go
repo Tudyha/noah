@@ -10,11 +10,21 @@ import (
 	"noah/pkg/request"
 	"noah/pkg/response"
 	"noah/pkg/utils"
+	"os"
+	"os/exec"
+	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
 	"github.com/robfig/cron/v3"
 	"github.com/samber/do/v2"
+)
+
+var (
+	clientBasePath       = "client/"
+	clientConfigFilename = "config.json"
+	buildStr             = `CGO_ENABLED=0 GOOS=%s GOARCH=%s go build -ldflags ' -s -w -extldflags "-static"' -o %s main.go`
 )
 
 type clientService struct {
@@ -155,4 +165,51 @@ func (c clientService) runScheduleTask() {
 	}
 
 	cr.Start()
+}
+
+func (c clientService) BuildCllient(goos, goarch, host, port string) (file string, err error) {
+	filename, err := prepareBuildSession(host, port)
+	defer func() {
+		os.Rename(clientBasePath+"/"+clientConfigFilename+"."+"b", clientBasePath+clientConfigFilename)
+	}()
+
+	file = filename
+
+	buildCmd := fmt.Sprintf(buildStr, goos, goarch, file)
+
+	cmd := exec.Command("sh", "-c", buildCmd)
+	cmd.Dir = clientBasePath
+
+	_, err = cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return clientBasePath + file, nil
+}
+
+func prepareBuildSession(host, port string) (filename string, err error) {
+	sessionID := uuid.New().String()
+
+	// 备份配置文件, 防止被覆盖
+	if err = os.Rename(clientBasePath+clientConfigFilename, clientBasePath+"/"+clientConfigFilename+"."+"b"); err != nil {
+		return
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return
+	}
+	clientConfig := map[string]interface{}{
+		"server": map[string]interface{}{
+			"host": host,
+			"port": p,
+		},
+	}
+	d, err := json.Marshal(clientConfig)
+	if err != nil {
+		return
+	}
+	if err = os.WriteFile(clientBasePath+clientConfigFilename, d, 0644); err != nil {
+		return
+	}
+	return sessionID, nil
 }

@@ -1,10 +1,21 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package main
 
-import "noah/client/cmd"
+import (
+	_ "embed"
+	"encoding/json"
+	"log"
+	"noah/client/app"
+	"noah/client/app/environment"
+)
+
+//go:embed config.json
+var configFile []byte
 
 func main() {
-	cmd.Execute()
+	var env environment.Environment
+	if err := json.Unmarshal(configFile, &env); err != nil {
+		log.Fatalln(err)
+	}
+	cli := app.NewClient(&env)
+	cli.Start()
 }

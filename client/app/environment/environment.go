@@ -1,10 +1,10 @@
 package environment
 
 type Environment struct {
-	Server ServerConfig `yaml:"server"`
+	Server ServerConfig `json:"server"`
 }
 
 type ServerConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
+	Host string `json:"host"`
+	Port int    `json:"port"`
 }

@@ -41,7 +41,7 @@ esac
 GOOS=$OS_NAME
 
 # 构建 API URL
-API_URL="http://${HOST}:${PORT}/api/client/build?token=${TOKEN}&goos=${GOOS}&goarch=${GOARCH}"
+API_URL="http://${HOST}:${PORT}/api/client/build?token=${TOKEN}&goos=${GOOS}&goarch=${GOARCH}&host=${HOST}&port=${PORT}"
 
 # 检查是否有 curl 命令
 if command -v curl >/dev/null 2>&1; then
@@ -61,4 +61,4 @@ fi
 chmod +x noah-cli
 
 # 执行文件
-./noah-cli run -d --host $HOST --port $PORT
+./noah-cli

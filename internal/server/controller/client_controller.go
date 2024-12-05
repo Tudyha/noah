@@ -16,7 +16,6 @@ import (
 	"noah/pkg/mux"
 	"noah/pkg/request"
 	"os"
-	"os/exec"
 	"strconv"
 	"time"
 
@@ -28,7 +27,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-module/carbon"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/jinzhu/copier"
 	"github.com/samber/do/v2"
@@ -313,31 +311,20 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 		Fail(ctx, errcode.ErrInvalidParameter)
 		return
 	}
-	id, err := uuid.NewUUID()
-	if err != nil {
-		Fail(ctx, err)
-		return
-	}
-	clientBasePath := "client"
-	buildStr := `CGO_ENABLED=0 GOOS=%s GOARCH=%s go build -o %s main.go`
 
-	buildCmd := fmt.Sprintf(buildStr, req.Goos, req.Goarch, id.String())
-
-	cmd := exec.Command("sh", "-c", buildCmd)
-	cmd.Dir = clientBasePath
-
-	_, err = cmd.CombinedOutput()
-
+	file, err := c.clientService.BuildCllient(req.Goos, req.Goarch, req.Host, req.Port)
 	if err != nil {
 		Fail(ctx, err)
 		return
 	}
 
 	defer func() {
-		os.Remove(clientBasePath + "/" + id.String())
+		os.Remove(file)
 	}()
 
-	ctx.File(clientBasePath + "/" + id.String())
+	fmt.Println(file)
+
+	ctx.File(file)
 }
 
 func (c ClientController) GetInstallScript(ctx *gin.Context) {
