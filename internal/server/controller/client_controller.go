@@ -317,7 +317,7 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 		return
 	}
 	clientBasePath := "client"
-	buildStr := `GOOS=%s GOARCH=%s go build -o %s main.go`
+	buildStr := `CGO_ENABLED=0 GOOS=%s GOARCH=%s go build -o %s main.go`
 
 	buildCmd := fmt.Sprintf(buildStr, req.Goos, req.Goarch, id.String())
 
