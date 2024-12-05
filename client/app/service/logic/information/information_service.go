@@ -195,7 +195,7 @@ func (i informationService) KillProcess(pid int32) error {
 
 func (i informationService) GetNetworkInfo() (res []message.NetworkInfo, err error) {
 	// 获取所有监听中的连接
-	conns, err := net.Connections("-1")
+	conns, err := net.Connections("all")
 	if err != nil {
 		return nil, err
 	}
