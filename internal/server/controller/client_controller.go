@@ -313,7 +313,7 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 	}
 	id, err := uuid.NewUUID()
 	if err != nil {
-		Fail(ctx, errcode.ErrInternalError)
+		Fail(ctx, err)
 		return
 	}
 	clientBasePath := "client"
@@ -327,7 +327,7 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 	_, err = cmd.CombinedOutput()
 
 	if err != nil {
-		Fail(ctx, errcode.ErrInternalError)
+		Fail(ctx, err)
 		return
 	}
 
