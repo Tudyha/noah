@@ -1,14 +1,17 @@
 package tunnel
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net"
-	"net/http"
-	"noah/pkg/mux"
-	"strings"
+	"os"
 	"sync"
+	"time"
+
+	"github.com/shadowsocks/go-shadowsocks2/core"
+	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
 
 type tunnel struct {
@@ -52,6 +55,15 @@ func (t *tunnel) stop() {
 
 func (t *tunnel) listen() {
 	defer t.service.removeTunnel(t.id)
+	var key []byte
+	cipher := "AES-256-GCM"
+	password := "123456"
+
+	ciph, err := core.PickCipher(cipher, key, password)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", t.serverPort))
 	if err != nil {
 		return
@@ -72,43 +84,34 @@ func (t *tunnel) listen() {
 				}
 				continue
 			}
-			go t.handleConn(conn)
+			go t.handleConn(conn, ciph.StreamConn)
 		}
 	}
 }
 
-func (t *tunnel) handleConn(conn net.Conn) {
-	defer conn.Close()
+func (t *tunnel) handleConn(c net.Conn, shadow func(net.Conn) net.Conn) {
+	defer c.Close()
 
 	network := "tcp"
 	targetAddr := t.targetAddr
 
-	var r *http.Request
-
 	switch t.tunnelType {
 	case 1:
 	case 2:
-		reader := bufio.NewReader(conn)
-		req, err := http.ReadRequest(reader)
+		c := shadow(c)
+
+		tgt, err := socks.ReadAddr(c)
 		if err != nil {
+			log.Printf("failed to get target address from %v: %v", c.RemoteAddr(), err)
+			// drain c to avoid leaking server behavioral features
+			// see https://www.ndss-symposium.org/ndss-paper/detecting-probe-resistant-proxies/
+			_, err = io.Copy(io.Discard, c)
+			if err != nil {
+				log.Printf("discard error: %v", err)
+			}
 			return
 		}
-		targetAddr = req.Host
-		if !strings.Contains(req.Host, ":") {
-			if req.URL.Scheme == "https" {
-				targetAddr = req.Host + ":443"
-			}
-			if req.URL.Scheme == "http" {
-				targetAddr = req.Host + ":80"
-			}
-		}
-
-		if req.Method == "CONNECT" {
-			conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
-			req = nil
-		}
-
-		r = req
+		targetAddr = tgt.String()
 	}
 
 	clientConn, err := t.service.newClientConn(t.clientId, network, targetAddr)
@@ -116,9 +119,29 @@ func (t *tunnel) handleConn(conn net.Conn) {
 		return
 	}
 	defer clientConn.Close()
-	if r != nil {
-		r.Write(clientConn)
-	}
 
-	clientConn.(*mux.Conn).Copy(conn)
+	relay(c, clientConn)
+}
+
+// relay copies between left and right bidirectionally
+func relay(left, right net.Conn) error {
+	var err, err1 error
+	var wg sync.WaitGroup
+	var wait = 5 * time.Second
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_, err1 = io.Copy(right, left)
+		right.SetReadDeadline(time.Now().Add(wait)) // unblock read on right
+	}()
+	_, err = io.Copy(left, right)
+	left.SetReadDeadline(time.Now().Add(wait)) // unblock read on left
+	wg.Wait()
+	if err1 != nil && !errors.Is(err1, os.ErrDeadlineExceeded) { // requires Go 1.15+
+		return err1
+	}
+	if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
+		return err
+	}
+	return nil
 }
