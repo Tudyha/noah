@@ -28,6 +28,9 @@ func (g *Gateway) SetPongHandler(h func(uint32, []byte)) {
 }
 
 func (g *Gateway) HanderConn(clientId uint32, conn net.Conn) {
+	if old, ok := g.conns.Load(clientId); ok {
+		old.(*mux.Mux).Close()
+	}
 	m := mux.NewMux(conn, conn)
 	err := m.Start()
 	if err != nil {

@@ -14,18 +14,19 @@ import (
 
 type Mux struct {
 	net.Listener
-	reader          io.Reader
-	writer          io.Writer
-	connIdManager   *iDManager  // 连接id管理
-	waitConnQueue   chan *Conn  // 等待处理的连接
-	conns           *SafeMap    // 连接池
+	reader        io.Reader
+	writer        io.Writer
+	connIdManager *iDManager // 连接id管理
+	waitConnQueue chan *Conn // 等待处理的连接
+	conns         *sync.Map  // 连接池
+
 	sendPacketQueue chan packet // 发送消息队列
 
-	closedCallbackHandler func()
+	closedCallbackHandler func() // mux关闭回调
 	closeOnce             sync.Once
 
-	pingHandler func() []byte
-	pongHandler func(data []byte)
+	pingHandler func() []byte     // 心跳连接ping，可在ping时附带数据
+	pongHandler func(data []byte) // 心跳连接pong，可在pong时处理ping附带的数据
 }
 
 func NewMux(reader io.Reader, writer io.Writer) *Mux {
@@ -34,7 +35,7 @@ func NewMux(reader io.Reader, writer io.Writer) *Mux {
 		writer:                writer,
 		sendPacketQueue:       make(chan packet, 32),
 		connIdManager:         newIDManager(),
-		conns:                 NewSafeMap(),
+		conns:                 &sync.Map{},
 		waitConnQueue:         make(chan *Conn),
 		closedCallbackHandler: nil,
 		closeOnce:             sync.Once{},
@@ -54,9 +55,7 @@ func (m *Mux) Start() error {
 		defer m.Close()
 		m.write()
 	}()
-	if m.pingHandler != nil {
-		go m.ping()
-	}
+	go m.ping()
 
 	return nil
 }
@@ -103,7 +102,7 @@ func (m *Mux) RemoteAddr() net.Addr {
 	return nil
 }
 
-// read websocket message.
+// read packet from reader.
 func (m *Mux) read() error {
 	buf := bufio.NewReader(m.reader)
 	for {
@@ -116,9 +115,11 @@ func (m *Mux) read() error {
 	}
 }
 
+// handler packet
 func (m *Mux) handlerPacket(packet *packet) {
 	switch packet.Flag {
 	case Flag_New_Conn:
+		// new connection
 		c := NewConn(packet.ConnId, m)
 
 		var lk message.LinkInfo
@@ -129,26 +130,30 @@ func (m *Mux) handlerPacket(packet *packet) {
 		c.network = lk.Network
 		c.addr = lk.Addr
 
-		m.conns.Set(c.id, c)
+		m.conns.Store(c.id, c)
 		m.waitConnQueue <- c
 		m.writeMsg(Flag_Conn_Ok, packet.ConnId, nil)
 	case Flag_Conn_Ok:
-		if conn, ok := m.conns.Get(packet.ConnId); ok {
-			conn.connStatusOkCh <- struct{}{}
+		// connection ok
+		if conn, ok := m.conns.Load(packet.ConnId); ok {
+			conn.(*Conn).connStatusOkCh <- struct{}{}
 		}
 	case Flag_Data:
-		if conn, ok := m.conns.Get(packet.ConnId); ok {
-			conn.receive(packet.Data)
+		// conn data
+		if conn, ok := m.conns.Load(packet.ConnId); ok {
+			conn.(*Conn).receive(packet.Data)
 		}
 	case Flag_Close:
-		if conn, ok := m.conns.Get(packet.ConnId); ok {
-			conn.Close()
+		// conn close
+		if conn, ok := m.conns.Load(packet.ConnId); ok {
+			conn.(*Conn).Close()
 		}
 	case Flag_Ping:
+		// ping
 		if m.pongHandler != nil {
 			m.pongHandler(packet.Data)
 		}
-		m.writeMsg(Flag_Pong, 0, packet.Data)
+		m.writeMsg(Flag_Pong, 0, nil)
 	}
 }
 
@@ -178,7 +183,7 @@ func (m *Mux) Dial(network, address string) (*Conn, error) {
 	conn.network = network
 	conn.addr = address
 	// it must be Set before send
-	m.conns.Set(connId, conn)
+	m.conns.Store(connId, conn)
 
 	data, err := json.Marshal(message.LinkInfo{
 		Network: network,

@@ -302,7 +302,7 @@ Content-Length: %d
 	conn.Write([]byte(fmt.Sprintf(response, contentLength, data)))
 
 	// write success response
-	go c.gateway.HanderConn(uint32(id), conn)
+	c.gateway.HanderConn(uint32(id), conn)
 }
 
 func (c ClientController) GenerateClient(ctx *gin.Context) {
