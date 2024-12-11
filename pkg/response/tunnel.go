@@ -8,4 +8,5 @@ type GetTunnelListRes struct {
 	ServerPort int    `json:"serverPort"`
 	Status     uint8  `json:"status"`
 	FailReason string `json:"failReason"`
+	TargetAddr string `json:"targetAddr"`
 }

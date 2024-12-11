@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -23,7 +22,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strconv"
-	"sync"
 	"time"
 
 	"noah/pkg/mux"
@@ -201,29 +199,10 @@ func (h *Handler) handlerConnection(conn *mux.Conn) {
 	}
 	if target != nil {
 		defer target.Close()
-		if err := relay(conn, target); err != nil {
+		if err := myio.Copy(conn, target); err != nil {
 			return
 		}
 	}
-}
-
-func relay(left, right io.ReadWriter) error {
-	var err, err1 error
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		_, err1 = io.Copy(right, left)
-	}()
-	_, err = io.Copy(left, right)
-	wg.Wait()
-	if err1 != nil && !errors.Is(err1, os.ErrDeadlineExceeded) { // requires Go 1.15+
-		return err1
-	}
-	if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
-		return err
-	}
-	return nil
 }
 
 func (h *Handler) handlerCommand(cmd string, data []byte) (response any, err error) {

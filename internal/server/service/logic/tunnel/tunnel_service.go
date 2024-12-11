@@ -1,21 +1,25 @@
 package tunnel
 
 import (
-	"github.com/jinzhu/copier"
-	"github.com/samber/do/v2"
+	"fmt"
 	"net"
 	"noah/internal/server/dao"
+	"noah/internal/server/environment"
 	"noah/internal/server/gateway"
 	"noah/internal/server/middleware/log"
 	"noah/internal/server/model"
 	"noah/pkg/request"
 	"noah/pkg/response"
+
+	"github.com/jinzhu/copier"
+	"github.com/samber/do/v2"
 )
 
 type tunnelService struct {
 	tunnelDao dao.TunnelDao
 	tunnels   map[uint]*tunnel
 	gateway   *gateway.Gateway
+	env       *environment.Environment
 }
 
 func NewTunnelService(i do.Injector) (tunnelService, error) {
@@ -23,6 +27,7 @@ func NewTunnelService(i do.Injector) (tunnelService, error) {
 		tunnelDao: do.MustInvoke[dao.TunnelDao](i),
 		tunnels:   make(map[uint]*tunnel),
 		gateway:   do.MustInvoke[*gateway.Gateway](i),
+		env:       do.MustInvoke[*environment.Environment](i),
 	}
 
 	s.recoverTunnel()
@@ -35,12 +40,20 @@ func (c tunnelService) NewTunnel(id uint, tunnelReq request.CreateTunnelReq) err
 	tunnelType := tunnelReq.TunnelType
 	serverPort := tunnelReq.ServerPort
 	targetAddr := tunnelReq.TargetAddr
+	cipher := tunnelReq.Cipher
+	password := tunnelReq.Password
+
+	if tunnelType == 2 {
+		targetAddr = fmt.Sprintf("ss://%s:%s@%s:%d", cipher, password, c.env.Server.Host, serverPort)
+	}
 
 	tunnelId, err := c.tunnelDao.Save(model.Tunnel{
 		TunnelType: tunnelType,
 		ClientId:   id,
 		ServerPort: serverPort,
 		TargetAddr: targetAddr,
+		Cipher:     cipher,
+		Password:   password,
 	})
 	if err != nil {
 		log.Error("Save tunnel error", map[string]interface{}{"clientId": id, "error": err})
@@ -58,7 +71,10 @@ func (c tunnelService) startTunnel(tunnelId uint) (err error) {
 	if err != nil {
 		return err
 	}
-	t := newTunnel(mt.ID, mt.TunnelType, mt.ServerPort, mt.ClientId, mt.TargetAddr, &c)
+	t, err := newTunnel(mt.ID, mt.TunnelType, mt.ServerPort, mt.ClientId, mt.TargetAddr, mt.Cipher, mt.Password, &c)
+	if err != nil {
+		return err
+	}
 	if err = t.start(); err != nil {
 		c.tunnelDao.UpdateStatus(tunnelId, 2, err.Error())
 		return err
@@ -70,9 +86,7 @@ func (c tunnelService) startTunnel(tunnelId uint) (err error) {
 }
 
 func (c tunnelService) removeTunnel(id uint) {
-	if _, ok := c.tunnels[id]; ok {
-		delete(c.tunnels, id)
-	}
+	delete(c.tunnels, id)
 }
 
 // GetTunnelList 获取tunnel列表

@@ -13,7 +13,6 @@ import (
 	"noah/internal/server/service"
 	"noah/pkg/enum"
 	"noah/pkg/errcode"
-	"noah/pkg/mux"
 	"noah/pkg/request"
 	"os"
 	"strconv"
@@ -148,7 +147,7 @@ func (c ClientController) OpenPty(ctx *gin.Context) {
 func copy(src, target io.ReadWriteCloser) {
 	defer src.Close()
 	defer target.Close()
-	src.(*mux.Conn).Copy(target)
+	myio.Copy(target, src)
 }
 
 // GetClientInfo 获取客户端信息
@@ -312,7 +311,7 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 		return
 	}
 
-	file, err := c.clientService.BuildCllient(req.Goos, req.Goarch, req.Host, req.Port)
+	file, err := c.clientService.BuildCllient(req.Goos, req.Goarch, c.env.Server.Host, fmt.Sprintf("%d", c.env.Server.Port))
 	if err != nil {
 		Fail(ctx, err)
 		return
@@ -321,8 +320,6 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 	defer func() {
 		os.Remove(file)
 	}()
-
-	fmt.Println(file)
 
 	ctx.File(file)
 }

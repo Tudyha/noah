@@ -48,8 +48,8 @@ type SendCommandReq struct {
 type GenerateClientReq struct {
 	Goos   string `form:"goos" binding:"required" description:"操作系统"`
 	Goarch string `form:"goarch" binding:"required" description:"CPU架构"`
-	Host   string `form:"host" binding:"required" description:"服务器地址"`
-	Port   string `form:"port" binding:"required" description:"端口号"`
+	// Host   string `form:"host" binding:"required" description:"服务器地址"`
+	// Port   string `form:"port" binding:"required" description:"端口号"`
 }
 
 // ClientFileRenameReq 重命名文件请求

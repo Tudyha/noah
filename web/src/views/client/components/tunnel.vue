@@ -45,17 +45,25 @@
 
     </el-container>
     <el-dialog title="新增隧道" :visible.sync="dialogVisible" width="30%">
-      <el-form :model="form">
+      <el-form :model="form" label-position="left" label-width="80px">
         <el-form-item label="模式">
           <el-select v-model="form.tunnelType" placeholder="请选择">
             <el-option v-for="item in m.tunnelTypeOptions" :key="item.value" :label="item.label" :value="+item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="端口">
-          <el-input v-model.number="form.serverPort" autocomplete="off" />
+          <el-input v-model.number="form.serverPort" autocomplete="off" style="width: 30%;" />
         </el-form-item>
         <el-form-item v-if="form.tunnelType === 1" label="目标地址">
-          <el-input v-model="form.targetAddr" autocomplete="off" />
+          <el-input v-model="form.targetAddr" autocomplete="off" style="width: 70%;" />
+        </el-form-item>
+        <el-form-item v-if="form.tunnelType === 2" label="加密方式">
+          <el-select v-model="form.cipher" placeholder="请选择">
+            <el-option v-for="item in m.cipherOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="form.tunnelType === 2" label="密码">
+          <el-input v-model="form.password" autocomplete="off" type="password" style="width: 70%;" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -87,7 +95,9 @@ export default {
       form: {
         tunnelType: null,
         serverPort: null,
-        targetAddr: ""
+        targetAddr: "",
+        cipher: null,
+        password: null,
       }
     }
   },

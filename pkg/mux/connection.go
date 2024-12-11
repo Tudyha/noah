@@ -82,12 +82,6 @@ func (c *Conn) Close() error {
 	return nil
 }
 
-// Copy fixme 加解密、压缩
-func (c *Conn) Copy(target io.ReadWriter) {
-	go io.Copy(target, c)
-	io.Copy(c, target)
-}
-
 func (c *Conn) ReadFull() ([]byte, error) {
 	var buffer bytes.Buffer
 	buf := make([]byte, 32*1024)

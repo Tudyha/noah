@@ -3,27 +3,41 @@ package tunnel
 import (
 	"errors"
 	"fmt"
-	"github.com/shadowsocks/go-shadowsocks2/core"
-	"github.com/shadowsocks/go-shadowsocks2/socks"
 	"io"
 	"log"
 	"net"
-	"os"
+	myio "noah/pkg/io"
 	"sync"
+
+	"github.com/shadowsocks/go-shadowsocks2/core"
+	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
 
 type tunnel struct {
-	id          uint
-	tunnelType  uint8
-	serverPort  int
-	clientId    uint
-	targetAddr  string
-	closeSignal chan struct{}
+	id          uint          // tunnel id
+	tunnelType  uint8         // 隧道类型: 1.tcp 2.shadowsocks
+	serverPort  int           // 服务端监听端口
+	clientId    uint          // 客户端id
+	targetAddr  string        // 目标地址
+	closeSignal chan struct{} // 关闭信号
 	closeOnce   sync.Once
-	service     *tunnelService
+	service     *tunnelService          // tunnel service
+	shadow      func(net.Conn) net.Conn // shadowsocks 加密
 }
 
-func newTunnel(id uint, tunnelType uint8, serverPort int, clientId uint, targetAddr string, s *tunnelService) *tunnel {
+// cipher: shadowsocks 加密方式: CHACHA20-IETF-POLY1305、AES-128-GCM、AES-256-GCM
+// password: shadowsocks 密码
+func newTunnel(id uint, tunnelType uint8, serverPort int, clientId uint, targetAddr string, cipher, password string, s *tunnelService) (*tunnel, error) {
+	var shadow func(net.Conn) net.Conn
+	if tunnelType == 2 {
+		var key []byte
+
+		ciph, err := core.PickCipher(cipher, key, password)
+		if err != nil {
+			return nil, err
+		}
+		shadow = ciph.StreamConn
+	}
 	return &tunnel{
 		id:          id,
 		tunnelType:  tunnelType,
@@ -33,7 +47,8 @@ func newTunnel(id uint, tunnelType uint8, serverPort int, clientId uint, targetA
 		closeSignal: make(chan struct{}),
 		closeOnce:   sync.Once{},
 		service:     s,
-	}
+		shadow:      shadow,
+	}, nil
 }
 
 func (t *tunnel) start() error {
@@ -53,14 +68,6 @@ func (t *tunnel) stop() {
 
 func (t *tunnel) listen() {
 	defer t.service.removeTunnel(t.id)
-	var key []byte
-	cipher := "AES-256-GCM"
-	password := "123456"
-
-	ciph, err := core.PickCipher(cipher, key, password)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", t.serverPort))
 	if err != nil {
@@ -82,12 +89,12 @@ func (t *tunnel) listen() {
 				}
 				continue
 			}
-			go t.handleConn(conn, ciph.StreamConn)
+			go t.handleConn(conn)
 		}
 	}
 }
 
-func (t *tunnel) handleConn(c net.Conn, shadow func(net.Conn) net.Conn) {
+func (t *tunnel) handleConn(c net.Conn) {
 	defer c.Close()
 
 	network := "tcp"
@@ -99,7 +106,7 @@ func (t *tunnel) handleConn(c net.Conn, shadow func(net.Conn) net.Conn) {
 	case 1:
 		sc = c
 	case 2:
-		sc = shadow(c)
+		sc = t.shadow(c)
 
 		tgt, err := socks.ReadAddr(sc)
 		if err != nil {
@@ -123,28 +130,7 @@ func (t *tunnel) handleConn(c net.Conn, shadow func(net.Conn) net.Conn) {
 	}
 	defer rc.Close()
 
-	log.Printf("proxy %s <-> %s", c.RemoteAddr(), targetAddr)
-	if err = relay(sc, rc); err != nil {
+	if err = myio.Copy(sc, rc); err != nil {
 		log.Printf("relay error: %v", err)
 	}
-}
-
-// relay copies between left and right bidirectionally
-func relay(left, right net.Conn) error {
-	var err, err1 error
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		_, err1 = io.Copy(right, left)
-	}()
-	_, err = io.Copy(left, right)
-	wg.Wait()
-	if err1 != nil && !errors.Is(err1, os.ErrDeadlineExceeded) { // requires Go 1.15+
-		return err1
-	}
-	if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
-		return err
-	}
-	return nil
 }

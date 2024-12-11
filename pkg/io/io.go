@@ -2,7 +2,10 @@ package io
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"os"
+	"sync"
 
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
@@ -66,4 +69,23 @@ func (w *PtyReaderWriterCloser) Write(p []byte) (n int, err error) {
 
 func (w *PtyReaderWriterCloser) Close() error {
 	return w.IO.Close()
+}
+
+func Copy(left, right io.ReadWriter) error {
+	var err, err1 error
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_, err1 = io.Copy(right, left)
+	}()
+	_, err = io.Copy(left, right)
+	wg.Wait()
+	if err1 != nil && !errors.Is(err1, os.ErrDeadlineExceeded) { // requires Go 1.15+
+		return err1
+	}
+	if err != nil && !errors.Is(err, os.ErrDeadlineExceeded) {
+		return err
+	}
+	return nil
 }
