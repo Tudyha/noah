@@ -5,55 +5,56 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"noah/pkg/utils"
+
+	"github.com/gookit/goutil/arrutil"
 )
 
 const (
-	MAGIC_NUMBER = 0x12345678
-	VERSION      = 0x01
+	magicNumber         = 0x12345678
+	version             = 0x01
+	compressNone  uint8 = 0x00
+	compressGzip  uint8 = 0x01
+	compressFlate uint8 = 0x02
+)
+
+var (
+	compresses []uint8 = []uint8{compressNone, compressGzip, compressFlate}
 )
 
 type packet struct {
-	Flag        flag
-	Data        []byte
-	MagicNumber uint32
-	Version     uint8
-	Length      uint32
-	ConnId      uint32
+	flag     flag
+	data     []byte
+	connId   uint32
+	compress uint8
 }
 
 type flag uint8
 
 const (
-	Flag_First    flag = 0x00
-	Flag_New_Conn flag = 0x01
-	Flag_Conn_Ok  flag = 0x02
-	Flag_Data     flag = 0x03
-	Flag_Close    flag = 0x04
-	Flag_Ping     flag = 0x05
-	Flag_Pong     flag = 0x06
+	flagFirst   flag = 0x00
+	flagNewConn flag = 0x01
+	flagConnOk  flag = 0x02
+	flagData    flag = 0x03
+	flagClose   flag = 0x04
+	flagPing    flag = 0x05
+	flagPong    flag = 0x06
 )
 
 // readPacket 从 reader 中读取并解析一个完整的数据包
 func readPacket(reader io.Reader) (*packet, error) {
 	// 读取魔数
-	var magicNumber uint32
-	err := binary.Read(reader, binary.BigEndian, &magicNumber)
+	var mn uint32
+	err := binary.Read(reader, binary.BigEndian, &mn)
 	if err != nil {
 		return nil, errors.New("error reading magic number: " + err.Error())
 	}
 
 	// 读取版本号
-	var version uint8
-	err = binary.Read(reader, binary.BigEndian, &version)
+	var ver uint8
+	err = binary.Read(reader, binary.BigEndian, &ver)
 	if err != nil {
 		return nil, errors.New("error reading version: " + err.Error())
-	}
-
-	// 读取数据长度
-	var length uint32
-	err = binary.Read(reader, binary.BigEndian, &length)
-	if err != nil {
-		return nil, errors.New("error reading length: " + err.Error())
 	}
 
 	// 读取标志位
@@ -70,6 +71,23 @@ func readPacket(reader io.Reader) (*packet, error) {
 		return nil, errors.New("error reading session ID: " + err.Error())
 	}
 
+	// 读取压缩方式
+	var compress uint8
+	err = binary.Read(reader, binary.BigEndian, &compress)
+	if err != nil {
+		return nil, errors.New("error reading compress: " + err.Error())
+	}
+	if !arrutil.Contains(compresses, compress) {
+		return nil, errors.New("invalid compress")
+	}
+
+	// 读取数据长度
+	var length uint32
+	err = binary.Read(reader, binary.BigEndian, &length)
+	if err != nil {
+		return nil, errors.New("error reading length: " + err.Error())
+	}
+
 	// 读取数据内容
 	data := make([]byte, length)
 	_, err = io.ReadFull(reader, data)
@@ -78,71 +96,84 @@ func readPacket(reader io.Reader) (*packet, error) {
 	}
 
 	// 检查魔数和版本号
-	if magicNumber != MAGIC_NUMBER {
+	if magicNumber != mn {
 		return nil, errors.New("invalid magic number")
 	}
-	if version != VERSION {
+	if version != ver {
 		return nil, errors.New("invalid version")
 	}
 
+	// 解压
+	switch compress {
+	case compressGzip:
+		data, err = utils.GzipDecompress(data)
+		if err != nil {
+			return nil, errors.New("error decompressing data: " + err.Error())
+		}
+	case compressFlate:
+		data, err = utils.FlateDecompress(data)
+		if err != nil {
+			return nil, errors.New("error decompressing data: " + err.Error())
+		}
+	}
+
 	return &packet{
-		MagicNumber: magicNumber,
-		Version:     version,
-		Length:      length,
-		Flag:        flag,
-		Data:        data,
-		ConnId:      connId,
+		flag:     flag,
+		data:     data,
+		connId:   connId,
+		compress: compress,
 	}, nil
 }
 
 // buildPacket 构建一个完整的数据包
-func buildPacket(flag flag, connId uint32, data []byte) ([]byte, error) {
-	packet := &packet{
-		MagicNumber: MAGIC_NUMBER,
-		Version:     VERSION,
-		Length:      uint32(len(data)),
-		Flag:        flag,
-		Data:        data,
-		ConnId:      connId,
+func buildPacket(flag flag, connId uint32, data []byte, compress uint8) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, uint32(magicNumber))
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(buf, binary.BigEndian, uint8(version))
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(buf, binary.BigEndian, flag)
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(buf, binary.BigEndian, connId)
+	if err != nil {
+		return nil, err
+	}
+	if !arrutil.Contains(compresses, compress) {
+		return nil, errors.New("invalid compress")
+	}
+	err = binary.Write(buf, binary.BigEndian, compress)
+	if err != nil {
+		return nil, err
 	}
 
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.BigEndian, packet.MagicNumber)
+	// 压缩
+	switch compress {
+	case compressGzip:
+		data, err = utils.GzipCompress(data)
+		if err != nil {
+			return nil, errors.New("error compressing data: " + err.Error())
+		}
+	case compressFlate:
+		data, err = utils.FlateCompress(data)
+		if err != nil {
+			return nil, errors.New("error compressing data: " + err.Error())
+		}
+	}
+
+	err = binary.Write(buf, binary.BigEndian, uint32(len(data)))
 	if err != nil {
 		return nil, err
 	}
-	err = binary.Write(buf, binary.BigEndian, packet.Version)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(buf, binary.BigEndian, packet.Length)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(buf, binary.BigEndian, packet.Flag)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(buf, binary.BigEndian, packet.ConnId)
-	if err != nil {
-		return nil, err
-	}
-	_, err = buf.Write(packet.Data)
+	_, err = buf.Write(data)
 	if err != nil {
 		return nil, err
 	}
 
 	return buf.Bytes(), nil
-}
-
-func ReadFirstPacket(reader io.Reader) ([]byte, error) {
-	p, err := readPacket(reader)
-	if p.Flag != Flag_First {
-		return nil, errors.New("invalid first packet")
-	}
-	return p.Data, err
-}
-
-func BuildFirstPacket(data []byte) ([]byte, error) {
-	return buildPacket(Flag_First, 0, data)
 }

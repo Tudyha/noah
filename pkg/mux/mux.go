@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -27,6 +28,9 @@ type Mux struct {
 
 	pingHandler func() []byte     // 心跳连接ping，可在ping时附带数据
 	pongHandler func(data []byte) // 心跳连接pong，可在pong时处理ping附带的数据
+
+	compress     uint8 // 数据压缩方式
+	compressOnce sync.Once
 }
 
 func NewMux(reader io.Reader, writer io.Writer) *Mux {
@@ -41,9 +45,17 @@ func NewMux(reader io.Reader, writer io.Writer) *Mux {
 		closeOnce:             sync.Once{},
 		pingHandler:           nil,
 		pongHandler:           nil,
+		compress:              compressNone,
+		compressOnce:          sync.Once{},
 	}
 
 	return m
+}
+
+func (m *Mux) SetCompress(compress uint8) {
+	m.compressOnce.Do(func() {
+		m.compress = compress
+	})
 }
 
 func (m *Mux) Start() error {
@@ -55,7 +67,9 @@ func (m *Mux) Start() error {
 		defer m.Close()
 		m.write()
 	}()
-	go m.ping()
+	if m.pingHandler != nil {
+		go m.ping()
+	}
 
 	return nil
 }
@@ -108,7 +122,11 @@ func (m *Mux) read() error {
 	for {
 		packet, err := readPacket(buf)
 		if err != nil {
+			fmt.Println("read packet fail: " + err.Error())
 			return err
+		}
+		if m.compress != packet.compress {
+			m.SetCompress(packet.compress)
 		}
 
 		m.handlerPacket(packet)
@@ -117,13 +135,13 @@ func (m *Mux) read() error {
 
 // handler packet
 func (m *Mux) handlerPacket(packet *packet) {
-	switch packet.Flag {
-	case Flag_New_Conn:
+	switch packet.flag {
+	case flagNewConn:
 		// new connection
-		c := NewConn(packet.ConnId, m)
+		c := NewConn(packet.connId, m)
 
 		var lk message.LinkInfo
-		if err := json.Unmarshal(packet.Data, &lk); err != nil {
+		if err := json.Unmarshal(packet.data, &lk); err != nil {
 			return
 		}
 
@@ -132,35 +150,36 @@ func (m *Mux) handlerPacket(packet *packet) {
 
 		m.conns.Store(c.id, c)
 		m.waitConnQueue <- c
-		m.writeMsg(Flag_Conn_Ok, packet.ConnId, nil)
-	case Flag_Conn_Ok:
+		m.writeMsg(flagConnOk, packet.connId, nil)
+	case flagConnOk:
 		// connection ok
-		if conn, ok := m.conns.Load(packet.ConnId); ok {
+		if conn, ok := m.conns.Load(packet.connId); ok {
 			conn.(*Conn).connStatusOkCh <- struct{}{}
 		}
-	case Flag_Data:
+	case flagData:
 		// conn data
-		if conn, ok := m.conns.Load(packet.ConnId); ok {
-			conn.(*Conn).receive(packet.Data)
+		if conn, ok := m.conns.Load(packet.connId); ok {
+			conn.(*Conn).receive(packet.data)
 		}
-	case Flag_Close:
+	case flagClose:
 		// conn close
-		if conn, ok := m.conns.Load(packet.ConnId); ok {
+		if conn, ok := m.conns.Load(packet.connId); ok {
 			conn.(*Conn).Close()
 		}
-	case Flag_Ping:
+	case flagPing:
 		// ping
 		if m.pongHandler != nil {
-			m.pongHandler(packet.Data)
+			m.pongHandler(packet.data)
 		}
-		m.writeMsg(Flag_Pong, 0, nil)
+		m.writeMsg(flagPong, 0, nil)
 	}
 }
 
 func (m *Mux) write() error {
 	for p := range m.sendPacketQueue {
-		d, err := buildPacket(p.Flag, p.ConnId, p.Data)
+		d, err := buildPacket(p.flag, p.connId, p.data, m.compress)
 		if err != nil {
+			fmt.Println("write packet fail: " + err.Error())
 			continue
 		}
 		n, err := m.writer.Write(d)
@@ -193,7 +212,7 @@ func (m *Mux) Dial(network, address string) (*Conn, error) {
 		return nil, err
 	}
 
-	m.writeMsg(Flag_New_Conn, connId, data)
+	m.writeMsg(flagNewConn, connId, data)
 	// Set a timer timeout 120 second
 	timer := time.NewTimer(time.Minute * 2)
 	defer timer.Stop()
@@ -207,16 +226,16 @@ func (m *Mux) Dial(network, address string) (*Conn, error) {
 
 func (m *Mux) writeMsg(flag flag, connId uint32, data []byte) {
 	m.sendPacketQueue <- packet{
-		Flag:   flag,
-		Data:   data,
-		ConnId: connId,
+		flag:   flag,
+		data:   data,
+		connId: connId,
 	}
 }
 
 func (m *Mux) removeConn(id uint32) {
 	m.conns.Delete(id)
 	m.connIdManager.ReleaseID(id)
-	m.writeMsg(Flag_Close, id, nil)
+	m.writeMsg(flagClose, id, nil)
 }
 
 func (m *Mux) ping() {
@@ -225,7 +244,7 @@ func (m *Mux) ping() {
 		if m.pingHandler != nil {
 			data = m.pingHandler()
 		}
-		m.writeMsg(Flag_Ping, 0, data)
+		m.writeMsg(flagPing, 0, data)
 		time.Sleep(time.Second * 30)
 	}
 }

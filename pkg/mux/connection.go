@@ -70,7 +70,7 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 	n = len(b)
 	d := make([]byte, n)
 	copy(d[:], b[:n])
-	c.mux.writeMsg(Flag_Data, c.id, d)
+	c.mux.writeMsg(flagData, c.id, d)
 	return n, nil
 }
 
