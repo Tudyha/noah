@@ -15,5 +15,5 @@ type IClientService interface {
 	SaveClientStat(id uint, systemInfo request.CreateClientStatReq) error
 	GetClientStat(id uint, start time.Time, end time.Time) ([]response.GetClientStatRes, error)
 	Count() (online int64, offline int64)
-	BuildCllient(goos, goarch, host, port string) (file string, err error)
+	BuildCllient(goos, goarch, host, port string, compress uint8) (file string, err error)
 }

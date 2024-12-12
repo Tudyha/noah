@@ -101,11 +101,7 @@ func (c tunnelService) GetTunnelList(clientId uint) (res []response.GetTunnelLis
 
 // DeleteTunnel 删除tunnel
 func (c tunnelService) DeleteTunnel(id uint) error {
-	_, err := c.tunnelDao.GetById(id)
-	if err != nil {
-		return err
-	}
-	err = c.tunnelDao.Delete(id)
+	err := c.tunnelDao.Delete(id)
 	if err != nil {
 		return err
 	}
@@ -132,4 +128,15 @@ func (c tunnelService) recoverTunnel() {
 
 func (c tunnelService) newClientConn(clientId uint, network, targetAddr string) (net.Conn, error) {
 	return c.gateway.NewClientConn(uint32(clientId), network, targetAddr)
+}
+
+func (c tunnelService) DeleteTunnelByClientId(clientId uint) (err error) {
+	tunnels, err := c.tunnelDao.List(clientId)
+	if err != nil {
+		return err
+	}
+	for _, t := range tunnels {
+		c.DeleteTunnel(t.ID)
+	}
+	return
 }

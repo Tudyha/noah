@@ -36,9 +36,9 @@ func LoadEnvironment() (environment.Environment, error) {
 	}
 
 	//如果环境变量设置了配置，则覆盖配置文件
-	// if os.Getenv("SERVER_PORT") != "" {
-	// 	env.Server.HttpPort = os.Getenv("SERVER_PORT")
-	// }
+	if os.Getenv("HOST") != "" {
+		env.Server.Host = os.Getenv("HOST")
+	}
 	// if os.Getenv("ADMIN_PASSWORD") != "" {
 	// 	env.Admin.Password = os.Getenv("ADMIN_PASSWORD")
 	// }

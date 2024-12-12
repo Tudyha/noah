@@ -38,7 +38,6 @@ func Init(router *gin.Engine, i do.Injector) {
 	authApi := api.Group("", authMiddleware.AuthMiddlewareFunc())
 	//临时授权接口
 	tempAuthApi := api.Group("", authMiddleware.TempAuthMiddlewareFunc())
-	tempAuthApi.GET("/client/build", clientController.GenerateClient)
 
 	InitUserRouter(authApi, i)
 	InitClientRouter(authApi, i)

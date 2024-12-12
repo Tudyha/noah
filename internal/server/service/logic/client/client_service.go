@@ -167,8 +167,8 @@ func (c clientService) runScheduleTask() {
 	cr.Start()
 }
 
-func (c clientService) BuildCllient(goos, goarch, host, port string) (file string, err error) {
-	filename, err := prepareBuildSession(host, port)
+func (c clientService) BuildCllient(goos, goarch, host, port string, compress uint8) (file string, err error) {
+	filename, err := prepareBuildSession(host, port, compress)
 	defer func() {
 		os.Rename(clientBasePath+"/"+clientConfigFilename+"."+"b", clientBasePath+clientConfigFilename)
 	}()
@@ -187,7 +187,7 @@ func (c clientService) BuildCllient(goos, goarch, host, port string) (file strin
 	return clientBasePath + file, nil
 }
 
-func prepareBuildSession(host, port string) (filename string, err error) {
+func prepareBuildSession(host, port string, compress uint8) (filename string, err error) {
 	sessionID := uuid.New().String()
 
 	// 备份配置文件, 防止被覆盖
@@ -203,6 +203,7 @@ func prepareBuildSession(host, port string) (filename string, err error) {
 			"host": host,
 			"port": p,
 		},
+		"compress": compress,
 	}
 	d, err := json.Marshal(clientConfig)
 	if err != nil {

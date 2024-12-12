@@ -1,10 +1,11 @@
 import request from '@/utils/request'
+import requestFile from '@/utils/request-file'
 
-export function generate(data) {
-  return request({
-    url: '/client/generate',
-    method: 'post',
-    data
+export function generate(params) {
+  return requestFile({
+    url: '/client/build',
+    method: 'get',
+    params: params,
   })
 }
 

@@ -36,6 +36,7 @@ type ClientController struct {
 	gateway        *gateway.Gateway
 	authMiddleware *auth.AuthMiddleware
 	env            *environment.Environment
+	tunnelService  service.ITunnelService
 }
 
 func NewClientController(i do.Injector) (ClientController, error) {
@@ -44,6 +45,7 @@ func NewClientController(i do.Injector) (ClientController, error) {
 		gateway:        do.MustInvoke[*gateway.Gateway](i),
 		authMiddleware: do.MustInvoke[*auth.AuthMiddleware](i),
 		env:            do.MustInvoke[*environment.Environment](i),
+		tunnelService:  do.MustInvoke[service.ITunnelService](i),
 	}, nil
 }
 
@@ -106,9 +108,14 @@ func (c ClientController) DeleteClient(ctx *gin.Context) {
 	c.gateway.SendCommand(uint(id), enum.Exit, nil, false)
 
 	//删除客户端
-	err := c.clientService.Delete(uint(id))
-	if err != nil {
-		Fail(ctx, errcode.ErrInternalError)
+	if err := c.clientService.Delete(uint(id)); err != nil {
+		Fail(ctx, err)
+		return
+	}
+
+	// 删除tunnel
+	if err := c.tunnelService.DeleteTunnelByClientId(uint(id)); err != nil {
+		Fail(ctx, err)
 		return
 	}
 
@@ -311,7 +318,7 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 		return
 	}
 
-	file, err := c.clientService.BuildCllient(req.Goos, req.Goarch, c.env.Server.Host, fmt.Sprintf("%d", c.env.Server.Port))
+	file, err := c.clientService.BuildCllient(req.Goos, req.Goarch, c.env.Server.Host, fmt.Sprintf("%d", c.env.Server.Port), req.Compress)
 	if err != nil {
 		Fail(ctx, err)
 		return
@@ -321,10 +328,12 @@ func (c ClientController) GenerateClient(ctx *gin.Context) {
 		os.Remove(file)
 	}()
 
-	ctx.File(file)
-}
+	filename := req.Filename
+	if filename == "" {
+		filename = "noah-cli"
+	}
 
-func (c ClientController) GetInstallScript(ctx *gin.Context) {
-	r := c.authMiddleware.GenerateTempToken()
-	Success(ctx, r.Token)
+	ctx.Header("Content-Disposition", "attachment; filename="+filename)
+
+	ctx.File(file)
 }

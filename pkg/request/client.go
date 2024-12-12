@@ -46,10 +46,10 @@ type SendCommandReq struct {
 
 // ClientGenerateReq 生成客户端请求
 type GenerateClientReq struct {
-	Goos   string `form:"goos" binding:"required" description:"操作系统"`
-	Goarch string `form:"goarch" binding:"required" description:"CPU架构"`
-	// Host   string `form:"host" binding:"required" description:"服务器地址"`
-	// Port   string `form:"port" binding:"required" description:"端口号"`
+	Goos     string `form:"goos" binding:"required" description:"操作系统"`
+	Goarch   string `form:"goarch" binding:"required" description:"CPU架构"`
+	Compress uint8  `form:"compress" description:"压缩方式"`
+	Filename string `form:"filename,omitempty" description:"文件名"`
 }
 
 // ClientFileRenameReq 重命名文件请求

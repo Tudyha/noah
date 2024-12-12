@@ -134,7 +134,7 @@ func (h *Handler) connect() error {
 		return data
 	})
 
-	m.SetCompress(2)
+	m.SetCompress(h.Env.Compress)
 
 	err = m.Start()
 	if err != nil {

@@ -6,7 +6,6 @@
         <el-option v-for="item in map.statusOptions" :key="item.value" :label="item.label" :value="+item.value" />
       </el-select>
       <el-button class="margin-left-10" type="primary" @click="fetchData">搜索</el-button>
-      <el-button class="right-aligned" type="success" @click="handleBind">绑定主机</el-button>
     </div>
 
     <el-table v-loading="listLoading" class="table-container" :data="list" element-loading-text="Loading" border fit
