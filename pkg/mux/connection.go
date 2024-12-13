@@ -32,7 +32,10 @@ func NewConn(id uint32, m *Mux) *Conn {
 }
 
 func (c *Conn) receive(data []byte) {
-	c.receiveChan <- data
+	select {
+	case c.receiveChan <- data:
+	default:
+	}
 }
 
 func (c *Conn) Read(b []byte) (n int, err error) {
