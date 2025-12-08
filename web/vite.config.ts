@@ -6,6 +6,7 @@ import Component from "unplugin-vue-components/vite";
 import Icons from "unplugin-icons/vite";
 import { resolve } from "path";
 import { viteMockServe } from "vite-plugin-mock";
+import RadixVueResolver from 'radix-vue/resolver'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -20,6 +21,7 @@ export default defineConfig(({ mode }) => {
         eslintrc: {
           enabled: true,
         },
+        resolvers: [RadixVueResolver()],
       }),
       Component({
         dts: "src/components.d.ts",

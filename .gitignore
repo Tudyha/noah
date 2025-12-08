@@ -4,3 +4,4 @@ logs/*
 
 web/node_modules
 web/dist
+web/package-lock.json
