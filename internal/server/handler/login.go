@@ -39,10 +39,12 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 
 	var client model.Client
 
-	if err := copier.Copy(&client, &loginReq); err != nil {
+	if err := copier.Copy(&client, loginReq.ClientInfo); err != nil {
 		logger.Info("复制数据失败", "err", err)
 		return err
 	}
+	client.DeviceID = loginReq.DeviceId
+	client.AppID = loginReq.AppId
 	client.ConnID = ctx.GetConn().GetID()
 
 	if err := h.clientService.Create(ctx, &client); err != nil {

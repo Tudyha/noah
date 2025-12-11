@@ -8,7 +8,7 @@ import (
 type Client struct {
 	BaseModel
 
-	AppId           uint64 `gorm:"column:app_id;not null"`
+	AppID           uint64 `gorm:"column:app_id;not null"`
 	DeviceID        string `gorm:"column:device_id;uniqueIndex"`
 	OsType          int    `gorm:"column:os_type;type:int(11);not null"`
 	Hostname        string `gorm:"column:hostname"`
