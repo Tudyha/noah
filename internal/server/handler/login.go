@@ -52,6 +52,8 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 		return err
 	}
 
+	ctx.GetConn().SetState(conn.ConnState_Active)
+
 	return nil
 }
 

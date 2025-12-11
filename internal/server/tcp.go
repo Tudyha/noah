@@ -38,7 +38,9 @@ func NewTCPServer() app.Server {
 	}
 
 	registerHandler := handler.NewLoginHandler()
+	pingHandler := handler.NewPingHandler()
 	s.messageHandlers[registerHandler.MessageType()] = registerHandler
+	s.messageHandlers[pingHandler.MessageType()] = pingHandler
 
 	return s
 }

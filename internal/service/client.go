@@ -42,8 +42,7 @@ func (c *clientService) VerifySign(ctx context.Context, appID uint64, sign strin
 	if err != nil {
 		return err
 	}
-	success := utils.VerifySignature(app.ID, app.Secret, sign)
-	if !success {
+	if !utils.VerifySignature(app.ID, app.Secret, sign) {
 		return errors.New("sign verify error")
 	}
 	return nil

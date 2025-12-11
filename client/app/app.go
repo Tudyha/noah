@@ -57,6 +57,9 @@ func NewClient(cfg *config.Config) pkgApp.Server {
 func (c *Client) Start(ctx context.Context) error {
 	log.Println("client start...")
 
+	// 定时发送心跳包
+	go c.ping()
+
 	// 主循环：监听关闭信号并维持客户端连接
 	for {
 		select {
@@ -117,7 +120,7 @@ func (c *Client) handleConn() {
 	// 发送登录包
 	loginReq := &packet.Login{
 		AppId:    c.cfg.AppId,
-		Sign:     utils.Sign(c.cfg.AppId, "123456"),
+		Sign:     utils.Sign(c.cfg.AppId, c.cfg.AppSecret),
 		DeviceId: "1",
 	}
 	loginReq.ClientInfo = c.infoHandler.GetInfo()
@@ -129,6 +132,29 @@ func (c *Client) handleConn() {
 	for {
 
 	}
+}
+
+func (c *Client) ping() {
+	ticker := time.NewTicker(time.Duration(c.cfg.HeartbeatInterval) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-c.closeSignal:
+			log.Println("client close, stop ping")
+			return
+		case <-ticker.C:
+			if !c.connected.Load() {
+				log.Println("client not connected, ping fail")
+				continue
+			}
+			if err := c.WriteMessage(packet.MessageType_Ping, &packet.Ping{}); err != nil {
+				log.Println("心跳包发送失败:", err)
+				return
+			}
+		}
+	}
+
 }
 
 func (c *Client) WriteMessage(msgType packet.MessageType, msg proto.Message) error {

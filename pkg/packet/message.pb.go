@@ -383,6 +383,50 @@ func (x *LoginAck) GetMessage() string {
 	return ""
 }
 
+type Ping struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Timestamp     int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Ping) Reset() {
+	*x = Ping{}
+	mi := &file_pkg_packet_message_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Ping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Ping) ProtoMessage() {}
+
+func (x *Ping) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_packet_message_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Ping.ProtoReflect.Descriptor instead.
+func (*Ping) Descriptor() ([]byte, []int) {
+	return file_pkg_packet_message_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Ping) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
 type ErrorAck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
@@ -393,7 +437,7 @@ type ErrorAck struct {
 
 func (x *ErrorAck) Reset() {
 	*x = ErrorAck{}
-	mi := &file_pkg_packet_message_proto_msgTypes[4]
+	mi := &file_pkg_packet_message_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -405,7 +449,7 @@ func (x *ErrorAck) String() string {
 func (*ErrorAck) ProtoMessage() {}
 
 func (x *ErrorAck) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_packet_message_proto_msgTypes[4]
+	mi := &file_pkg_packet_message_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -418,7 +462,7 @@ func (x *ErrorAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ErrorAck.ProtoReflect.Descriptor instead.
 func (*ErrorAck) Descriptor() ([]byte, []int) {
-	return file_pkg_packet_message_proto_rawDescGZIP(), []int{4}
+	return file_pkg_packet_message_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ErrorAck) GetCode() int32 {
@@ -475,7 +519,9 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"disk_total\x18\x13 \x01(\x04R\tdiskTotal\"8\n" +
 	"\bLoginAck\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"8\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"$\n" +
+	"\x04Ping\x12\x1c\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\"8\n" +
 	"\bErrorAck\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessageB\x11Z\x0fnoah/pkg/packetb\x06proto3"
@@ -492,17 +538,18 @@ func file_pkg_packet_message_proto_rawDescGZIP() []byte {
 	return file_pkg_packet_message_proto_rawDescData
 }
 
-var file_pkg_packet_message_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_pkg_packet_message_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pkg_packet_message_proto_goTypes = []any{
 	(*Message)(nil),    // 0: protocol.Message
 	(*Login)(nil),      // 1: protocol.Login
 	(*ClientInfo)(nil), // 2: protocol.ClientInfo
 	(*LoginAck)(nil),   // 3: protocol.LoginAck
-	(*ErrorAck)(nil),   // 4: protocol.ErrorAck
-	(*anypb.Any)(nil),  // 5: google.protobuf.Any
+	(*Ping)(nil),       // 4: protocol.Ping
+	(*ErrorAck)(nil),   // 5: protocol.ErrorAck
+	(*anypb.Any)(nil),  // 6: google.protobuf.Any
 }
 var file_pkg_packet_message_proto_depIdxs = []int32{
-	5, // 0: protocol.Message.body:type_name -> google.protobuf.Any
+	6, // 0: protocol.Message.body:type_name -> google.protobuf.Any
 	2, // 1: protocol.Login.client_info:type_name -> protocol.ClientInfo
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
@@ -522,7 +569,7 @@ func file_pkg_packet_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_packet_message_proto_rawDesc), len(file_pkg_packet_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

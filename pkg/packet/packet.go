@@ -11,6 +11,7 @@ type MessageType uint16
 const (
 	// 通用消息
 	MessageType_Unknown MessageType = iota
+	MessageType_Ping
 	MessageType_Error
 
 	// 业务消息 - 鉴权相关

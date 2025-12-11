@@ -189,3 +189,9 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	}
 	return nil
 }
+
+func (c *Conn) SetState(state ConnState) {
+	c.stateMutex.Lock()
+	defer c.stateMutex.Unlock()
+	c.state = state
+}
