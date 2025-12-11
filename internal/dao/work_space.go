@@ -64,3 +64,8 @@ func (s *workSpaceDao) GetAppBySpaceIDs(ctx context.Context, spaceIDs []uint64) 
 	var list []*model.WorkSpaceApp
 	return list, s.db.Where("space_id IN ?", spaceIDs).Find(&list).Error
 }
+
+func (s *workSpaceDao) GetAppByAppID(ctx context.Context, appID uint64) (*model.WorkSpaceApp, error) {
+	var app model.WorkSpaceApp
+	return &app, s.db.Where("id = ?", appID).First(&app).Error
+}

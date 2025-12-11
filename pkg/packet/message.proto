@@ -8,13 +8,13 @@ option go_package = "noah/pkg/packet";
 
 message Message {
   string msg_id = 1;
-   google.protobuf.Any data = 2;
+  google.protobuf.Any body = 2;
 }
 
 // 用于客户端建立连接后的身份验证
 message Login {
   string device_id = 1; // 客户端唯一标识符
-  int32 app_id = 2; // 应用ID
+  uint64 app_id = 2; // 应用ID
   string sign = 3; // 签名
   int32 os_type = 4; // 操作系统类型
   string hostname = 5; // 主机名

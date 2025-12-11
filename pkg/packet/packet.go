@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
-	"sync"
 )
 
 type MessageType uint16
@@ -25,37 +24,39 @@ const (
 	MessageType_Stream_Close
 )
 
+type CodecType uint8
+
+const (
+	CodecType_Unkown CodecType = iota
+	CodecType_Protobuf
+)
+
 type Codec interface {
 	Decode(r io.Reader) (*Packet, error)
 	Encode(w io.Writer, p *Packet) (int, error)
-	Release()
-}
-
-var pool = sync.Pool{
-	New: func() any {
-		return &ProtoCodec{}
-	},
 }
 
 type Packet struct {
 	MessageType MessageType
+	CodecType   CodecType
 	length      uint64
 	Data        []byte
 }
 
-// protobuf编解码器
-type ProtoCodec struct {
+type codec struct {
 }
 
 func NewCodec() Codec {
-	codec := pool.Get().(*ProtoCodec)
-	return codec
+	return &codec{}
 }
 
-func (c *ProtoCodec) Decode(r io.Reader) (*Packet, error) {
+func (c *codec) Decode(r io.Reader) (*Packet, error) {
 	p := new(Packet)
 	buf := bufio.NewReader(r)
 	if err := binary.Read(buf, binary.BigEndian, &p.MessageType); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(buf, binary.BigEndian, &p.CodecType); err != nil {
 		return nil, err
 	}
 	if err := binary.Read(buf, binary.BigEndian, &p.length); err != nil {
@@ -68,17 +69,16 @@ func (c *ProtoCodec) Decode(r io.Reader) (*Packet, error) {
 	return p, nil
 }
 
-func (c *ProtoCodec) Encode(w io.Writer, p *Packet) (int, error) {
+func (c *codec) Encode(w io.Writer, p *Packet) (int, error) {
 	p.length = uint64(len(p.Data))
 	if err := binary.Write(w, binary.BigEndian, p.MessageType); err != nil {
+		return 0, err
+	}
+	if err := binary.Write(w, binary.BigEndian, p.CodecType); err != nil {
 		return 0, err
 	}
 	if err := binary.Write(w, binary.BigEndian, p.length); err != nil {
 		return 0, err
 	}
 	return int(p.length), binary.Write(w, binary.BigEndian, p.Data)
-}
-
-func (c *ProtoCodec) Release() {
-	pool.Put(c)
 }

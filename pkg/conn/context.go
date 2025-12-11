@@ -6,17 +6,19 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type Context interface {
-	Close() error // 关闭连接
-	Release()
+	context.Context
+	GetConn() *Conn                           // 获取连接
+	ShouldBindProto(body proto.Message) error // 解析消息体
+	Release()                                 // 回收context
 }
 
 type MessageHandler interface {
-	Handle(ctx Context, msg proto.Message) error
+	Handle(ctx Context) error
 	MessageType() packet.MessageType
-	MessageBody() proto.Message
 }
 
 var pool = sync.Pool{
@@ -27,24 +29,40 @@ var pool = sync.Pool{
 
 type connContext struct {
 	context.Context
-	conn *Conn
+	conn      *Conn
+	protoBody *anypb.Any
 }
 
-func NewConnContext(conn *Conn) Context {
+func NewConnContext(conn *Conn, p *packet.Packet) Context {
 	c := pool.Get().(*connContext)
-	c.reset(conn)
+	c.conn = conn
+	c.Context = context.Background()
+	switch p.CodecType {
+	case packet.CodecType_Protobuf:
+		var msg packet.Message
+		err := proto.Unmarshal(p.Data, &msg)
+		if err == nil {
+			c.protoBody = msg.Body
+		}
+	default:
+	}
 	return c
 }
 
 func (c *connContext) Release() {
 	c.conn = nil
+	c.protoBody = nil
+	c.Context = nil
 	pool.Put(c)
 }
 
-func (c *connContext) reset(conn *Conn) {
-	c.conn = conn
+func (c *connContext) GetConn() *Conn {
+	return c.conn
 }
 
-func (c *connContext) Close() error {
-	return c.conn.Close()
+func (c *connContext) ShouldBindProto(body proto.Message) error {
+	if c.protoBody == nil {
+		return nil
+	}
+	return c.protoBody.UnmarshalTo(body)
 }

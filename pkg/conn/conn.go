@@ -10,9 +10,6 @@ import (
 	"noah/pkg/utils"
 	"sync"
 	"time"
-
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type ConnState uint8
@@ -24,9 +21,10 @@ const (
 )
 
 type Conn struct {
-	connId  uint64       // 连接ID
-	netConn net.Conn     // 底层连接
-	codec   packet.Codec // 编解码器
+	connID  uint64   // 连接ID
+	netConn net.Conn // 底层连接
+
+	codec packet.Codec // 编解码器
 
 	state      ConnState // 连接状态
 	stateMutex sync.RWMutex
@@ -46,7 +44,7 @@ type Conn struct {
 func NewConn(conn net.Conn) *Conn {
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Conn{
-		connId:      uint64(utils.GenID()),
+		connID:      uint64(utils.GenID()),
 		codec:       packet.NewCodec(),
 		netConn:     conn,
 		muxBuf:      new(bytes.Buffer),
@@ -121,47 +119,33 @@ func (c *Conn) Close() error {
 		if c.netConn != nil {
 			c.netConn.Close()
 		}
-		if c.codec != nil {
-			c.codec.Release()
-		}
 	})
 	return nil
 }
 
 func (c *Conn) GetID() uint64 {
-	return c.connId
+	return c.connID
 }
 
-func (c *Conn) ReadMessage() (packet.MessageType, *anypb.Any, error) {
+func (c *Conn) ReadMessage() (*packet.Packet, error) {
 	select {
 	case <-c.ctx.Done():
-		return packet.MessageType_Unknown, nil, io.EOF
+		return nil, io.EOF
 	case p, ok := <-c.messageChan:
 		if !ok {
-			return packet.MessageType_Unknown, nil, io.EOF
+			return nil, io.EOF
 		}
-		var msg packet.Message
-		if err := proto.Unmarshal(p.Data, &msg); err != nil {
-			return packet.MessageType_Unknown, nil, err
-		}
-		return p.MessageType, msg.Data, nil
+		return p, nil
 	}
 }
 
-func (c *Conn) WriteMessage(msgType packet.MessageType, msg proto.Message) error {
-	ab, err := anypb.New(msg)
-	if err != nil {
-		return err
-	}
-	data, err := proto.Marshal(&packet.Message{Data: ab})
-	if err != nil {
-		return err
-	}
+func (c *Conn) WriteProtoMessage(msgType packet.MessageType, data []byte) error {
 	p := &packet.Packet{
 		MessageType: msgType,
+		CodecType:   packet.CodecType_Protobuf,
 		Data:        data,
 	}
-	_, err = c.codec.Encode(c.netConn, p)
+	_, err := c.codec.Encode(c.netConn, p)
 	return err
 }
 

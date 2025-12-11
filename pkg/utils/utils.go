@@ -127,6 +127,10 @@ func Int64ToString(num int64) string {
 	return strconv.FormatInt(num, 10)
 }
 
+func Uint64ToString(num uint64) string {
+	return strconv.FormatUint(num, 10)
+}
+
 // Float64ToString float64转字符串
 func Float64ToString(num float64) string {
 	return strconv.FormatFloat(num, 'f', -1, 64)

@@ -13,9 +13,10 @@ import (
 var (
 	once sync.Once
 
-	userServiceInstance UserService
-	authServiceInstance AuthService
-	smsServiceInstance  SmsService
+	userServiceInstance   UserService
+	authServiceInstance   AuthService
+	smsServiceInstance    SmsService
+	clientServiceInstance ClientService
 )
 
 // UserService 用户服务接口
@@ -38,7 +39,8 @@ type SmsService interface {
 }
 
 type ClientService interface {
-	Create(ctx context.Context) error
+	VerifySign(ctx context.Context, appID uint64, sign string) error
+	Create(ctx context.Context, client *model.Client) error
 }
 
 func Init() error {
@@ -47,6 +49,7 @@ func Init() error {
 		smsServiceInstance = newSmsService()
 		userServiceInstance = newUserService(dao.GetUserDao(), dao.GetWorkSpaceDao())
 		authServiceInstance = newAuthService(dao.GetUserDao(), smsServiceInstance, userServiceInstance)
+		clientServiceInstance = newClientService()
 	})
 	return nil
 }
@@ -57,4 +60,8 @@ func GetUserService() UserService {
 
 func GetAuthService() AuthService {
 	return authServiceInstance
+}
+
+func GetClientService() ClientService {
+	return clientServiceInstance
 }

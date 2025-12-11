@@ -25,7 +25,7 @@ const (
 type Message struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MsgId         string                 `protobuf:"bytes,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`
-	Data          *anypb.Any             `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Body          *anypb.Any             `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -67,9 +67,9 @@ func (x *Message) GetMsgId() string {
 	return ""
 }
 
-func (x *Message) GetData() *anypb.Any {
+func (x *Message) GetBody() *anypb.Any {
 	if x != nil {
-		return x.Data
+		return x.Body
 	}
 	return nil
 }
@@ -78,7 +78,7 @@ func (x *Message) GetData() *anypb.Any {
 type Login struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	DeviceId        string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`                       // 客户端唯一标识符
-	AppId           int32                  `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`                               // 应用ID
+	AppId           uint64                 `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`                               // 应用ID
 	Sign            string                 `protobuf:"bytes,3,opt,name=sign,proto3" json:"sign,omitempty"`                                               // 签名
 	OsType          int32                  `protobuf:"varint,4,opt,name=os_type,json=osType,proto3" json:"os_type,omitempty"`                            // 操作系统类型
 	Hostname        string                 `protobuf:"bytes,5,opt,name=hostname,proto3" json:"hostname,omitempty"`                                       // 主机名
@@ -141,7 +141,7 @@ func (x *Login) GetDeviceId() string {
 	return ""
 }
 
-func (x *Login) GetAppId() int32 {
+func (x *Login) GetAppId() uint64 {
 	if x != nil {
 		return x.AppId
 	}
@@ -406,10 +406,10 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"\x18pkg/packet/message.proto\x12\bprotocol\x1a\x19google/protobuf/any.proto\"J\n" +
 	"\aMessage\x12\x15\n" +
 	"\x06msg_id\x18\x01 \x01(\tR\x05msgId\x12(\n" +
-	"\x04data\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04data\"\xfc\x04\n" +
+	"\x04body\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\xfc\x04\n" +
 	"\x05Login\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x15\n" +
-	"\x06app_id\x18\x02 \x01(\x05R\x05appId\x12\x12\n" +
+	"\x06app_id\x18\x02 \x01(\x04R\x05appId\x12\x12\n" +
 	"\x04sign\x18\x03 \x01(\tR\x04sign\x12\x17\n" +
 	"\aos_type\x18\x04 \x01(\x05R\x06osType\x12\x1a\n" +
 	"\bhostname\x18\x05 \x01(\tR\bhostname\x12\x1a\n" +
@@ -462,7 +462,7 @@ var file_pkg_packet_message_proto_goTypes = []any{
 	(*anypb.Any)(nil), // 4: google.protobuf.Any
 }
 var file_pkg_packet_message_proto_depIdxs = []int32{
-	4, // 0: protocol.Message.data:type_name -> google.protobuf.Any
+	4, // 0: protocol.Message.body:type_name -> google.protobuf.Any
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

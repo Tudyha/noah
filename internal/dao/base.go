@@ -12,6 +12,7 @@ var (
 
 	userDaoInstance      UserDao
 	workSpaceDaoInstance WorkSpaceDao
+	clientDaoInstance    ClientDao
 )
 
 func Init() error {
@@ -19,6 +20,7 @@ func Init() error {
 	once.Do(func() {
 		userDaoInstance = newUserDao(db)
 		workSpaceDaoInstance = newWorkSpaceDao(db)
+		clientDaoInstance = newClientDao(db)
 	})
 	return nil
 }
@@ -29,6 +31,10 @@ func GetUserDao() UserDao {
 
 func GetWorkSpaceDao() WorkSpaceDao {
 	return workSpaceDaoInstance
+}
+
+func GetClientDao() ClientDao {
+	return clientDaoInstance
 }
 
 type UserDao interface {
@@ -44,4 +50,10 @@ type WorkSpaceDao interface {
 	CreateApp(ctx context.Context, spaceId uint64, secret, name, description string) error
 	GetByUserID(ctx context.Context, userID uint64) ([]*model.WorkSpace, error)
 	GetAppBySpaceIDs(ctx context.Context, spaceIDs []uint64) ([]*model.WorkSpaceApp, error)
+	GetAppByAppID(ctx context.Context, appID uint64) (*model.WorkSpaceApp, error)
+}
+
+type ClientDao interface {
+	Create(ctx context.Context, client *model.Client) error
+	GetByDeviceID(ctx context.Context, deviceID string) (*model.Client, error)
 }

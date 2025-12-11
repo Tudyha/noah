@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"noah/pkg/enum"
+	"time"
+)
 
 type Client struct {
 	BaseModel
@@ -32,8 +35,9 @@ type Client struct {
 	MemTotal        uint64 `gorm:"column:mem_total"`
 	DiskTotal       uint64 `gorm:"column:disk_total"`
 
-	Status         int       `gorm:"column:status;type:int(11)"`
-	LastOnlineTime time.Time `gorm:"column:last_online_time;type:datetime"`
+	ConnID         uint64            `gorm:"column:conn_id"`
+	Status         enum.ClientStatus `gorm:"column:status;type:int(11)"`
+	LastOnlineTime time.Time         `gorm:"column:last_online_time;type:datetime"`
 }
 
 // TableName table name
