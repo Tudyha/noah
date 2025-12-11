@@ -1,11 +1,13 @@
 server:
   env: dev # 运行环境：dev/release/test
   http:
-    port: 8080 # HTTP 服务端口
+    addr: 127.0.0.1:8080 # HTTP监听地址
     read_timeout: 60 # 读取超时时间（秒）
     write_timeout: 60 # 写入超时时间（秒）
   tcp:
-    port: 9090 # TCP 服务端口
+    addr: 127.0.0.1:9090 # TCP监听地址
+    timeout: 5 # TCP连接超时时间（秒）
+    keep_alive: 30 # TCP连接保持时间（秒）
 
 database:
   type: sqlite # 数据库类型：mysql/sqlite

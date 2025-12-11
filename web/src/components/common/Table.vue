@@ -40,12 +40,12 @@ const handleReset = () => {
     </div>
 
     <!-- 搜索栏 -->
-    <Search v-if="props.searchItems" :items="props.searchItems" @search="handleSearch" @reset="handleReset" />
+    <Search v-if="searchItems" :items="searchItems" @search="handleSearch" @reset="handleReset" />
 
     <!-- 表格内容 -->
-    <TableContent :columns="columns" :data="data" :is-loading="isLoading" :current-page="currentPage" :page-size="pageSize" :total="total" />
+    <TableContent :columns="columns" :data="data" :is-loading="isLoading" />
 
     <!-- 分页器 -->
-    <Pagination v-if="total > 0" :current-page="currentPage" :page-size="pageSize" :total="total" />
+    <Pagination v-if="total && total > 0" :current-page="currentPage" :page-size="pageSize" :total="total" />
   </div>
 </template>

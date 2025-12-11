@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -35,7 +34,7 @@ func NewHTTPServer() app.Server {
 	api.RegisterRoutes(router)
 
 	s := &http.Server{
-		Addr:           fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
+		Addr:           cfg.Server.HTTP.Addr,
 		Handler:        router,
 		ReadTimeout:    time.Duration(cfg.Server.HTTP.ReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(cfg.Server.HTTP.WriteTimeout) * time.Second,

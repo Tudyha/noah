@@ -27,14 +27,16 @@ type ServerConfig struct {
 
 // HTTPConfig HTTP服务配置
 type HTTPConfig struct {
-	Port         int `mapstructure:"port"`
-	ReadTimeout  int `mapstructure:"read_timeout"`
-	WriteTimeout int `mapstructure:"write_timeout"`
+	Addr         string `mapstructure:"addr"`
+	ReadTimeout  int    `mapstructure:"read_timeout"`
+	WriteTimeout int    `mapstructure:"write_timeout"`
 }
 
 // TCPConfig TCP服务配置
 type TCPConfig struct {
-	Port int `mapstructure:"port"`
+	Addr      string `mapstructure:"addr"`
+	Timeout   int    `mapstructure:"timeout"`
+	KeepAlive int    `mapstructure:"keep_alive"`
 }
 
 // DatabaseConfig 数据库配置

@@ -84,6 +84,7 @@ func main() {
 	// 创建服务实例
 	servers := []app.Server{
 		server.NewHTTPServer(),
+		server.NewTCPServer(),
 	}
 
 	// 启动应用

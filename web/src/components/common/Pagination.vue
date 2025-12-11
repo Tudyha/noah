@@ -59,7 +59,7 @@ const handlePageSizeChange = (size) => {
 </script>
 
 <template>
-  <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 rounded-box border border-base-content/5 bg-base-100 p-2">
     <!-- 分页信息 -->
     <div class="text-sm text-base-content/60">
       共 <span class="font-semibold text-base-content">{{ total }}</span> 条数据

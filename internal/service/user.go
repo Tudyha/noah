@@ -11,6 +11,7 @@ import (
 	"noah/internal/model"
 	"noah/pkg/errcode"
 	"noah/pkg/response"
+	"noah/pkg/utils"
 )
 
 type userService struct {
@@ -43,7 +44,7 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 	if err := s.workSpaceDao.CreateSpaceUser(ctx, space.ID, user.ID, 1); err != nil {
 		return err
 	}
-	if err := s.workSpaceDao.CreateApp(ctx, space.ID, "默认应用", ""); err != nil {
+	if err := s.workSpaceDao.CreateApp(ctx, space.ID, utils.GenerateRandomString(16), "默认应用", ""); err != nil {
 		return err
 	}
 

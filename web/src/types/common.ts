@@ -28,8 +28,8 @@ export type TableProps = {
   data: any[]; // 表格数据
   columns: TableColumn[]; // 列配置
   searchItems?: SearchItem[]; // 搜索栏配置
-  total: number;
-  currentPage: number;
-  pageSize: number;
+  total?: number;
+  currentPage?: number;
+  pageSize?: number;
   isLoading?: boolean; // 加载状态
 }

@@ -41,7 +41,7 @@ type UserDao interface {
 type WorkSpaceDao interface {
 	Create(ctx context.Context, name, description string) (*model.WorkSpace, error)
 	CreateSpaceUser(ctx context.Context, spaceId, userId uint64, role int) error
-	CreateApp(ctx context.Context, spaceId uint64, name, description string) error
+	CreateApp(ctx context.Context, spaceId uint64, secret, name, description string) error
 	GetByUserID(ctx context.Context, userID uint64) ([]*model.WorkSpace, error)
 	GetAppBySpaceIDs(ctx context.Context, spaceIDs []uint64) ([]*model.WorkSpaceApp, error)
 }

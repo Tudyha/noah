@@ -5,5 +5,5 @@ type UserResponse struct {
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
 
-	WorkSpaceList []*WorkSpaceResponse `json:"workSpaceList"` // 工作空间列表
+	WorkSpaceList []*WorkSpaceResponse `json:"work_space_list"` // 工作空间列表
 }

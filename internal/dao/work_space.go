@@ -34,8 +34,9 @@ func (s *workSpaceDao) CreateSpaceUser(ctx context.Context, spaceId uint64, user
 	}).Error
 }
 
-func (s *workSpaceDao) CreateApp(ctx context.Context, spaceId uint64, name string, description string) error {
+func (s *workSpaceDao) CreateApp(ctx context.Context, spaceId uint64, secret, name, description string) error {
 	return s.db.Create(&model.WorkSpaceApp{
+		Secret:      secret,
 		SpaceID:     spaceId,
 		Name:        name,
 		Description: description,

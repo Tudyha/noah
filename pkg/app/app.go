@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -28,9 +29,12 @@ func NewApp(servers ...Server) *App {
 func (a *App) Run() {
 	ctx := context.Background()
 	for _, server := range a.servers {
-		if err := server.Start(ctx); err != nil {
-			log.Println("start server", server.String(), "failed:", err)
-		}
+		go func() {
+			if err := server.Start(ctx); err != nil {
+				fmt.Println("start server", server.String(), "failed:", err)
+				os.Exit(1)
+			}
+		}()
 	}
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

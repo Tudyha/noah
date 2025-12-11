@@ -37,6 +37,10 @@ type SmsService interface {
 	VerifyCode(ctx context.Context, smsCodeType enum.SmsCodeType, phone, code string) error
 }
 
+type ClientService interface {
+	Create(ctx context.Context) error
+}
+
 func Init() error {
 	once.Do(func() {
 		// 初始化服务
