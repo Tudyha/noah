@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"net"
 	"noah/internal/model"
 	"noah/internal/service"
 	"noah/pkg/conn"
+	"noah/pkg/enum"
 	"noah/pkg/logger"
 	"noah/pkg/packet"
+
+	"noah/pkg/ip"
 
 	"github.com/jinzhu/copier"
 )
@@ -46,6 +50,13 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 	client.DeviceID = loginReq.DeviceId
 	client.AppID = loginReq.AppId
 	client.ConnID = ctx.GetConn().GetID()
+	client.OsType = enum.ClientOsNameToOsTypeMap[client.OsName]
+
+	remoteAddr := ctx.GetConn().RemoteAddr()
+	remoteIP, port, _ := net.SplitHostPort(remoteAddr.String())
+	client.RemoteIP = remoteIP
+	client.Port = port
+	client.RemoteIpCountry = ip.GetIPCountry(client.RemoteIP)
 
 	if err := h.clientService.Create(ctx, &client); err != nil {
 		logger.Info("创建客户端失败", "err", err)

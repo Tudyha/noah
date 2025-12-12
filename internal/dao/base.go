@@ -4,7 +4,10 @@ import (
 	"context"
 	"noah/internal/database"
 	"noah/internal/model"
+	"noah/pkg/request"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -56,4 +59,25 @@ type WorkSpaceDao interface {
 type ClientDao interface {
 	Create(ctx context.Context, client *model.Client) error
 	GetByDeviceID(ctx context.Context, deviceID string) (*model.Client, error)
+	GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) ([]*model.Client, int64, error)
+}
+
+func Paginate(pageQuery request.PageQuery) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		page := pageQuery.Page
+		if page <= 0 {
+			page = 1
+		}
+
+		pageSize := pageQuery.Limit
+		switch {
+		case pageSize > 100:
+			pageSize = 100
+		case pageSize <= 0:
+			pageSize = 10
+		}
+
+		offset := (page - 1) * pageSize
+		return db.Offset(offset).Limit(pageSize)
+	}
 }

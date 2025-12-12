@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 	clientapp "noah/client/app"
-	"noah/client/app/config"
 
 	"noah/pkg/app"
+	"noah/pkg/config"
 
 	"github.com/sevlyar/go-daemon"
 	"github.com/spf13/cobra"
@@ -50,7 +50,7 @@ func init() {
 }
 
 func run() {
-	var cfg config.Config
+	var cfg config.ClientConfig
 	b, err := base64.StdEncoding.DecodeString(configBase64)
 	if err != nil {
 		panic(err)

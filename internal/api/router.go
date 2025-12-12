@@ -32,6 +32,7 @@ func RegisterRoutes(router *gin.Engine) {
 
 		authController := controller.GetAuthController()
 		userController := controller.GetUserController()
+		clientController := controller.GetClientController()
 		// 认证相关路由
 		authGroup := v1Group.Group("/auth")
 		{
@@ -42,6 +43,17 @@ func RegisterRoutes(router *gin.Engine) {
 		userGroup := v1Group.Group("/user")
 		{
 			v1.RegisterUserRoutes(userGroup, userController)
+		}
+
+		// 客户端相关路由
+		clientGroup := v1Group.Group("/client")
+		{
+			v1.RegisterClientRoutes(clientGroup, clientController)
+		}
+
+		fileGroup := router.Group("/file")
+		{
+			v1.RegisterFileRoutes(fileGroup)
 		}
 	}
 }

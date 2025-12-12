@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -115,6 +116,11 @@ func StringToInt(str string) (int, error) {
 // StringToInt64 字符串转int64
 func StringToInt64(str string) (int64, error) {
 	return strconv.ParseInt(str, 10, 64)
+}
+
+// StringToUint64 字符串转uint64
+func StringToUint64(str string) (uint64, error) {
+	return strconv.ParseUint(str, 10, 64)
 }
 
 // IntToString 整数转字符串
@@ -234,4 +240,8 @@ func FormatBytes(bytes int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func Base64Encode(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data)
 }

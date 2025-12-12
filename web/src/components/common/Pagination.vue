@@ -1,41 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { PaginationProps } from '@/types'
 
-const props = defineProps({
-  currentPage: {
-    type: Number,
-    default: 1
-  },
-  pageSize: {
-    type: Number,
-    default: 10
-  },
-  total: {
-    type: Number,
-    required: true
-  },
-  pageSizes: {
-    type: Array,
-    default: () => [10, 20, 50, 100]
-  },
-  maxPages: {
-    type: Number,
-    default: 7 // 最多显示的页码按钮数量
-  }
-})
+const props = defineProps<PaginationProps>()
 
-const emit = defineEmits(['update:currentPage', 'update:pageSize', 'change'])
+const emit = defineEmits(['change'])
 
-const totalPages = computed(() => Math.ceil(props.total / props.pageSize))
+const pageSizes = [10, 20, 30, 40, 50]
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalPages = computed(() => Math.ceil(props.total / pageSize.value))
 
 const pageRange = computed(() => {
   const range = []
-  const half = Math.floor(props.maxPages / 2)
-  let start = Math.max(1, props.currentPage - half)
-  let end = Math.min(totalPages.value, start + props.maxPages - 1)
+  const half = Math.floor(totalPages.value / 2)
+  let start = Math.max(1, currentPage.value - half)
+  let end = Math.min(totalPages.value, start + totalPages.value - 1)
   
-  if (end - start < props.maxPages - 1) {
-    start = Math.max(1, end - props.maxPages + 1)
+  if (end - start < totalPages.value - 1) {
+    start = Math.max(1, end - totalPages.value + 1)
   }
   
   for (let i = start; i <= end; i++) {
@@ -45,21 +27,15 @@ const pageRange = computed(() => {
   return range
 })
 
-const handlePageChange = (page) => {
-  if (page < 1 || page > totalPages.value || page === props.currentPage) return
-  emit('update:currentPage', page)
-  emit('change', { page, pageSize: props.pageSize })
-}
-
-const handlePageSizeChange = (size) => {
-  emit('update:pageSize', size)
-  emit('update:currentPage', 1)
-  emit('change', { page: 1, pageSize: size })
+const handlePageChange = (page: number) => {
+  if (page < 1 || page > totalPages.value || page === currentPage.value) return
+  currentPage.value = page
+  emit('change', { page, pageSize: pageSize.value })
 }
 </script>
 
 <template>
-  <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 rounded-box border border-base-content/5 bg-base-100 p-2">
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-2">
     <!-- 分页信息 -->
     <div class="text-sm text-base-content/60">
       共 <span class="font-semibold text-base-content">{{ total }}</span> 条数据
@@ -75,7 +51,6 @@ const handlePageSizeChange = (size) => {
       <select 
         class="select select-bordered select-sm"
         :value="pageSize"
-        @change="handlePageSizeChange(Number($event.target.value))"
       >
         <option v-for="size in pageSizes" :key="size" :value="size">
           {{ size }} 条/页

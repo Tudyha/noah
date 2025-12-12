@@ -17,6 +17,7 @@ var (
 	authServiceInstance   AuthService
 	smsServiceInstance    SmsService
 	clientServiceInstance ClientService
+	workServiceInstance   WorkService
 )
 
 // UserService 用户服务接口
@@ -38,9 +39,14 @@ type SmsService interface {
 	VerifyCode(ctx context.Context, smsCodeType enum.SmsCodeType, phone, code string) error
 }
 
+type WorkService interface {
+	GetAppByAppID(ctx context.Context, appID uint64) (*model.WorkSpaceApp, error)
+}
+
 type ClientService interface {
 	VerifySign(ctx context.Context, appID uint64, sign string) error
 	Create(ctx context.Context, client *model.Client) error
+	GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) (*response.Page[response.ClientResponse], error)
 }
 
 func Init() error {
@@ -50,6 +56,7 @@ func Init() error {
 		userServiceInstance = newUserService(dao.GetUserDao(), dao.GetWorkSpaceDao())
 		authServiceInstance = newAuthService(dao.GetUserDao(), smsServiceInstance, userServiceInstance)
 		clientServiceInstance = newClientService()
+		workServiceInstance = newWorkService()
 	})
 	return nil
 }
@@ -64,4 +71,8 @@ func GetAuthService() AuthService {
 
 func GetClientService() ClientService {
 	return clientServiceInstance
+}
+
+func GetWorkService() WorkService {
+	return workServiceInstance
 }

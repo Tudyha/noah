@@ -12,12 +12,12 @@ export const useUserStore = defineStore(
 
     const isLogined = computed(() => !!token.value);
 
-    const workSpaceList = computed(() => user.value?.workSpaceList || []);
+    const workSpaceList = computed(() => user.value?.work_space_list || []);
     const workAppList = computed(
       () =>
         workSpaceList.value.find(
           (workSpace) => workSpace.id === currentWorkSpace.value
-        )?.appList
+        )?.app_list
     );
 
     const login = async (data: LoginRequest): Promise<void> => {
@@ -27,9 +27,9 @@ export const useUserStore = defineStore(
       const userInfoRes = await getUserApi();
       user.value = userInfoRes;
 
-      currentWorkSpace.value = userInfoRes.workSpaceList[0]?.id || null;
+      currentWorkSpace.value = userInfoRes.work_space_list[0]?.id || null;
       currentWorkApp.value =
-        userInfoRes.workSpaceList[0]?.appList[0]?.id || null;
+        userInfoRes.work_space_list[0]?.app_list[0]?.id || null;
     };
 
     const logout = () => {

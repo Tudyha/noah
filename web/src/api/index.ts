@@ -35,7 +35,7 @@ class HttpService {
           config.headers.WorkSpaceId = userStore.currentWorkSpace;
         }
         if (userStore.currentWorkApp) {
-          config.headers.WorkAppId = userStore.currentWorkApp;
+          config.headers['app-id'] = userStore.currentWorkApp;
         }
         return config;
       },

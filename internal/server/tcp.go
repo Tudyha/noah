@@ -22,7 +22,7 @@ type tcpServer struct {
 
 	sessions sync.Map // 连接会话，key -> connId, value -> *conn.Conn
 
-	messageHandlers map[packet.MessageType]conn.MessageHandler
+	messageHandlers map[packet.MessageType]conn.MessageHandler // 消息处理器
 }
 
 func NewTCPServer() app.Server {

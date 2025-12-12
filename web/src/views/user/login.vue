@@ -6,8 +6,8 @@
 
           <!-- tab -->
           <label class="tab gap-2">
-            <input type="radio" name="loginByPhone" value="1" v-model="form.loginType"
-              :checked="form.loginType === 1" />
+            <input type="radio" name="loginByPhone" value="1" v-model="form.login_type"
+              :checked="form.login_type === 1" />
             <Icon icon="material-symbols:perm-phone-msg" />
             {{ t('login.loginByPhone') }}
           </label>
@@ -38,8 +38,8 @@
 
           <!-- tab -->
           <label class="tab gap-2">
-            <input type="radio" name="loginByPassword" value="2" v-model="form.loginType"
-              :checked="form.loginType === 2" />
+            <input type="radio" name="loginByPassword" value="2" v-model="form.login_type"
+              :checked="form.login_type === 2" />
             <Icon icon="carbon:password" />
             {{ t('login.loginByPassword') }}
           </label>
@@ -83,7 +83,7 @@ const { start, remaining } = useCountdown(countdown, {})
 
 const { t } = useI18n()
 const form = ref<LoginRequest>({
-  loginType: 1,
+  login_type: 1,
   username: '',
   password: '',
   code: '',
@@ -92,10 +92,10 @@ const form = ref<LoginRequest>({
 async function login() {
   loginLoading.value = true
   const data = form.value
-  if (data.loginType === 1) {
+  if (data.login_type === 1) {
     delete data.password
   }
-  if (data.loginType === 2) {
+  if (data.login_type === 2) {
     delete data.code
   }
   userStore.login(data).then(() => {

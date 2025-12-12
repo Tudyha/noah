@@ -9,7 +9,7 @@ export type SearchItem = {
 }
 
 export type SearchProps = {
-  items: SearchItem[]
+  items?: SearchItem[]
 }
 
 // 表格列配置项的接口
@@ -32,4 +32,8 @@ export type TableProps = {
   currentPage?: number;
   pageSize?: number;
   isLoading?: boolean; // 加载状态
+}
+
+export type PaginationProps = {
+  total: number;
 }

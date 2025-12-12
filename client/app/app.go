@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 	"net"
-	"noah/client/app/config"
 	"noah/client/app/handler"
 	pkgApp "noah/pkg/app"
+	"noah/pkg/config"
 	"noah/pkg/conn"
 	"noah/pkg/packet"
 	"noah/pkg/utils"
@@ -18,7 +18,7 @@ import (
 )
 
 type Client struct {
-	cfg *config.Config
+	cfg *config.ClientConfig
 
 	connected atomic.Bool
 
@@ -29,7 +29,7 @@ type Client struct {
 	infoHandler *handler.InfoHandler
 }
 
-func NewClient(cfg *config.Config) pkgApp.Server {
+func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 	if cfg.ReconnectInterval == 0 {
 		cfg.ReconnectInterval = 10
 	}
@@ -121,7 +121,7 @@ func (c *Client) handleConn() {
 	loginReq := &packet.Login{
 		AppId:    c.cfg.AppId,
 		Sign:     utils.Sign(c.cfg.AppId, c.cfg.AppSecret),
-		DeviceId: "1",
+		DeviceId: "2",
 	}
 	loginReq.ClientInfo = c.infoHandler.GetInfo()
 	if err := c.WriteMessage(packet.MessageType_Login, loginReq); err != nil {

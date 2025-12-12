@@ -6,6 +6,7 @@ import (
 	"noah/pkg/constant"
 	"noah/pkg/errcode"
 	"noah/pkg/response"
+	"noah/pkg/utils"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -14,14 +15,16 @@ import (
 var (
 	once sync.Once
 
-	authController *AuthController
-	userController *UserController
+	authController   *AuthController
+	userController   *UserController
+	clientController *ClientController
 )
 
 func Init() error {
 	once.Do(func() {
 		authController = newAuthController()
 		userController = newUserController()
+		clientController = newClientController()
 	})
 	return nil
 }
@@ -32,6 +35,10 @@ func GetAuthController() *AuthController {
 
 func GetUserController() *UserController {
 	return userController
+}
+
+func GetClientController() *ClientController {
+	return clientController
 }
 
 func Success(ctx *gin.Context, data any) {
@@ -73,4 +80,12 @@ func getErrorMsg(err error) (code int, msg string) {
 
 func GetUserId(ctx *gin.Context) uint64 {
 	return ctx.GetUint64(constant.HttpHeaderUserIDKey)
+}
+
+func GetAppID(ctx *gin.Context) uint64 {
+	id, err := utils.StringToUint64(ctx.Request.Header.Get(constant.HttpHeaderAppIDKey))
+	if err != nil {
+		return 0
+	}
+	return id
 }

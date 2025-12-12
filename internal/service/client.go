@@ -6,9 +6,12 @@ import (
 	"noah/internal/dao"
 	"noah/internal/model"
 	"noah/pkg/enum"
+	"noah/pkg/request"
+	"noah/pkg/response"
 	"noah/pkg/utils"
 	"time"
 
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
 
@@ -46,4 +49,17 @@ func (c *clientService) VerifySign(ctx context.Context, appID uint64, sign strin
 		return errors.New("sign verify error")
 	}
 	return nil
+}
+
+func (c *clientService) GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) (*response.Page[response.ClientResponse], error) {
+	clients, total, err := c.clientDao.GetPage(ctx, appID, query)
+	if err != nil {
+		return nil, err
+	}
+	var list []response.ClientResponse
+	copier.Copy(&list, clients)
+	return &response.Page[response.ClientResponse]{
+		Total: total,
+		List:  list,
+	}, nil
 }

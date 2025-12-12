@@ -1,22 +1,24 @@
 export type LoginRequest = {
-  loginType: number;
+  login_type: number;
   username: string;
   password?: string;
   code?: string;
 };
+
 export type LoginResponse = { token: string };
+
 export type UserResponse = {
   id: string;
   nickname: string;
   avatar: string;
-  workSpaceList: WorkSpaceResponse[];
+  work_space_list: WorkSpaceResponse[];
 };
 
 export type WorkSpaceResponse = {
   id: string;
   name: string;
   description: string;
-  appList: WorkSpaceAppResponse[];
+  app_list: WorkSpaceAppResponse[];
 };
 
 export type WorkSpaceAppResponse = {
