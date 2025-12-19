@@ -45,8 +45,14 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api": {
-          target: "http://localhost:8080",
+          target: "http://127.0.0.1:8080",
           changeOrigin: true,
+        },
+        '/ws-api': {
+          target: 'ws://127.0.0.1:8080',
+          changeOrigin: true,
+          ws: true,
+          rewrite: (path) => path.replace(/^\/ws-api/, '/api/v1'),
         },
       },
     },

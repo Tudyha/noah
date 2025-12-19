@@ -16,13 +16,13 @@ const handleSearch = () => {
 
 <template>
   <div class="border-b border-base-content/5 p-2">
-    <div class="">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-        <div v-if="items && items.length > 0" v-for="item in props.items" :key="item.key" class="form-control">
-          <label class="label">
-            <span class="label-text">{{ item.label }}</span>
-          </label>
+    <div class="grid grid-cols-4 auto-rows-min gap-x-4 gap-y-2" style="grid-auto-flow: dense;">
+      <div v-if="items && items.length > 0" v-for="item in props.items" :key="item.key" class="flex items-center gap-1">
+        <div class="w-20">
+          <span>{{ item.label }}</span>
+        </div>
 
+        <div :class="item.width ? item.width : 'w-full'">
           <!-- 输入框 -->
           <input v-if="item.type === 'input'" type="text" :placeholder="item.placeholder || `请输入${item.label}`"
             class="input input-bordered input-sm" v-model="searchForm[item.key]" />
@@ -34,34 +34,15 @@ const handleSearch = () => {
               {{ option.label }}
             </option>
           </select>
-
-          <!-- 日期选择 -->
-          <input v-else-if="item.type === 'date'" type="date" class="input input-bordered select-sm"
-            v-model="searchForm[item.key]" />
-
-          <!-- 日期范围 -->
-          <!-- <div v-else-if="item.type === 'date-range'" class="flex gap-2">
-            <input
-              type="date"
-              class="input input-bordered w-full"
-              v-model="searchForm[item.key]?.[0]"
-            />
-            <span class="flex items-center">至</span>
-            <input
-              type="date"
-              class="input input-bordered w-full"
-              v-model="searchForm[item.key]?.[1]"
-            />
-          </div> -->
         </div>
-        <div class="flex gap-1">
-          <button class="btn btn-ghost btn-sm btn-outline">
-            重置
-          </button>
-          <button class="btn btn-primary btn-sm btn-outline" @click="handleSearch">
-            搜索
-          </button>
-        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="btn btn-sm btn-soft btn-primary btn-square" @click="handleSearch">
+          <Icon icon="mdi:search" class="w-6 h-6" />
+        </button>
+        <button class="btn btn-sm btn-soft btn-warning btn-square">
+          <Icon icon="mdi:refresh" class="w-6 h-6" />
+        </button>
       </div>
     </div>
   </div>

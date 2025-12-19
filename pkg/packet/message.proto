@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package protocol;
+package packet;
 
 import "google/protobuf/any.proto";
 
@@ -49,9 +49,34 @@ message LoginAck {
 
 message Ping {
   int64 timestamp = 1;
+  uint64 mem_free = 2;
+  uint64 mem_used = 3;
+  double mem_used_percent = 4;
+  uint64 mem_available = 5;
+  double cpu_percent = 6;
+  repeated DiskUsageStat disk_usage = 7;
+  double net_bytes_sent = 8;
+  double net_bytes_recv = 9;
 }
 
 message ErrorAck {
   int32 code = 1;
   string message = 2;
+}
+
+message Logout {
+  
+}
+
+message DiskUsageStat {
+  string path = 1;
+  string fstype = 2;
+  uint64 total = 3;
+  uint64 free = 4;
+  uint64 used = 5;
+  double used_percent = 6;
+  uint64 inodes_total = 7;
+  uint64 inodes_free = 8;
+  uint64 inodes_used = 9;
+  double inodes_used_percent = 10;
 }

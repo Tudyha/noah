@@ -9,4 +9,6 @@ import (
 func RegisterClientRoutes(router *gin.RouterGroup, clientController *controller.ClientController) {
 	router.GET("/page", clientController.GetClientPage)
 	router.GET("/bind", clientController.GetClientBind)
+	router.DELETE("/:client_id", clientController.DeleteClient)
+	router.GET("/:client_id/stat", clientController.GetClientStat)
 }

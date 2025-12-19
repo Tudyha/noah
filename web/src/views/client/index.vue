@@ -1,8 +1,39 @@
 <script lang="ts" setup>
 import { useRequest } from 'vue-hooks-plus'
 import { getClientPage } from "@/api/client";
-import Bind from './bind.vue'
-import Client from './client.vue'
+import Bind from './components/bind.vue'
+import Client from './components/client.vue'
+import type { SearchItem } from '@/types'
+
+const searchItems: SearchItem[] = [
+  {
+    type: "input",
+    label: "主机名称",
+    key: "username",
+  },
+  {
+    type: "input",
+    label: "IP地址",
+    key: "username",
+    placeholder: "请输入IP地址"
+  },
+  {
+    type: "select",
+    label: "在线状态",
+    key: "status",
+    width: "w-20",
+    options: [
+      {
+        value: "1",
+        label: "在线"
+      },
+      {
+        value: "2",
+        label: "离线"
+      }
+    ]
+  }
+]
 
 const { data, loading, run } = useRequest(getClientPage)
 
@@ -23,7 +54,9 @@ const handleSearch = () => {
         <span>主机列表</span>
       </div>
       <div class="flex-none">
-        <button class="btn btn-outline btn-primary btn-sm" onclick="bing_dialog.showModal()">绑定</button>
+        <button class="btn btn-outline btn-primary btn-sm" onclick="bing_dialog.showModal()">
+          <Icon icon="mdi:link" />绑定
+        </button>
         <dialog id="bing_dialog" class="modal">
           <div class="modal-box">
             <Bind />
@@ -38,7 +71,7 @@ const handleSearch = () => {
       </div>
     </div>
 
-    <Search @search="handleSearch" />
+    <Search :items="searchItems" @search="handleSearch" />
 
 
     <div class="p-2 border-b border-base-content/5">
@@ -49,10 +82,15 @@ const handleSearch = () => {
         </div>
       </template>
       <template v-else>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
+        <div v-if="data && data.list.length > 0"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           <template v-for="item in data?.list">
-            <Client :item="item" />
+            <Client :item="item" @refresh="handleSearch" />
           </template>
+        </div>
+
+        <div v-else class="grid place-items-center">
+          <span>暂无数据，立即<button class="btn btn-link btn-lg" onclick="bing_dialog.showModal()">绑定</button></span>
         </div>
 
       </template>

@@ -82,6 +82,22 @@ class HttpService {
   ): Promise<T> {
     return this.instance.post(url, data, config);
   }
+
+  public put<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    return this.instance.put(url, data, config);
+  }
+
+  public delete<T>(
+    url: string,
+    parame?: any,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    return this.instance.delete(url, { params: parame, ...config });
+  }
 }
 
 const httpService = new HttpService();

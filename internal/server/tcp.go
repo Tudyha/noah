@@ -4,13 +4,10 @@ import (
 	"context"
 	"errors"
 	"net"
-	"noah/internal/server/handler"
+	"noah/internal/session"
 	"noah/pkg/app"
 	"noah/pkg/config"
-	"noah/pkg/conn"
 	"noah/pkg/logger"
-	"noah/pkg/packet"
-	"sync"
 	"time"
 )
 
@@ -20,27 +17,17 @@ type tcpServer struct {
 	keepAlive  int          // 连接保活时间
 	listener   net.Listener // 监听句柄，可用于关闭连接等
 
-	sessions sync.Map // 连接会话，key -> connId, value -> *conn.Conn
-
-	messageHandlers map[packet.MessageType]conn.MessageHandler // 消息处理器
+	sessionManager session.SessionManager
 }
 
 func NewTCPServer() app.Server {
 	cfg := config.Get().Server.TCP
 	s := &tcpServer{
-		listenAddr: cfg.Addr,
-		timeout:    cfg.Timeout,
-		keepAlive:  cfg.KeepAlive,
-
-		sessions: sync.Map{},
-
-		messageHandlers: make(map[packet.MessageType]conn.MessageHandler),
+		listenAddr:     cfg.Addr,
+		timeout:        cfg.Timeout,
+		keepAlive:      cfg.KeepAlive,
+		sessionManager: session.GetSessionManager(),
 	}
-
-	registerHandler := handler.NewLoginHandler()
-	pingHandler := handler.NewPingHandler()
-	s.messageHandlers[registerHandler.MessageType()] = registerHandler
-	s.messageHandlers[pingHandler.MessageType()] = pingHandler
 
 	return s
 }
@@ -71,16 +58,6 @@ func (t *tcpServer) Start(ctx context.Context) error {
 	t.listener = listener
 
 	// 启动监听协程处理连接
-	go t.listen()
-
-	return nil
-}
-
-// listen 监听TCP连接请求并处理新建立的连接
-// 该方法会持续监听新的TCP连接，当有新连接建立时，启动一个新的goroutine来处理该连接
-// 当监听器被关闭时，方法会正常退出
-func (t *tcpServer) listen() {
-	// 持续监听新的连接请求
 	for {
 		// 接受新的TCP连接
 		conn, err := t.listener.Accept()
@@ -93,60 +70,15 @@ func (t *tcpServer) listen() {
 			// 其他错误情况下继续监听
 			continue
 		}
-		// 为每个新连接启动一个独立的goroutine进行处理
-		go t.handleTCPConnection(conn)
-	}
-}
-
-// handleTCPConnection 处理TCP连接的主循环函数
-// 该函数负责接收和处理来自客户端的TCP连接，包括消息读取、解析和分发给相应的处理器
-// 参数:
-//   - netConn: 网络连接对象，用于与客户端进行数据通信
-func (t *tcpServer) handleTCPConnection(netConn net.Conn) {
-	c := conn.NewConn(netConn)
-	defer c.Close()
-
-	// 将新建立的连接添加到服务器的会话存储中，以便后续管理和查找
-	t.sessions.Store(c.GetID(), c)
-
-	// 主循环：持续读取消息并进行处理
-	for {
-		// 从连接中读取下一个消息
-		p, err := c.ReadMessage()
+		logger.Info("new tcp conn", "RemoteAddr", conn.RemoteAddr().String())
+		_, err = t.sessionManager.NewSession(conn)
 		if err != nil {
-			// 如果连接已关闭，则退出循环
-			if errors.Is(err, net.ErrClosed) {
-				break
-			}
-			// 其他错误情况下继续循环，尝试读取下一条消息
-			continue
+			logger.Error("tcp server创建session失败", "err", err)
+			conn.Close()
 		}
-
-		msgType := p.MessageType
-
-		logger.Info("tcp server接收到消息", "msgType", msgType)
-
-		// 检查连接状态，如果连接未激活且消息不是登录类型，则拒绝处理
-		if c.GetState() != conn.ConnState_Active && msgType != packet.MessageType_Login {
-			logger.Error("连接未激活，不允许处理消息", "connId", c.GetID())
-			continue
-		}
-
-		// 创建上下文对象，用于在消息处理过程中传递连接相关信息
-		ctx := conn.NewConnContext(c, p)
-
-		// 根据消息类型查找对应的消息处理器
-		h := t.messageHandlers[msgType]
-		if h != nil {
-			// 调用处理器处理消息
-			if err := h.Handle(ctx); err != nil {
-				logger.Error("msg handle err", "err", err)
-			}
-		}
-
-		// 回收上下文对象
-		ctx.Release()
 	}
+
+	return nil
 }
 
 // Stop 停止TCP服务器

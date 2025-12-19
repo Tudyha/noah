@@ -45,3 +45,28 @@ type ClientBindResponse struct {
 	WindowsBind string `json:"windows_bind"`
 	LinuxBind   string `json:"linux_bind"`
 }
+
+type ClientStatResponse struct {
+	MemAvailable   uint64          `json:"mem_available"`
+	MemUsed        uint64          `json:"mem_used"`
+	MemUsedPercent float64         `json:"mem_used_percent"`
+	MemFree        uint64          `json:"mem_free"`
+	CpuPercent     float64         `json:"cpu_percent"`
+	DiskUsage      []DiskUsageStat `json:"disk_usage"`
+	NetBytesSent   float64         `json:"bytesSent"`
+	NetBytesRecv   float64         `json:"bytesRecv"`
+	CreatedAt      *time.Time      `json:"created_at"`
+}
+
+type DiskUsageStat struct {
+	Path              string  `json:"path"`
+	Fstype            string  `json:"fstype"`
+	Total             uint64  `json:"total"`
+	Free              uint64  `json:"free"`
+	Used              uint64  `json:"used"`
+	UsedPercent       float64 `json:"used_percent"`
+	InodesTotal       uint64  `json:"inodes_total"`
+	InodesFree        uint64  `json:"inodes_free"`
+	InodesUsed        uint64  `json:"inodes_used"`
+	InodesUsedPercent float64 `json:"inodes_used_percent"`
+}

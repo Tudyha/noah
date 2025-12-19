@@ -27,7 +27,7 @@ func newClientService() ClientService {
 	}
 }
 
-func (c *clientService) Create(ctx context.Context, client *model.Client) error {
+func (c *clientService) Connect(ctx context.Context, client *model.Client) error {
 	old, err := c.clientDao.GetByDeviceID(ctx, client.DeviceID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -62,4 +62,31 @@ func (c *clientService) GetPage(ctx context.Context, appID uint64, query request
 		Total: total,
 		List:  list,
 	}, nil
+}
+
+func (c *clientService) Disconnect(ctx context.Context, clientID uint64) error {
+	return c.clientDao.UpdateStatus(ctx, clientID, enum.ClientStatusOffline)
+}
+
+func (c *clientService) Delete(ctx context.Context, clientID uint64) (*model.Client, error) {
+	old, err := c.clientDao.GetByID(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	return old, c.clientDao.Delete(ctx, clientID)
+}
+
+func (c *clientService) SaveClientStat(ctx context.Context, stat *model.ClientStat) error {
+	return c.clientDao.SaveClientStat(ctx, stat)
+}
+
+func (c *clientService) GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) ([]*response.ClientStatResponse, error) {
+	stats, err := c.clientDao.GetClientStat(ctx, clientID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	var list []*response.ClientStatResponse
+	copier.Copy(&list, stats)
+	return list, nil
 }

@@ -44,3 +44,22 @@ type Client struct {
 func (m *Client) TableName() string {
 	return "client"
 }
+
+type ClientStat struct {
+	BaseModel
+
+	ClientId       uint64  `gorm:"column:client_id;not null"`
+	MemAvailable   uint64  `gorm:"column:mem_available"`
+	MemUsed        uint64  `gorm:"column:mem_used"`
+	MemUsedPercent float64 `gorm:"column:mem_used_percent"`
+	MemFree        uint64  `gorm:"column:mem_free"`
+	CpuPercent     float64 `gorm:"column:cpu_percent"`
+	DiskUsage      string  `gorm:"column:disk_usage"`
+	NetBytesSent   float64 `gorm:"column:bytesSent"`
+	NetBytesRecv   float64 `gorm:"column:bytesRecv"`
+}
+
+// TableName table name
+func (m *ClientStat) TableName() string {
+	return "client_stat"
+}

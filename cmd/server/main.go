@@ -11,6 +11,7 @@ import (
 	"noah/internal/database"
 	"noah/internal/server"
 	"noah/internal/service"
+	"noah/internal/session"
 	"noah/pkg/app"
 	"noah/pkg/config"
 	"noah/pkg/logger"
@@ -78,6 +79,12 @@ func main() {
 	// 初始化controller层
 	if err := controller.Init(); err != nil {
 		logger.Error("初始化controller层失败", "err", err)
+		os.Exit(1)
+	}
+
+	// 初始化tcp连接管理器
+	if err := session.Init(); err != nil {
+		logger.Error("初始化tcp连接管理器失败", "err", err)
 		os.Exit(1)
 	}
 

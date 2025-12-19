@@ -6,6 +6,7 @@ export type SearchItem = {
   placeholder?: string;
   options?: { value: string | number; label: string }[]; // select组件使用
   // default?: string | number | Date | Date[]
+  width?: string;
 }
 
 export type SearchProps = {

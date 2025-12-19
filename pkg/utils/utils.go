@@ -245,3 +245,21 @@ func FormatBytes(bytes int64) string {
 func Base64Encode(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data)
 }
+
+func GetMacAddress() string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ""
+	}
+	var address []string
+	for _, i := range interfaces {
+		a := i.HardwareAddr.String()
+		if a != "" {
+			address = append(address, a)
+		}
+	}
+	if len(address) == 0 {
+		return ""
+	}
+	return address[0]
+}

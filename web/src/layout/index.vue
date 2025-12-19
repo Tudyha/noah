@@ -8,7 +8,7 @@
         <div class="drawer-content flex flex-col flex-1 overflow-y-auto">
           <!-- Main content area -->
           <main class="p-4 flex-1 mx-auto w-full bg-base-200">
-            <div class="bg-base-100">
+            <div class="bg-base-100 shadow h-full overflow-y-auto">
               <RouterView />
             </div>
           </main>

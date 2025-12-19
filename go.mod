@@ -12,7 +12,15 @@ require (
 	noah/pkg v0.0.0-00010101000000-000000000000
 )
 
-require github.com/oschwald/maxminddb-golang v1.13.1 // indirect
+require (
+	github.com/gobuffalo/envy v1.7.0 // indirect
+	github.com/gobuffalo/packd v0.3.0 // indirect
+	github.com/gobuffalo/packr v1.30.1 // indirect
+	github.com/joho/godotenv v1.3.0 // indirect
+	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/xtaci/smux/v2 v2.1.0 // indirect
+)
 
 require (
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -49,6 +57,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/golang-module/carbon v1.7.3
 	github.com/jinzhu/copier v0.4.0
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -84,5 +93,5 @@ require (
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/protobuf v1.36.10
 )

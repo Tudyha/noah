@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"io"
 	"log"
 	"net"
 	"noah/client/app/handler"
@@ -14,7 +16,6 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type Client struct {
@@ -27,6 +28,8 @@ type Client struct {
 	closeSignal chan struct{}
 
 	infoHandler *handler.InfoHandler
+
+	messageHandlers map[packet.MessageType]conn.MessageHandler
 }
 
 func NewClient(cfg *config.ClientConfig) pkgApp.Server {
@@ -39,11 +42,18 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 	if cfg.HeartbeatInterval == 0 {
 		cfg.HeartbeatInterval = 30
 	}
-	return &Client{
+	c := &Client{
 		cfg:         cfg,
 		closeSignal: make(chan struct{}),
 		infoHandler: &handler.InfoHandler{},
+
+		messageHandlers: make(map[packet.MessageType]conn.MessageHandler),
 	}
+
+	logoutHandler := handler.NewLogoutHandler()
+	c.messageHandlers[logoutHandler.MessageType()] = logoutHandler
+
+	return c
 }
 
 // Start 启动客户端并维持连接状态
@@ -55,29 +65,23 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 //
 //	error: 启动过程中发生的错误，正常关闭时返回nil
 func (c *Client) Start(ctx context.Context) error {
-	log.Println("client start...")
-
 	// 定时发送心跳包
 	go c.ping()
+
+	ticker := time.NewTicker(time.Duration(c.cfg.ReconnectInterval) * time.Second)
+	defer ticker.Stop()
 
 	// 主循环：监听关闭信号并维持客户端连接
 	for {
 		select {
 		case <-c.closeSignal:
 			// 接收到关闭信号，停止客户端
-			log.Println("client stop...")
 			return nil
-		default:
-			// 检查客户端是否已连接，如果已连接则跳过本次循环
-			if c.connected.Load() {
-				continue
-			}
-
-			// 尝试建立连接，如果失败则等待重连间隔后重试
-			if err := c.connect(); err != nil {
-				log.Println("连接失败:", err)
-				time.Sleep(time.Duration(c.cfg.ReconnectInterval) * time.Second)
-				continue
+		case <-ticker.C:
+			if !c.connected.Load() {
+				if err := c.connect(); err != nil {
+					log.Println("连接失败:", err)
+				}
 			}
 		}
 	}
@@ -121,16 +125,23 @@ func (c *Client) handleConn() {
 	loginReq := &packet.Login{
 		AppId:    c.cfg.AppId,
 		Sign:     utils.Sign(c.cfg.AppId, c.cfg.AppSecret),
-		DeviceId: "2",
+		DeviceId: utils.GetMacAddress(),
 	}
 	loginReq.ClientInfo = c.infoHandler.GetInfo()
 	if err := c.WriteMessage(packet.MessageType_Login, loginReq); err != nil {
-		log.Println("登录包发送失败:", err)
 		return
 	}
-	log.Println("登录包发送成功")
 	for {
-
+		p, err := c.conn.ReadMessage()
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) || errors.Is(err, io.EOF) {
+				return
+			}
+			continue
+		}
+		if err := c.messageHandlers[p.MessageType].Handle(conn.NewConnContext(c.conn, p)); err != nil {
+			log.Println("处理消息失败:", err)
+		}
 	}
 }
 
@@ -148,7 +159,8 @@ func (c *Client) ping() {
 				log.Println("client not connected, ping fail")
 				continue
 			}
-			if err := c.WriteMessage(packet.MessageType_Ping, &packet.Ping{}); err != nil {
+			data := c.infoHandler.GetSystemStat()
+			if err := c.WriteMessage(packet.MessageType_Ping, data); err != nil {
 				log.Println("心跳包发送失败:", err)
 				return
 			}
@@ -158,18 +170,7 @@ func (c *Client) ping() {
 }
 
 func (c *Client) WriteMessage(msgType packet.MessageType, msg proto.Message) error {
-	body, err := anypb.New(msg)
-	if err != nil {
-		return err
-	}
-
-	data, err := proto.Marshal(&packet.Message{
-		Body: body,
-	})
-	if err != nil {
-		return err
-	}
-	return c.conn.WriteProtoMessage(msgType, data)
+	return c.conn.WriteProtoMessage(msgType, msg)
 }
 
 func (c *Client) Stop(ctx context.Context) error {

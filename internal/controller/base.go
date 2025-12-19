@@ -89,3 +89,15 @@ func GetAppID(ctx *gin.Context) uint64 {
 	}
 	return id
 }
+
+func GetClientID(ctx *gin.Context) uint64 {
+	v, ok := ctx.Params.Get("client_id")
+	if !ok {
+		return 0
+	}
+	clientID, err := utils.StringToUint64(v)
+	if err != nil {
+		return 0
+	}
+	return clientID
+}

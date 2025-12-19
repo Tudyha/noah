@@ -58,12 +58,12 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 	client.Port = port
 	client.RemoteIpCountry = ip.GetIPCountry(client.RemoteIP)
 
-	if err := h.clientService.Create(ctx, &client); err != nil {
+	if err := h.clientService.Connect(ctx, &client); err != nil {
 		logger.Info("创建客户端失败", "err", err)
 		return err
 	}
 
-	ctx.GetConn().SetState(conn.ConnState_Active)
+	ctx.GetConn().ConnectSuccess(client.ID)
 
 	return nil
 }

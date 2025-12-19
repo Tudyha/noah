@@ -4,8 +4,10 @@ import (
 	"context"
 	"noah/internal/database"
 	"noah/internal/model"
+	"noah/pkg/enum"
 	"noah/pkg/request"
 	"sync"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -60,6 +62,11 @@ type ClientDao interface {
 	Create(ctx context.Context, client *model.Client) error
 	GetByDeviceID(ctx context.Context, deviceID string) (*model.Client, error)
 	GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) ([]*model.Client, int64, error)
+	UpdateStatus(ctx context.Context, clientID uint64, status enum.ClientStatus) error
+	Delete(ctx context.Context, clientID uint64) error
+	GetByID(ctx context.Context, clientID uint64) (*model.Client, error)
+	SaveClientStat(ctx context.Context, stat *model.ClientStat) error
+	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) (any, error)
 }
 
 func Paginate(pageQuery request.PageQuery) func(db *gorm.DB) *gorm.DB {

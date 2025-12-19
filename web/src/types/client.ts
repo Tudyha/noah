@@ -36,3 +36,15 @@ export type ClientResponse = {
   created_at: Date;
   updated_at: Date;
 }
+
+export type ClientSystemInfoResponse = {
+  mem_available: number;
+  mem_used: number;
+  mem_used_percent: number;
+  mem_free: number;
+  cpu_percent: number;
+  disk_usage: null;
+  bytesSent: number;
+  bytesRecv: number;
+  created_at: Date;
+}

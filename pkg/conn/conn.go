@@ -3,13 +3,16 @@ package conn
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"noah/pkg/packet"
 	"noah/pkg/utils"
 	"sync"
 	"time"
+
+	smux "github.com/xtaci/smux/v2"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type ConnState uint8
@@ -21,8 +24,9 @@ const (
 )
 
 type Conn struct {
-	connID  uint64   // 连接ID
-	netConn net.Conn // 底层连接
+	clientID uint64   // 客户端ID
+	connID   uint64   // 连接ID
+	netConn  net.Conn // 底层连接
 
 	codec packet.Codec // 编解码器
 
@@ -33,6 +37,7 @@ type Conn struct {
 	writeMutex sync.Mutex    // 写锁
 	muxBuf     *bytes.Buffer // 多路复用器数据缓冲区
 	cond       *sync.Cond    // 用于在muxBuf为空时阻塞Read()，并在写入数据时唤醒
+	session    *smux.Session // 多路复用器会话
 
 	messageChan chan *packet.Packet // 消息通道
 
@@ -54,6 +59,8 @@ func NewConn(conn net.Conn) *Conn {
 	}
 	c.cond = sync.NewCond(&c.readMutex) // 初始化 Cond
 
+	c.session, _ = smux.Server(c, smux.DefaultConfig())
+
 	go c.read()
 
 	return c
@@ -65,7 +72,6 @@ func (c *Conn) read() {
 	for c.ctx.Err() == nil {
 		p, err := c.codec.Decode(c.netConn)
 		if err != nil {
-			fmt.Println(err)
 			return
 		}
 
@@ -127,6 +133,10 @@ func (c *Conn) GetID() uint64 {
 	return c.connID
 }
 
+func (c *Conn) GetClientID() uint64 {
+	return c.clientID
+}
+
 func (c *Conn) ReadMessage() (*packet.Packet, error) {
 	select {
 	case <-c.ctx.Done():
@@ -139,13 +149,27 @@ func (c *Conn) ReadMessage() (*packet.Packet, error) {
 	}
 }
 
-func (c *Conn) WriteProtoMessage(msgType packet.MessageType, data []byte) error {
+func (c *Conn) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) error {
+	c.writeMutex.Lock()
+	defer c.writeMutex.Unlock()
+	body, err := anypb.New(msg)
+	if err != nil {
+		return err
+	}
+
+	data, err := proto.Marshal(&packet.Message{
+		Body: body,
+	})
+	if err != nil {
+		return err
+	}
+
 	p := &packet.Packet{
 		MessageType: msgType,
 		CodecType:   packet.CodecType_Protobuf,
 		Data:        data,
 	}
-	_, err := c.codec.Encode(c.netConn, p)
+	_, err = c.codec.Encode(c.netConn, p)
 	return err
 }
 
@@ -190,8 +214,13 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (c *Conn) SetState(state ConnState) {
+func (c *Conn) ConnectSuccess(clientID uint64) {
 	c.stateMutex.Lock()
 	defer c.stateMutex.Unlock()
-	c.state = state
+	c.state = ConnState_Active
+	c.clientID = clientID
+}
+
+func (c *Conn) GetSmuxSession() *smux.Session {
+	return c.session
 }

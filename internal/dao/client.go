@@ -3,7 +3,9 @@ package dao
 import (
 	"context"
 	"noah/internal/model"
+	"noah/pkg/enum"
 	"noah/pkg/request"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -39,4 +41,27 @@ func (c *clientDao) GetPage(ctx context.Context, appID uint64, query request.Cli
 	}
 	db = db.Order("id desc")
 	return clients, total, db.Scopes(Paginate(query.PageQuery)).Find(&clients).Error
+}
+
+func (c *clientDao) UpdateStatus(ctx context.Context, clientID uint64, status enum.ClientStatus) error {
+	return c.db.WithContext(ctx).Model(&model.Client{}).Where("id = ?", clientID).Update("status", status).Error
+}
+
+func (c *clientDao) Delete(ctx context.Context, clientID uint64) error {
+	return c.db.WithContext(ctx).Delete(&model.Client{}, clientID).Error
+
+}
+
+func (c *clientDao) GetByID(ctx context.Context, clientID uint64) (*model.Client, error) {
+	var client model.Client
+	return &client, c.db.WithContext(ctx).First(&client, clientID).Error
+}
+
+func (c *clientDao) SaveClientStat(ctx context.Context, stat *model.ClientStat) error {
+	return c.db.WithContext(ctx).Model(&model.ClientStat{}).Save(stat).Error
+}
+
+func (c *clientDao) GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) (any, error) {
+	var stats []*model.ClientStat
+	return stats, c.db.WithContext(ctx).Model(&model.ClientStat{}).Where("client_id = ?", clientID).Where("created_at >= ?", start).Where("created_at <= ?", end).Find(&stats).Error
 }

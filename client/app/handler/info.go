@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"noah/pkg/packet"
 	"os"
@@ -9,10 +10,19 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/jinzhu/copier"
+	"github.com/samber/lo"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/net"
+)
+
+var (
+	LastNetStatTime  = time.Now()
+	LastNetBytesRecv uint64
+	LastNetBytesSent uint64
 )
 
 type InfoHandler struct {
@@ -134,23 +144,68 @@ func (h *InfoHandler) getMemoryInfo(info *packet.ClientInfo) (err error) {
 
 func (h *InfoHandler) getDiskInfo(info *packet.ClientInfo) (err error) {
 	// 获取所有分区
-	partitions, err := disk.Partitions(false)
+	partitions, err := getDiskUsage()
 	if err != nil {
 		return
 	}
 
-	var totalDisk uint64 = 0
+	info.DiskTotal = lo.Reduce(partitions, func(v uint64, item *disk.UsageStat, _ int) uint64 {
+		return v + item.Total
+	}, 0)
+	return
+}
 
-	// 遍历所有分区，累加磁盘空间
-	for _, partition := range partitions {
-		usage, err := disk.Usage(partition.Mountpoint)
+func getDiskUsage() ([]*disk.UsageStat, error) {
+	switch runtime.GOOS {
+	case "linux", "darwin":
+		u, err := disk.Usage("/")
+		return []*disk.UsageStat{u}, err
+	case "windows":
+		parts, err := disk.Partitions(false)
 		if err != nil {
-			continue // 跳过无法访问的分区
+			return nil, err
 		}
+		var us []*disk.UsageStat
+		for _, p := range parts {
+			u, err := disk.Usage(p.Mountpoint)
+			if err != nil {
+				return nil, err
+			}
+			us = append(us, u)
+		}
+		return us, nil
+	default:
+		return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
+}
 
-		totalDisk += usage.Total
+func (h *InfoHandler) GetSystemStat() *packet.Ping {
+	info := &packet.Ping{}
+	v, _ := mem.VirtualMemory()
+	if v != nil {
+		info.MemFree = v.Free
+		info.MemUsed = v.Used
+		info.MemUsedPercent = v.UsedPercent
+		info.MemAvailable = v.Available
 	}
 
-	info.DiskTotal = totalDisk
-	return
+	cpuPercent, _ := cpu.Percent(0, false)
+	if len(cpuPercent) > 0 {
+		info.CpuPercent = cpuPercent[0]
+	}
+
+	du, _ := getDiskUsage()
+	copier.Copy(&info.DiskUsage, du)
+
+	ioCounters, _ := net.IOCounters(false)
+
+	if len(ioCounters) > 0 {
+		info.NetBytesSent = float64(ioCounters[0].BytesSent-LastNetBytesSent) / time.Since(LastNetStatTime).Seconds()
+		info.NetBytesRecv = float64(ioCounters[0].BytesRecv-LastNetBytesRecv) / time.Since(LastNetStatTime).Seconds()
+		LastNetBytesSent = ioCounters[0].BytesSent
+		LastNetBytesRecv = ioCounters[0].BytesRecv
+	}
+	LastNetStatTime = time.Now()
+
+	return info
 }

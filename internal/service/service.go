@@ -8,6 +8,7 @@ import (
 	"noah/pkg/request"
 	"noah/pkg/response"
 	"sync"
+	"time"
 )
 
 var (
@@ -45,8 +46,12 @@ type WorkService interface {
 
 type ClientService interface {
 	VerifySign(ctx context.Context, appID uint64, sign string) error
-	Create(ctx context.Context, client *model.Client) error
+	Connect(ctx context.Context, client *model.Client) error
 	GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) (*response.Page[response.ClientResponse], error)
+	Disconnect(ctx context.Context, clientID uint64) error
+	Delete(ctx context.Context, clientID uint64) (*model.Client, error)
+	SaveClientStat(ctx context.Context, stat *model.ClientStat) error
+	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) ([]*response.ClientStatResponse, error)
 }
 
 func Init() error {
