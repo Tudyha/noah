@@ -49,7 +49,6 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 	}
 	client.DeviceID = loginReq.DeviceId
 	client.AppID = loginReq.AppId
-	client.ConnID = ctx.GetConn().GetID()
 	client.OsType = enum.ClientOsNameToOsTypeMap[client.OsName]
 
 	remoteAddr := ctx.GetConn().RemoteAddr()
@@ -62,8 +61,6 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 		logger.Info("创建客户端失败", "err", err)
 		return err
 	}
-
-	ctx.GetConn().ConnectSuccess(client.ID)
 
 	return nil
 }

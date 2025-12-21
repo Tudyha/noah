@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"google.golang.org/protobuf/proto"
+	"github.com/xtaci/smux/v2"
 )
 
 type Client struct {
@@ -23,7 +23,9 @@ type Client struct {
 
 	connected atomic.Bool
 
-	conn *conn.Conn
+	conn       *conn.Conn
+	session    *smux.Session
+	pingStream *smux.Stream
 
 	closeSignal chan struct{}
 
@@ -56,18 +58,7 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 	return c
 }
 
-// Start 启动客户端并维持连接状态
-// 参数:
-//
-//	ctx: 上下文对象，用于控制协程生命周期
-//
-// 返回值:
-//
-//	error: 启动过程中发生的错误，正常关闭时返回nil
 func (c *Client) Start(ctx context.Context) error {
-	// 定时发送心跳包
-	go c.ping()
-
 	ticker := time.NewTicker(time.Duration(c.cfg.ReconnectInterval) * time.Second)
 	defer ticker.Stop()
 
@@ -87,30 +78,19 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 }
 
-// connect 建立与服务器的TCP连接并初始化连接处理器
-// 该函数会创建一个带有超时设置的网络拨号器，尝试连接到配置的服务器地址，
-// 如果连接成功，则初始化连接对象并启动连接处理协程
-//
-// 返回值:
-//
-//	error - 连接过程中的错误信息，成功时返回nil
 func (c *Client) connect() error {
-	// 创建带超时设置的拨号器
 	dail := net.Dialer{
 		Timeout: time.Duration(c.cfg.DailTimeout) * time.Second,
 	}
 
-	// 尝试建立TCP连接
 	netConn, err := dail.Dial("tcp", c.cfg.ServerAddr)
 	if err != nil {
 		return err
 	}
 
-	// 初始化连接并标记为已连接状态
 	c.conn = conn.NewConn(netConn)
 	c.connected.Store(true)
 
-	// 启动连接处理协程
 	go c.handleConn()
 	return nil
 }
@@ -118,7 +98,12 @@ func (c *Client) connect() error {
 func (c *Client) handleConn() {
 	defer func() {
 		c.connected.Store(false)
-		c.conn.Close()
+		if c.conn != nil {
+			c.conn.Close()
+		}
+		if c.session != nil {
+			c.session.Close()
+		}
 	}()
 
 	// 发送登录包
@@ -128,24 +113,59 @@ func (c *Client) handleConn() {
 		DeviceId: utils.GetMacAddress(),
 	}
 	loginReq.ClientInfo = c.infoHandler.GetInfo()
-	if err := c.WriteMessage(packet.MessageType_Login, loginReq); err != nil {
+	if _, err := c.conn.WriteProtoMessage(packet.MessageType_Login, loginReq); err != nil {
 		return
 	}
+	p, err := c.conn.ReadOnce()
+	if err != nil {
+		return
+	}
+	if p.MessageType != packet.MessageType_LoginAck {
+		return
+	}
+
+	log.Println("认证通过")
+
+	log.Println("创建smux session")
+	c.session, err = smux.Server(c.conn.GetConn(), smux.DefaultConfig())
+	if err != nil {
+		log.Println("创建smux session失败:", err)
+		return
+	}
+	c.conn.Stop()
+	c.conn = nil
+
+	log.Println("创建ping任务")
+	if c.pingStream, err = c.session.OpenStream(); err != nil {
+		log.Println("创建ping stream失败:", err)
+	} else {
+		go c.ping()
+	}
+
+	log.Println("监听新连接")
 	for {
-		p, err := c.conn.ReadMessage()
+		stream, err := c.session.AcceptStream()
 		if err != nil {
-			if errors.Is(err, net.ErrClosed) || errors.Is(err, io.EOF) {
+			if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
 				return
 			}
 			continue
 		}
-		if err := c.messageHandlers[p.MessageType].Handle(conn.NewConnContext(c.conn, p)); err != nil {
-			log.Println("处理消息失败:", err)
-		}
+		go c.handleStream(stream)
 	}
 }
 
+func (c *Client) handleStream(conn net.Conn) {
+	log.Println("handle new stream")
+}
+
 func (c *Client) ping() {
+	if c.pingStream == nil {
+		return
+	}
+	conn := conn.NewConn(c.pingStream)
+	defer conn.Close()
+
 	ticker := time.NewTicker(time.Duration(c.cfg.HeartbeatInterval) * time.Second)
 	defer ticker.Stop()
 
@@ -160,17 +180,13 @@ func (c *Client) ping() {
 				continue
 			}
 			data := c.infoHandler.GetSystemStat()
-			if err := c.WriteMessage(packet.MessageType_Ping, data); err != nil {
+			if _, err := conn.WriteProtoMessage(packet.MessageType_Ping, data); err != nil {
 				log.Println("心跳包发送失败:", err)
 				return
 			}
+			log.Println("心跳包发送成功")
 		}
 	}
-
-}
-
-func (c *Client) WriteMessage(msgType packet.MessageType, msg proto.Message) error {
-	return c.conn.WriteProtoMessage(msgType, msg)
 }
 
 func (c *Client) Stop(ctx context.Context) error {

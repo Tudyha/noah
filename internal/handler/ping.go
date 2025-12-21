@@ -26,12 +26,12 @@ func (p *pingHandler) Handle(ctx conn.Context) error {
 	if err := ctx.ShouldBindProto(&ping); err != nil {
 		return err
 	}
-	logger.Info("receive ping msg", "ConnID", ctx.GetConn().GetID(), "data", ping.String())
+	logger.Info("receive ping msg", "data", ping.String())
 	var clientStat model.ClientStat
 	copier.CopyWithOption(&clientStat, &ping, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 	du, _ := json.Marshal(ping.DiskUsage)
 	clientStat.DiskUsage = string(du)
-	clientStat.ClientId = ctx.GetConn().GetClientID()
+	// clientStat.ClientId = ctx.GetConn().GetClientID()
 	p.clientService.SaveClientStat(ctx, &clientStat)
 	return nil
 }

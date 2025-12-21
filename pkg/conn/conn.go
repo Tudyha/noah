@@ -2,110 +2,128 @@ package conn
 
 import (
 	"bytes"
-	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"noah/pkg/packet"
-	"noah/pkg/utils"
 	"sync"
 	"time"
 
-	smux "github.com/xtaci/smux/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-type ConnState uint8
-
-const (
-	ConnState_Init ConnState = iota
-	ConnState_Active
-	ConnState_Closed
-)
-
 type Conn struct {
-	clientID uint64   // 客户端ID
-	connID   uint64   // 连接ID
-	netConn  net.Conn // 底层连接
+	netConn     net.Conn     // 底层连接
+	codec       packet.Codec // 编解码器
+	closeOnce   sync.Once
+	closeSignal chan struct{}
 
-	codec packet.Codec // 编解码器
-
-	state      ConnState // 连接状态
-	stateMutex sync.RWMutex
-
-	readMutex  sync.Mutex    // 读锁
-	writeMutex sync.Mutex    // 写锁
-	muxBuf     *bytes.Buffer // 多路复用器数据缓冲区
-	cond       *sync.Cond    // 用于在muxBuf为空时阻塞Read()，并在写入数据时唤醒
-	session    *smux.Session // 多路复用器会话
-
-	messageChan chan *packet.Packet // 消息通道
-
-	closeOnce sync.Once
-	ctx       context.Context
-	cancel    context.CancelFunc
+	messageChan chan *packet.Packet // 控制消息
+	dataBuf     *bytes.Buffer       // 数据
+	cond        *sync.Cond
+	readMux     *sync.Mutex
+	writeMux    *sync.Mutex
 }
 
 func NewConn(conn net.Conn) *Conn {
-	ctx, cancel := context.WithCancel(context.Background())
 	c := &Conn{
-		connID:      uint64(utils.GenID()),
 		codec:       packet.NewCodec(),
 		netConn:     conn,
-		muxBuf:      new(bytes.Buffer),
+		closeSignal: make(chan struct{}),
 		messageChan: make(chan *packet.Packet, 1024),
-		ctx:         ctx,
-		cancel:      cancel,
+		dataBuf:     bytes.NewBuffer(nil),
+		readMux:     &sync.Mutex{},
+		writeMux:    &sync.Mutex{},
 	}
-	c.cond = sync.NewCond(&c.readMutex) // 初始化 Cond
-
-	c.session, _ = smux.Server(c, smux.DefaultConfig())
-
-	go c.read()
+	c.cond = sync.NewCond(c.readMux)
 
 	return c
 }
 
-func (c *Conn) read() {
-	defer c.Close()
-
-	for c.ctx.Err() == nil {
-		p, err := c.codec.Decode(c.netConn)
-		if err != nil {
+func (c *Conn) Run() {
+	defer func() {
+		c.Close()
+	}()
+	for {
+		select {
+		case <-c.closeSignal:
+			fmt.Println("stop read")
 			return
-		}
-
-		c.readMutex.Lock()
-		switch p.MessageType {
-		case packet.MessageType_Stream_Data:
-			c.muxBuf.Write(p.Data)
-			c.cond.Broadcast()
 		default:
-			c.messageChan <- p
+			p, err := c.codec.Decode(c.netConn)
+			if err != nil {
+				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
+					return
+				}
+				continue
+			}
+			c.readMux.Lock()
+			switch p.MessageType {
+			case packet.MessageType_Stream_Data:
+				c.dataBuf.Write(p.Data)
+				c.cond.Broadcast()
+			default:
+				c.messageChan <- p
+			}
+			c.readMux.Unlock()
 		}
-		c.readMutex.Unlock()
 	}
 }
 
+func (c *Conn) ReadOnce() (*packet.Packet, error) {
+	return c.codec.Decode(c.netConn)
+}
+
+func (c *Conn) ReadMessage() (*packet.Packet, error) {
+	p, ok := <-c.messageChan
+	if !ok {
+		return nil, io.EOF
+	}
+	return p, nil
+}
+
+func (c *Conn) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) (int, error) {
+	c.writeMux.Lock()
+	defer c.writeMux.Unlock()
+	var body *anypb.Any
+	body, err := anypb.New(msg)
+	if err != nil {
+		return 0, err
+	}
+	var m = packet.Message{
+		Body: body,
+	}
+	data, err := proto.Marshal(&m)
+	if err != nil {
+		return 0, err
+	}
+	p := &packet.Packet{
+		MessageType: msgType,
+		CodecType:   packet.CodecType_Protobuf,
+		Data:        data,
+	}
+	return c.codec.Encode(c.netConn, p)
+}
+
 func (c *Conn) Read(b []byte) (n int, err error) {
-	c.readMutex.Lock()
-	defer c.readMutex.Unlock()
 	for {
-		if c.muxBuf.Len() > 0 {
-			return c.muxBuf.Read(b)
+		switch {
+		// case c.closeSignal != nil:
+		// 	return 0, io.EOF
+		case c.dataBuf.Len() > 0:
+			return c.dataBuf.Read(b)
+		default:
+			c.cond.Wait()
+			continue
 		}
-
-		if c.ctx.Err() != nil {
-			return 0, io.EOF
-		}
-
-		c.cond.Wait()
 	}
 }
 
 func (c *Conn) Write(b []byte) (n int, err error) {
-	c.writeMutex.Lock()
-	defer c.writeMutex.Unlock()
+	c.writeMux.Lock()
+	defer c.writeMux.Unlock()
 	p := &packet.Packet{
 		MessageType: packet.MessageType_Stream_Data,
 		Data:        b,
@@ -116,67 +134,12 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 
 func (c *Conn) Close() error {
 	c.closeOnce.Do(func() {
-		c.cancel()
-
-		c.cond.Broadcast()
-
-		close(c.messageChan)
-
 		if c.netConn != nil {
 			c.netConn.Close()
 		}
+		close(c.closeSignal)
 	})
 	return nil
-}
-
-func (c *Conn) GetID() uint64 {
-	return c.connID
-}
-
-func (c *Conn) GetClientID() uint64 {
-	return c.clientID
-}
-
-func (c *Conn) ReadMessage() (*packet.Packet, error) {
-	select {
-	case <-c.ctx.Done():
-		return nil, io.EOF
-	case p, ok := <-c.messageChan:
-		if !ok {
-			return nil, io.EOF
-		}
-		return p, nil
-	}
-}
-
-func (c *Conn) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) error {
-	c.writeMutex.Lock()
-	defer c.writeMutex.Unlock()
-	body, err := anypb.New(msg)
-	if err != nil {
-		return err
-	}
-
-	data, err := proto.Marshal(&packet.Message{
-		Body: body,
-	})
-	if err != nil {
-		return err
-	}
-
-	p := &packet.Packet{
-		MessageType: msgType,
-		CodecType:   packet.CodecType_Protobuf,
-		Data:        data,
-	}
-	_, err = c.codec.Encode(c.netConn, p)
-	return err
-}
-
-func (c *Conn) GetState() ConnState {
-	c.stateMutex.RLock()
-	defer c.stateMutex.RUnlock()
-	return c.state
 }
 
 func (c *Conn) LocalAddr() net.Addr {
@@ -214,13 +177,11 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (c *Conn) ConnectSuccess(clientID uint64) {
-	c.stateMutex.Lock()
-	defer c.stateMutex.Unlock()
-	c.state = ConnState_Active
-	c.clientID = clientID
+func (c *Conn) Stop() {
+	c.netConn = nil
+	c.Close()
 }
 
-func (c *Conn) GetSmuxSession() *smux.Session {
-	return c.session
+func (c *Conn) GetConn() net.Conn {
+	return c.netConn
 }

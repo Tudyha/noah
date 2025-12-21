@@ -26,19 +26,19 @@ func (p *PtyHandler) Handle(ctx conn.Context) error {
 	}
 	defer rwc.Close()
 
-	conn, err := ctx.GetConn().GetSmuxSession().Open()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	// conn, err := ctx.GetConn().GetSmuxSession().Open()
+	// if err != nil {
+	// 	return err
+	// }
+	// defer conn.Close()
 
-	go func() {
-		io.Copy(conn, rwc)
-	}()
+	// go func() {
+	// 	io.Copy(conn, rwc)
+	// }()
 
-	go func() {
-		io.Copy(rwc, conn)
-	}()
+	// go func() {
+	// 	io.Copy(rwc, conn)
+	// }()
 
 	return nil
 }

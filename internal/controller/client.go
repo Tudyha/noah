@@ -4,11 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"noah/internal/service"
-	"noah/internal/session"
 	"noah/pkg/config"
 	"noah/pkg/errcode"
-	"noah/pkg/logger"
-	"noah/pkg/packet"
 	"noah/pkg/request"
 	"noah/pkg/response"
 	"noah/pkg/utils"
@@ -93,16 +90,16 @@ func (h *ClientController) DeleteClient(ctx *gin.Context) {
 		return
 	}
 
-	client, err := h.clientService.Delete(ctx, GetClientID(ctx))
+	_, err := h.clientService.Delete(ctx, GetClientID(ctx))
 	if err != nil {
 		Fail(ctx, err)
 		return
 	}
 
 	// 通知客户端退出程序
-	if err := session.GetSessionManager().SendProtoMessage(client.ConnID, packet.MessageType_Logout, &packet.Logout{}); err != nil {
-		logger.Info("client logout fail", "err", err)
-	}
+	// if err := session.GetSessionManager().SendProtoMessage(client.ConnID, packet.MessageType_Logout, &packet.Logout{}); err != nil {
+	// 	logger.Info("client logout fail", "err", err)
+	// }
 	Success(ctx, nil)
 }
 

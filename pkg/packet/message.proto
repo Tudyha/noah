@@ -44,7 +44,7 @@ message ClientInfo {
 
 message LoginAck {
   int32 code = 1; // 响应码
-  string message = 2; // 响应信息
+  string msg = 2; // 响应信息
 }
 
 message Ping {
@@ -61,7 +61,7 @@ message Ping {
 
 message ErrorAck {
   int32 code = 1;
-  string message = 2;
+  string msg = 2;
 }
 
 message Logout {
@@ -79,4 +79,8 @@ message DiskUsageStat {
   uint64 inodes_free = 8;
   uint64 inodes_used = 9;
   double inodes_used_percent = 10;
+}
+
+message Close {
+  string msg = 1;
 }
