@@ -23,7 +23,6 @@ type Client struct {
 
 	connected atomic.Bool
 
-	conn       *conn.Conn
 	session    *smux.Session
 	pingStream *smux.Stream
 
@@ -62,13 +61,13 @@ func (c *Client) Start(ctx context.Context) error {
 	ticker := time.NewTicker(time.Duration(c.cfg.ReconnectInterval) * time.Second)
 	defer ticker.Stop()
 
-	// 主循环：监听关闭信号并维持客户端连接
 	for {
 		select {
 		case <-c.closeSignal:
 			// 接收到关闭信号，停止客户端
 			return nil
 		case <-ticker.C:
+			// 定时重连
 			if !c.connected.Load() {
 				if err := c.connect(); err != nil {
 					log.Println("连接失败:", err)
@@ -88,35 +87,40 @@ func (c *Client) connect() error {
 		return err
 	}
 
-	c.conn = conn.NewConn(netConn)
 	c.connected.Store(true)
 
-	go c.handleConn()
+	go c.handleConn(netConn)
 	return nil
 }
 
-func (c *Client) handleConn() {
+func (c *Client) handleConn(netConn net.Conn) {
+	conn := conn.NewConn(netConn)
 	defer func() {
 		c.connected.Store(false)
-		if c.conn != nil {
-			c.conn.Close()
+		if conn != nil {
+			conn.Close()
 		}
 		if c.session != nil {
 			c.session.Close()
 		}
+		if c.pingStream != nil {
+			c.pingStream.Close()
+		}
 	}()
 
-	// 发送登录包
+	// 发送鉴权包
 	loginReq := &packet.Login{
 		AppId:    c.cfg.AppId,
 		Sign:     utils.Sign(c.cfg.AppId, c.cfg.AppSecret),
 		DeviceId: utils.GetMacAddress(),
 	}
 	loginReq.ClientInfo = c.infoHandler.GetInfo()
-	if _, err := c.conn.WriteProtoMessage(packet.MessageType_Login, loginReq); err != nil {
+	if err := conn.WriteProtoMessage(packet.MessageType_Login, loginReq); err != nil {
 		return
 	}
-	p, err := c.conn.ReadOnce()
+
+	// 读取鉴权包ack
+	p, err := conn.ReadMessage()
 	if err != nil {
 		return
 	}
@@ -126,16 +130,17 @@ func (c *Client) handleConn() {
 
 	log.Println("认证通过")
 
+	conn.Release()
+	conn = nil
+
 	log.Println("创建smux session")
-	c.session, err = smux.Server(c.conn.GetConn(), smux.DefaultConfig())
+	c.session, err = smux.Client(netConn, smux.DefaultConfig())
 	if err != nil {
 		log.Println("创建smux session失败:", err)
 		return
 	}
-	c.conn.Stop()
-	c.conn = nil
 
-	log.Println("创建ping任务")
+	log.Println("smux session创建成功，创建ping stream")
 	if c.pingStream, err = c.session.OpenStream(); err != nil {
 		log.Println("创建ping stream失败:", err)
 	} else {
@@ -155,8 +160,34 @@ func (c *Client) handleConn() {
 	}
 }
 
-func (c *Client) handleStream(conn net.Conn) {
+func (c *Client) handleStream(netConn net.Conn) {
 	log.Println("handle new stream")
+	defer func() {
+		netConn.Close()
+	}()
+
+	co := conn.NewConn(netConn)
+	for {
+		p, err := co.ReadMessage()
+		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
+				return
+			}
+			continue
+		}
+		// 创建上下文，用于传递数据
+		ctx := conn.NewConnContext(co, p)
+		h := c.messageHandlers[p.MessageType]
+		if h == nil {
+			log.Println("消息处理函数未注册", "messageType", p.MessageType)
+			continue
+		}
+		if err = h.Handle(ctx); err != nil {
+			log.Println("处理消息失败", "err", err)
+		}
+		// 回收上下文
+		ctx.Release()
+	}
 }
 
 func (c *Client) ping() {
@@ -180,7 +211,7 @@ func (c *Client) ping() {
 				continue
 			}
 			data := c.infoHandler.GetSystemStat()
-			if _, err := conn.WriteProtoMessage(packet.MessageType_Ping, data); err != nil {
+			if err := conn.WriteProtoMessage(packet.MessageType_Ping, data); err != nil {
 				log.Println("心跳包发送失败:", err)
 				return
 			}
@@ -191,8 +222,8 @@ func (c *Client) ping() {
 
 func (c *Client) Stop(ctx context.Context) error {
 	log.Println("client stop...")
-	if c.conn != nil {
-		c.conn.Close()
+	if c.session != nil {
+		c.session.Close()
 	}
 	close(c.closeSignal)
 	return nil

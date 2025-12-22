@@ -14,6 +14,7 @@ type Context interface {
 	GetConn() *Conn                           // 获取连接
 	ShouldBindProto(body proto.Message) error // 解析消息体
 	Release()                                 // 回收context
+	WithValue(key any, value any)
 }
 
 type MessageHandler interface {
@@ -65,4 +66,8 @@ func (c *connContext) ShouldBindProto(body proto.Message) error {
 		return nil
 	}
 	return c.protoBody.UnmarshalTo(body)
+}
+
+func (c *connContext) WithValue(key any, value any) {
+	c.Context = context.WithValue(c.Context, key, value)
 }

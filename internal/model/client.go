@@ -35,7 +35,7 @@ type Client struct {
 	MemTotal        uint64            `gorm:"column:mem_total"`
 	DiskTotal       uint64            `gorm:"column:disk_total"`
 
-	ConnID         uint64            `gorm:"column:conn_id"`
+	SessionID      uint64            `gorm:"column:session_id"`
 	Status         enum.ClientStatus `gorm:"column:status;type:int(11)"`
 	LastOnlineTime time.Time         `gorm:"column:last_online_time;type:datetime"`
 }

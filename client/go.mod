@@ -7,7 +7,7 @@ replace noah/pkg => ../pkg
 require (
 	github.com/sevlyar/go-daemon v0.1.6
 	github.com/spf13/cobra v1.10.2
-	google.golang.org/protobuf v1.36.10
+	github.com/xtaci/smux/v2 v2.1.0
 	noah/pkg v0.0.0-00010101000000-000000000000
 )
 
@@ -27,10 +27,10 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
-	github.com/xtaci/smux/v2 v2.1.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/text v0.28.0 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 )
 
 require (

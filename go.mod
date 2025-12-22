@@ -6,6 +6,7 @@ replace noah/pkg => ./pkg
 
 require (
 	github.com/gin-gonic/gin v1.11.0
+	github.com/xtaci/smux/v2 v2.1.0
 	golang.org/x/crypto v0.43.0
 	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.5
@@ -19,7 +20,6 @@ require (
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	github.com/xtaci/smux/v2 v2.1.0 // indirect
 )
 
 require (
@@ -93,5 +93,5 @@ require (
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.10 // indirect
 )

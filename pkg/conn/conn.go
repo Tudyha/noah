@@ -2,9 +2,6 @@ package conn
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"io"
 	"net"
 	"noah/pkg/packet"
 	"sync"
@@ -15,110 +12,65 @@ import (
 )
 
 type Conn struct {
-	netConn     net.Conn     // 底层连接
-	codec       packet.Codec // 编解码器
-	closeOnce   sync.Once
-	closeSignal chan struct{}
+	netConn   net.Conn     // 底层连接
+	codec     packet.Codec // 编解码器
+	closeOnce sync.Once
 
-	messageChan chan *packet.Packet // 控制消息
-	dataBuf     *bytes.Buffer       // 数据
-	cond        *sync.Cond
-	readMux     *sync.Mutex
-	writeMux    *sync.Mutex
+	dataBuf  *bytes.Buffer // 数据
+	writeMux *sync.Mutex
 }
 
 func NewConn(conn net.Conn) *Conn {
 	c := &Conn{
-		codec:       packet.NewCodec(),
-		netConn:     conn,
-		closeSignal: make(chan struct{}),
-		messageChan: make(chan *packet.Packet, 1024),
-		dataBuf:     bytes.NewBuffer(nil),
-		readMux:     &sync.Mutex{},
-		writeMux:    &sync.Mutex{},
+		codec:    packet.NewCodec(),
+		netConn:  conn,
+		dataBuf:  bytes.NewBuffer(nil),
+		writeMux: &sync.Mutex{},
 	}
-	c.cond = sync.NewCond(c.readMux)
 
 	return c
 }
 
-func (c *Conn) Run() {
-	defer func() {
-		c.Close()
-	}()
-	for {
-		select {
-		case <-c.closeSignal:
-			fmt.Println("stop read")
-			return
-		default:
-			p, err := c.codec.Decode(c.netConn)
-			if err != nil {
-				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
-					return
-				}
-				continue
-			}
-			c.readMux.Lock()
-			switch p.MessageType {
-			case packet.MessageType_Stream_Data:
-				c.dataBuf.Write(p.Data)
-				c.cond.Broadcast()
-			default:
-				c.messageChan <- p
-			}
-			c.readMux.Unlock()
-		}
-	}
-}
-
-func (c *Conn) ReadOnce() (*packet.Packet, error) {
+func (c *Conn) ReadMessage() (*packet.Packet, error) {
 	return c.codec.Decode(c.netConn)
 }
 
-func (c *Conn) ReadMessage() (*packet.Packet, error) {
-	p, ok := <-c.messageChan
-	if !ok {
-		return nil, io.EOF
-	}
-	return p, nil
-}
-
-func (c *Conn) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) (int, error) {
+func (c *Conn) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) error {
 	c.writeMux.Lock()
 	defer c.writeMux.Unlock()
 	var body *anypb.Any
 	body, err := anypb.New(msg)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	var m = packet.Message{
 		Body: body,
 	}
 	data, err := proto.Marshal(&m)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	p := &packet.Packet{
 		MessageType: msgType,
 		CodecType:   packet.CodecType_Protobuf,
 		Data:        data,
 	}
-	return c.codec.Encode(c.netConn, p)
+	_, err = c.codec.Encode(c.netConn, p)
+	return err
 }
 
 func (c *Conn) Read(b []byte) (n int, err error) {
-	for {
-		switch {
-		// case c.closeSignal != nil:
-		// 	return 0, io.EOF
-		case c.dataBuf.Len() > 0:
-			return c.dataBuf.Read(b)
-		default:
-			c.cond.Wait()
-			continue
-		}
+	if c.dataBuf.Len() > 0 {
+		return c.dataBuf.Read(b)
 	}
+
+	p, err := c.ReadMessage()
+	if err != nil {
+		return 0, err
+	}
+
+	c.dataBuf.Write(p.Data)
+	return c.dataBuf.Read(b)
 }
 
 func (c *Conn) Write(b []byte) (n int, err error) {
@@ -137,7 +89,6 @@ func (c *Conn) Close() error {
 		if c.netConn != nil {
 			c.netConn.Close()
 		}
-		close(c.closeSignal)
 	})
 	return nil
 }
@@ -177,11 +128,6 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (c *Conn) Stop() {
+func (c *Conn) Release() {
 	c.netConn = nil
-	c.Close()
-}
-
-func (c *Conn) GetConn() net.Conn {
-	return c.netConn
 }
