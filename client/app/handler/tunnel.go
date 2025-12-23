@@ -60,21 +60,12 @@ func (p *TunnelHandler) Handle(ctx conn.Context) error {
 	}
 
 	go func() {
-		_, err := io.Copy(src, target)
-		if err != nil {
+		defer func() {
 			target.Close()
 			src.Close()
-			return
-		}
-	}()
-
-	go func() {
-		_, err := io.Copy(target, src)
-		if err != nil {
-			target.Close()
-			src.Close()
-			return
-		}
+		}()
+		go io.Copy(target, src)
+		io.Copy(src, target)
 	}()
 
 	return nil

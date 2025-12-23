@@ -77,6 +77,7 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 }
 
+// 连接到服务端
 func (c *Client) connect() error {
 	dail := net.Dialer{
 		Timeout: time.Duration(c.cfg.DailTimeout) * time.Second,
@@ -93,6 +94,7 @@ func (c *Client) connect() error {
 	return nil
 }
 
+// 处理连接
 func (c *Client) handleConn(netConn net.Conn) {
 	conn := conn.NewConn(netConn)
 	defer func() {
@@ -144,10 +146,10 @@ func (c *Client) handleConn(netConn net.Conn) {
 	if c.pingStream, err = c.session.OpenStream(); err != nil {
 		log.Println("创建ping stream失败:", err)
 	} else {
+		log.Println("开始定时发送心跳包")
 		go c.ping()
 	}
 
-	log.Println("监听新连接")
 	for {
 		stream, err := c.session.AcceptStream()
 		if err != nil {
@@ -157,6 +159,7 @@ func (c *Client) handleConn(netConn net.Conn) {
 	}
 }
 
+// 处理stream
 func (c *Client) handleStream(netConn net.Conn) {
 	co := conn.NewConn(netConn)
 	for {
@@ -178,7 +181,7 @@ func (c *Client) handleStream(netConn net.Conn) {
 		}
 
 		if ctx.IsHijacked() {
-			log.Println("底层连接已被劫持，不再处理消息")
+			log.Println("stream底层连接已被劫持，不再处理消息")
 			ctx.Release()
 			return
 		}

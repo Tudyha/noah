@@ -44,7 +44,7 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 	defer func() {
 		if err != nil || s.status.Load() != 2 {
 			logger.Error("session认证失败", "sessionID", s.ID, "err", err)
-			netConn.Close()
+			c.Close()
 			s.Close()
 		}
 	}()
@@ -81,7 +81,7 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 	c.Release()
 	c = nil
 
-	logger.Info("创建smux.session，并监听新连接", "sessionID", s.ID)
+	logger.Info("创建smux session", "sessionID", s.ID)
 	smuxSession, err := smux.Server(netConn, smux.DefaultConfig())
 	if err != nil {
 		logger.Error("创建smux session失败", "err", err)
@@ -89,6 +89,7 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 	}
 	s.smuxSession = smuxSession
 
+	// 设置session状态为已认证
 	s.status.Store(2)
 
 	go s.accept()
@@ -97,10 +98,12 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 
 // 接受新子流
 func (s *Session) accept() {
+	logger.Info("accept new stream", "sessionID", s.ID)
 	defer s.Close()
 	for {
 		c, err := s.smuxSession.AcceptStream()
 		if err != nil {
+			logger.Error("接受子流失败", "sessionID", s.ID, "err", err)
 			return
 		}
 		go s.handleConn(c)
@@ -167,6 +170,7 @@ func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Messag
 	return c.WriteProtoMessage(msgType, msg)
 }
 
+// 打开tunnel
 func (s *Session) OpenTunnel(tunnelType packet.OpenTunnel_TuunnelType) (io.ReadWriteCloser, error) {
 	var err error
 

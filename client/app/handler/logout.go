@@ -15,7 +15,7 @@ func NewLogoutHandler() conn.MessageHandler {
 }
 
 func (s *LogoutHandler) Handle(ctx conn.Context) error {
-	log.Println("收到服务端退出消息")
+	log.Println("收到服务端退出消息，退出程序")
 	os.Exit(0)
 	return nil
 }
