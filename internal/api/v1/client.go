@@ -11,4 +11,5 @@ func RegisterClientRoutes(router *gin.RouterGroup, clientController *controller.
 	router.GET("/bind", clientController.GetClientBind)
 	router.DELETE("/:client_id", clientController.DeleteClient)
 	router.GET("/:client_id/stat", clientController.GetClientStat)
+	router.GET("/:client_id/pty", clientController.OpenPty)
 }

@@ -2,11 +2,11 @@ package conn
 
 import (
 	"context"
+	"io"
 	"noah/pkg/packet"
 	"sync"
 
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type Context interface {
@@ -15,6 +15,8 @@ type Context interface {
 	ShouldBindProto(body proto.Message) error // 解析消息体
 	Release()                                 // 回收context
 	WithValue(key any, value any)
+	IsHijacked() bool // 是否被劫持
+	Hijack() (io.ReadWriteCloser, error)
 }
 
 type MessageHandler interface {
@@ -30,29 +32,22 @@ var pool = sync.Pool{
 
 type connContext struct {
 	context.Context
-	conn      *Conn
-	protoBody *anypb.Any
+	conn       *Conn
+	request    *packet.Packet
+	isHijacked bool
 }
 
 func NewConnContext(conn *Conn, p *packet.Packet) Context {
 	c := pool.Get().(*connContext)
 	c.conn = conn
 	c.Context = context.Background()
-	switch p.CodecType {
-	case packet.CodecType_Protobuf:
-		var msg packet.Message
-		err := proto.Unmarshal(p.Data, &msg)
-		if err == nil {
-			c.protoBody = msg.Body
-		}
-	default:
-	}
+	c.request = p
 	return c
 }
 
 func (c *connContext) Release() {
 	c.conn = nil
-	c.protoBody = nil
+	c.request = nil
 	c.Context = nil
 	pool.Put(c)
 }
@@ -62,12 +57,22 @@ func (c *connContext) GetConn() *Conn {
 }
 
 func (c *connContext) ShouldBindProto(body proto.Message) error {
-	if c.protoBody == nil {
+	if c.request == nil {
 		return nil
 	}
-	return c.protoBody.UnmarshalTo(body)
+	return c.request.Unmarshal(body)
 }
 
 func (c *connContext) WithValue(key any, value any) {
 	c.Context = context.WithValue(c.Context, key, value)
+}
+
+func (c *connContext) Hijack() (io.ReadWriteCloser, error) {
+	c.isHijacked = true
+	rwc := c.conn
+	return rwc, nil
+}
+
+func (c *connContext) IsHijacked() bool {
+	return c.isHijacked
 }

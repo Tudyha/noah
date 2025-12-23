@@ -3,7 +3,10 @@ package packet
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type MessageType uint16
@@ -27,8 +30,8 @@ const (
 
 	// tunnel 控制消息
 	MessageType_Tunnel = iota + 3000
-	MessageType_Tunnel_Pty
-	MessageType_Tunnel_PtyAck
+	MessageType_Tunnel_Open
+	MessageType_Tunnel_Open_Ack
 )
 
 type CodecType uint8
@@ -88,4 +91,24 @@ func (c *codec) Encode(w io.Writer, p *Packet) (int, error) {
 		return 0, err
 	}
 	return int(p.length), binary.Write(w, binary.BigEndian, p.Data)
+}
+
+func (p *Packet) Unmarshal(body any) error {
+	switch p.CodecType {
+	case CodecType_Protobuf:
+		var msg Message
+		if err := proto.Unmarshal(p.Data, &msg); err != nil {
+			return err
+		}
+		if msg.Body == nil {
+			return nil
+		}
+		if err := msg.Body.UnmarshalTo(body.(proto.Message)); err != nil {
+			fmt.Println(err)
+			return err
+		}
+	default:
+		return nil
+	}
+	return nil
 }

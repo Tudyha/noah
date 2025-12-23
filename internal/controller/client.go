@@ -3,6 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"noah/internal/service"
 	"noah/internal/session"
 	"noah/pkg/config"
@@ -14,8 +16,11 @@ import (
 	"noah/pkg/utils"
 	"time"
 
+	myio "noah/pkg/io"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-module/carbon"
+	"github.com/gorilla/websocket"
 	"github.com/jinzhu/copier"
 )
 
@@ -87,12 +92,6 @@ func (h *ClientController) GetClientBind(ctx *gin.Context) {
 }
 
 func (h *ClientController) DeleteClient(ctx *gin.Context) {
-	appID := GetAppID(ctx)
-	if appID == 0 {
-		Fail(ctx, errcode.ErrInvalidParams)
-		return
-	}
-
 	client, err := h.clientService.Delete(ctx, GetClientID(ctx))
 	if err != nil {
 		Fail(ctx, err)
@@ -107,11 +106,6 @@ func (h *ClientController) DeleteClient(ctx *gin.Context) {
 }
 
 func (h *ClientController) GetClientStat(ctx *gin.Context) {
-	appID := GetAppID(ctx)
-	if appID == 0 {
-		Fail(ctx, errcode.ErrInvalidParams)
-		return
-	}
 	start := ctx.Query("start")
 	end := ctx.Query("end")
 	var startTime, endTime time.Time
@@ -146,4 +140,43 @@ func (h *ClientController) GetClientStat(ctx *gin.Context) {
 		return
 	}
 	Success(ctx, clientInfoList)
+}
+
+func (h *ClientController) OpenPty(ctx *gin.Context) {
+	logger.Info("open pty")
+	client, err := h.clientService.GetByID(ctx, GetClientID(ctx))
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+	src, err := session.GetSessionManager().OpenTunnel(client.SessionID, packet.OpenTunnel_PTY)
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+	maxMessageSize := 32 * 1024
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  maxMessageSize,
+		WriteBufferSize: maxMessageSize,
+		// 解决跨域问题
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	target, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		Fail(ctx, err)
+		src.Close()
+		return
+	}
+	go func() {
+		defer func() {
+			src.Close()
+			target.Close()
+		}()
+		tg := &myio.WebSocketReadWriteCloser{Conn: target, MessageType: websocket.TextMessage}
+		go io.Copy(tg, src)
+		io.Copy(src, tg)
+	}()
 }

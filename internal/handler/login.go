@@ -5,7 +5,6 @@ import (
 	"noah/internal/model"
 	"noah/internal/service"
 	"noah/pkg/conn"
-	"noah/pkg/constant"
 	"noah/pkg/enum"
 	"noah/pkg/logger"
 	"noah/pkg/packet"
@@ -57,7 +56,7 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 	client.RemoteIP = remoteIP
 	client.Port = port
 	client.RemoteIpCountry = ip.GetIPCountry(client.RemoteIP)
-	client.SessionID = ctx.Value(constant.SESSION_ID_KEY).(uint64)
+	client.SessionID = getSessionID(ctx)
 
 	if err := h.clientService.Connect(ctx, &client); err != nil {
 		logger.Info("创建客户端失败", "err", err)

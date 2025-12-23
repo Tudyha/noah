@@ -1,6 +1,7 @@
 package session
 
 import (
+	"io"
 	"net"
 	"noah/internal/handler"
 	"noah/pkg/conn"
@@ -15,6 +16,7 @@ import (
 type SessionManager interface {
 	NewSession(netConn net.Conn) (*Session, error)
 	SendProtoMessage(sessionID uint64, msgType packet.MessageType, msg proto.Message) error
+	OpenTunnel(sessionID uint64, tunnelType packet.OpenTunnel_TuunnelType) (io.ReadWriteCloser, error)
 }
 
 var (
@@ -75,4 +77,19 @@ func (m *sessionManager) SendProtoMessage(sessionID uint64, msgType packet.Messa
 		return errcode.ErrClientDisconnect
 	}
 	return s.WriteProtoMessage(msgType, msg)
+}
+
+func (m *sessionManager) OpenTunnel(sessionID uint64, tunnelType packet.OpenTunnel_TuunnelType) (io.ReadWriteCloser, error) {
+	v, ok := m.sessions.Load(sessionID)
+	if !ok {
+		return nil, errcode.ErrClientDisconnect
+	}
+	s, ok := v.(*Session)
+	if !ok {
+		return nil, errcode.ErrClientDisconnect
+	}
+	if s.status.Load() != 2 {
+		return nil, errcode.ErrClientDisconnect
+	}
+	return s.OpenTunnel(tunnelType)
 }

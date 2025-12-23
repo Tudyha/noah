@@ -31,8 +31,7 @@ func (p *pingHandler) Handle(ctx conn.Context) error {
 	copier.CopyWithOption(&clientStat, &ping, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 	du, _ := json.Marshal(ping.DiskUsage)
 	clientStat.DiskUsage = string(du)
-	// clientStat.ClientId = ctx.GetConn().GetClientID()
-	p.clientService.SaveClientStat(ctx, &clientStat)
+	p.clientService.SaveClientStat(ctx, getSessionID(ctx), &clientStat)
 	return nil
 }
 

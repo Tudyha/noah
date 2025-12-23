@@ -42,11 +42,13 @@ message ClientInfo {
   uint64 disk_total = 19; // 磁盘总量
 }
 
+// 登录响应
 message LoginAck {
   int32 code = 1; // 响应码
   string msg = 2; // 响应信息
 }
 
+// 心跳包
 message Ping {
   int64 timestamp = 1;
   uint64 mem_free = 2;
@@ -57,15 +59,6 @@ message Ping {
   repeated DiskUsageStat disk_usage = 7;
   double net_bytes_sent = 8;
   double net_bytes_recv = 9;
-}
-
-message ErrorAck {
-  int32 code = 1;
-  string msg = 2;
-}
-
-message Logout {
-  
 }
 
 message DiskUsageStat {
@@ -81,6 +74,21 @@ message DiskUsageStat {
   double inodes_used_percent = 10;
 }
 
-message Close {
-  string msg = 1;
+// 登出
+message Logout {
+  
+}
+
+// 打开终端
+message OpenTunnel {
+  enum TuunnelType {
+    UNKNOWN = 0;
+    PTY = 1;
+  }
+  TuunnelType tunnel_type = 1;
+}
+
+message OpenTunnelAck {
+  int32 code = 1; // 响应码
+  string msg = 2; // 响应信息
 }

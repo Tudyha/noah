@@ -65,3 +65,8 @@ func (c *clientDao) GetClientStat(ctx context.Context, clientID uint64, start ti
 	var stats []*model.ClientStat
 	return stats, c.db.WithContext(ctx).Model(&model.ClientStat{}).Where("client_id = ?", clientID).Where("created_at >= ?", start).Where("created_at <= ?", end).Find(&stats).Error
 }
+
+func (c *clientDao) GetBySessionID(ctx context.Context, sessionID uint64) (*model.Client, error) {
+	var model model.Client
+	return &model, c.db.WithContext(ctx).Model(&model).Where("session_id = ?", sessionID).First(&model).Error
+}

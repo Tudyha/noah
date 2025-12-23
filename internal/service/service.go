@@ -50,8 +50,9 @@ type ClientService interface {
 	GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) (*response.Page[response.ClientResponse], error)
 	Disconnect(ctx context.Context, clientID uint64) error
 	Delete(ctx context.Context, clientID uint64) (*model.Client, error)
-	SaveClientStat(ctx context.Context, stat *model.ClientStat) error
+	SaveClientStat(ctx context.Context, sessionID uint64, stat *model.ClientStat) error
 	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) ([]*response.ClientStatResponse, error)
+	GetByID(ctx context.Context, clientID uint64) (*model.Client, error)
 }
 
 func Init() error {

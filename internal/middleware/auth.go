@@ -20,23 +20,16 @@ func Auth(authService service.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		header := ctx.GetHeader(constant.HttpHeaderTokenKey)
-		if header == "" {
+		token := getToken(ctx)
+		if token == "" {
 			ctx.AbortWithStatusJSON(http.StatusOK, response.Response{
 				Code: errcode.UNAUTHORIZED,
-				Msg:  "token is empty",
+				Msg:  "invalid token",
 			})
 			return
 		}
-		parts := strings.SplitN(header, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			ctx.AbortWithStatusJSON(http.StatusOK, response.Response{
-				Code: errcode.UNAUTHORIZED,
-				Msg:  "invalid token format",
-			})
-			return
-		}
-		userID, err := authService.ValidateToken(ctx, parts[1])
+
+		userID, err := authService.ValidateToken(ctx, token)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusOK, response.Response{
 				Code: errcode.UNAUTHORIZED,
@@ -47,4 +40,20 @@ func Auth(authService service.AuthService) gin.HandlerFunc {
 		ctx.Set(constant.HttpHeaderUserIDKey, userID)
 		ctx.Next()
 	}
+}
+
+func getToken(ctx *gin.Context) string {
+	token := ctx.Query(constant.HttpHeaderTokenKey)
+	if token != "" {
+		return token
+	}
+	header := ctx.GetHeader(constant.HttpHeaderTokenKey)
+	if header == "" {
+		return ""
+	}
+	parts := strings.SplitN(header, " ", 2)
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return ""
+	}
+	return parts[1]
 }

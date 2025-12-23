@@ -77,7 +77,12 @@ func (c *clientService) Delete(ctx context.Context, clientID uint64) (*model.Cli
 	return old, c.clientDao.Delete(ctx, clientID)
 }
 
-func (c *clientService) SaveClientStat(ctx context.Context, stat *model.ClientStat) error {
+func (c *clientService) SaveClientStat(ctx context.Context, sessionID uint64, stat *model.ClientStat) error {
+	client, err := c.clientDao.GetBySessionID(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	stat.ClientId = client.ID
 	return c.clientDao.SaveClientStat(ctx, stat)
 }
 
@@ -89,4 +94,8 @@ func (c *clientService) GetClientStat(ctx context.Context, clientID uint64, star
 	var list []*response.ClientStatResponse
 	copier.Copy(&list, stats)
 	return list, nil
+}
+
+func (c *clientService) GetByID(ctx context.Context, clientID uint64) (*model.Client, error) {
+	return c.clientDao.GetByID(ctx, clientID)
 }

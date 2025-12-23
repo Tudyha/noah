@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
-	"io"
 	"log"
 	"net"
 	"noah/client/app/handler"
@@ -52,7 +50,9 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 	}
 
 	logoutHandler := handler.NewLogoutHandler()
+	tunnelHandler := handler.NewTunnelHandler()
 	c.messageHandlers[logoutHandler.MessageType()] = logoutHandler
+	c.messageHandlers[tunnelHandler.MessageType()] = tunnelHandler
 
 	return c
 }
@@ -151,41 +151,38 @@ func (c *Client) handleConn(netConn net.Conn) {
 	for {
 		stream, err := c.session.AcceptStream()
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
-				return
-			}
-			continue
+			return
 		}
 		go c.handleStream(stream)
 	}
 }
 
 func (c *Client) handleStream(netConn net.Conn) {
-	log.Println("handle new stream")
-	defer func() {
-		netConn.Close()
-	}()
-
 	co := conn.NewConn(netConn)
 	for {
 		p, err := co.ReadMessage()
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
-				return
-			}
-			continue
+			co.Close()
+			return
 		}
 		// 创建上下文，用于传递数据
 		ctx := conn.NewConnContext(co, p)
 		h := c.messageHandlers[p.MessageType]
 		if h == nil {
 			log.Println("消息处理函数未注册", "messageType", p.MessageType)
+			ctx.Release()
 			continue
 		}
 		if err = h.Handle(ctx); err != nil {
 			log.Println("处理消息失败", "err", err)
 		}
-		// 回收上下文
+
+		if ctx.IsHijacked() {
+			log.Println("底层连接已被劫持，不再处理消息")
+			ctx.Release()
+			return
+		}
+
 		ctx.Release()
 	}
 }

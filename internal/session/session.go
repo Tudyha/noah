@@ -1,7 +1,6 @@
 package session
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -23,6 +22,7 @@ type Session struct {
 	smuxSession *smux.Session // smux session smux多路复用器
 }
 
+// 创建新会话
 func newSession(netConn net.Conn) (*Session, error) {
 	s := Session{
 		ID:     uint64(utils.GenID()),
@@ -37,6 +37,7 @@ func newSession(netConn net.Conn) (*Session, error) {
 	return &s, nil
 }
 
+// 鉴权
 func (s *Session) checkAuth(netConn net.Conn) error {
 	c := conn.NewConn(netConn)
 	var err error
@@ -48,7 +49,7 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 		}
 	}()
 
-	// 读取鉴权包
+	// 读取鉴权包 TODO 增加超时
 	p, err := c.ReadMessage()
 	if err != nil {
 		return err
@@ -66,12 +67,12 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 	msgContext := conn.NewConnContext(c, p)
 	msgContext.WithValue(constant.SESSION_ID_KEY, s.ID)
 	if err = h.Handle(msgContext); err != nil {
+		msgContext.Release()
 		return err
 	}
 	msgContext.Release()
 
 	logger.Info("认证成功", "sessionID", s.ID)
-	logger.Info("回复鉴权通过ack", "sessionID", s.ID)
 	if err = c.WriteProtoMessage(packet.MessageType_LoginAck, &packet.LoginAck{}); err != nil {
 		return err
 	}
@@ -94,50 +95,52 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 	return err
 }
 
+// 接受新子流
 func (s *Session) accept() {
+	defer s.Close()
 	for {
 		c, err := s.smuxSession.AcceptStream()
 		if err != nil {
-			logger.Info("AcceptStream", "err", err)
-			if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
-				return
-			}
-			continue
+			return
 		}
 		go s.handleConn(c)
 	}
 }
 
+// 处理子流
 func (s *Session) handleConn(netConn net.Conn) {
-	defer func() {
-		netConn.Close()
-	}()
-
 	c := conn.NewConn(netConn)
+
 	for {
 		p, err := c.ReadMessage()
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
-				return
-			}
-			continue
+			logger.Error("读取子流消息失败", "err", err)
+			c.Close()
+			return
 		}
 		// 创建上下文，用于传递数据
 		ctx := conn.NewConnContext(c, p)
 		ctx.WithValue(constant.SESSION_ID_KEY, s.ID)
 		h := messageHandlers[p.MessageType]
 		if h == nil {
+			ctx.Release()
 			logger.Error("消息处理函数未注册", "messageType", p.MessageType)
 			continue
 		}
 		if err = h.Handle(ctx); err != nil {
 			logger.Error("处理消息失败", "err", err)
 		}
-		// 回收上下文
+
+		if ctx.IsHijacked() {
+			logger.Info("底层连接已被劫持，不再处理消息", "sessionID", s.ID)
+			ctx.Release()
+			return
+		}
 		ctx.Release()
 	}
 }
 
+// 关闭会话
 func (s *Session) Close() error {
 	logger.Info("close session", "sessionID", s.ID)
 	if s.smuxSession != nil {
@@ -149,7 +152,9 @@ func (s *Session) Close() error {
 	return nil
 }
 
+// 发送proto消息
 func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) error {
+	// fixme: 临时方案，考虑增加专门用于发送消息的stream
 	netConn, err := s.smuxSession.OpenStream()
 	if err != nil {
 		return err
@@ -160,4 +165,45 @@ func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Messag
 	defer c.Close()
 
 	return c.WriteProtoMessage(msgType, msg)
+}
+
+func (s *Session) OpenTunnel(tunnelType packet.OpenTunnel_TuunnelType) (io.ReadWriteCloser, error) {
+	var err error
+
+	netConn, err := s.smuxSession.OpenStream()
+	if err != nil {
+		return nil, err
+	}
+	c := conn.NewConn(netConn)
+	defer func() {
+		if err != nil {
+			netConn.Close()
+			c.Close()
+		}
+	}()
+
+	if err = c.WriteProtoMessage(packet.MessageType_Tunnel_Open, &packet.OpenTunnel{
+		TunnelType: tunnelType,
+	}); err != nil {
+		return nil, err
+	}
+
+	p, err := c.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+	if p.MessageType != packet.MessageType_Tunnel_Open_Ack {
+		err = fmt.Errorf("tunnel open ack error: %d", p.MessageType)
+		return nil, err
+	}
+	var ack packet.OpenTunnelAck
+	if err = p.Unmarshal(&ack); err != nil {
+		return nil, err
+	}
+	if ack.Code != 0 {
+		err = fmt.Errorf("tunnel open ack error: %s", ack.Msg)
+		return nil, err
+	}
+
+	return c, nil
 }
