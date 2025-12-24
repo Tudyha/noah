@@ -4,7 +4,7 @@
       <ThemePreview :theme="currentTheme" />
     </div>
     <div tabindex="0"
-      class="dropdown-content bg-base-200 text-base-content rounded-box top-px h-122 max-h-[calc(100vh-8.6rem)] overflow-y-auto  border-white/5 shadow-2xl  outline-black/5 mt-16">
+      class="dropdown-content bg-base-200 text-base-content rounded-box h-122 max-h-[calc(100vh-8.6rem)] overflow-y-auto  border-white/5 shadow-2xl  outline-black/5">
       <ul class="menu">
         <li v-for="theme in themes" :key="theme" class="w-40">
           <a @click="setTheme(theme)" :class="{ 'active': currentTheme === theme }">

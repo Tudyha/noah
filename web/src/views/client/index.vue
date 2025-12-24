@@ -49,53 +49,82 @@ const handleSearch = () => {
 
 <template>
   <div>
-    <div class="navbar p-2 border-b border-base-content/5">
+    <div class="navbar border-b border-base-content/5">
       <div class="flex-1">
-        <span>主机列表</span>
+        <h1>主机列表</h1>
       </div>
-      <div class="flex-none">
-        <button class="btn btn-outline btn-primary btn-sm" onclick="bing_dialog.showModal()">
-          <Icon icon="mdi:link" />绑定
-        </button>
-        <dialog id="bing_dialog" class="modal">
-          <div class="modal-box">
-            <Bind />
-            <div class="modal-action">
-              <form method="dialog">
-                <!-- if there is a button in form, it will close the modal -->
-                <button class="btn">关闭</button>
-              </form>
-            </div>
-          </div>
-        </dialog>
-      </div>
+      <button
+        class="btn btn-primary btn-sm btn-soft flex-shrink-0 transition-all duration-200 focus-visible:ring focus-visible:ring-primary/30"
+        onclick="bing_dialog.showModal()" aria-label="绑定主机">
+        <Icon icon="mdi:link" />绑定
+      </button>
     </div>
 
     <Search :items="searchItems" @search="handleSearch" />
 
-
-    <div class="p-2 border-b border-base-content/5">
-      <template v-if="loading">
-        <div class="grid place-items-center">
-          <span>数据加载中</span>
-          <span class="loading loading-xl loading-spinner text-primary" />
+    <!-- 绑定模态框 -->
+    <dialog id="bing_dialog" class="modal">
+      <div class="modal-box">
+        <Bind />
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn">关闭</button>
+          </form>
         </div>
-      </template>
-      <template v-else>
-        <div v-if="data && data.list.length > 0"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-          <template v-for="item in data?.list">
-            <Client :item="item" @refresh="handleSearch" />
-          </template>
-        </div>
+      </div>
+    </dialog>
 
-        <div v-else class="grid place-items-center">
-          <span>暂无数据，立即<button class="btn btn-link btn-lg" onclick="bing_dialog.showModal()">绑定</button></span>
-        </div>
+    <div class="p-2">
+      <Transition name="fade" mode="out-in">
+        <template v-if="loading">
+          <div class="grid place-items-center h-48">
+            <span class="text-lg font-semibold text-base-content/70 mb-4">正在获取主机数据...</span>
+            <span class="loading loading-spinner loading-lg text-primary animate-pulse" />
+          </div>
+        </template>
+        <template v-else>
+          <TransitionGroup v-if="data && data.list.length > 0" name="list-fade" tag="div"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <Client v-for="item in data?.list" :key="item.id" :item="item" @refresh="handleSearch" />
+          </TransitionGroup>
 
-      </template>
+          <div v-else class="grid place-items-center h-48">
+            <Icon icon="mdi:server-off" class="w-16 h-16 text-base-content/30 mb-4" />
+            <span class="text-lg font-semibold text-base-content/70 mb-4">暂未发现已绑定的主机</span>
+            <button
+              class="btn btn-primary btn-md btn-soft transition-all duration-200 focus-visible:ring focus-visible:ring-primary/30"
+              onclick="bing_dialog.showModal()" aria-label="立即绑定主机">
+              <Icon icon="mdi:link" />立即绑定
+            </button>
+          </div>
+        </template>
+      </Transition>
     </div>
 
     <Pagination v-if="!loading" :total="data?.total || 0" @change="handlePageChange" />
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.list-fade-enter-active,
+.list-fade-leave-active {
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.list-fade-enter-from,
+.list-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.98) translateY(6px);
+}
+</style>

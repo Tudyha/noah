@@ -7,7 +7,7 @@
         </div>
       </div>
     </div>
-    <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-25 mt-4">
+    <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-25">
       <li v-for="lang in languages" :key="lang.code">
         <a @click="changeLanguage(lang.code)" :class="{ 'active': currentLocale === lang.code }">
           {{ lang.name }}
