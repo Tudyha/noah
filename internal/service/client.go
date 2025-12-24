@@ -77,7 +77,7 @@ func (c *clientService) Delete(ctx context.Context, clientID uint64) (*model.Cli
 	return old, c.clientDao.Delete(ctx, clientID)
 }
 
-func (c *clientService) SaveClientStat(ctx context.Context, sessionID uint64, stat *model.ClientStat) error {
+func (c *clientService) SaveClientStat(ctx context.Context, sessionID string, stat *model.ClientStat) error {
 	client, err := c.clientDao.GetBySessionID(ctx, sessionID)
 	if err != nil {
 		return err

@@ -2,17 +2,17 @@
 import SystemInfo from './components/system-info.vue'
 import Terminal from './components/terminal.vue';
 
-const id = useRoute().params.id;
+const id = useRoute().params.id + '';
 
 const tabs = [
     {
-        name: "Tab1",
+        name: "系统资源",
         icon: "mdi:home",
         active: true,
         component: SystemInfo,
     },
     {
-        name: "Tab2",
+        name: "在线终端",
         icon: "mdi:terminal",
         component: Terminal,
     },

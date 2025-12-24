@@ -8,16 +8,16 @@ import (
 	"noah/pkg/constant"
 	"noah/pkg/logger"
 	"noah/pkg/packet"
-	"noah/pkg/utils"
 	"sync/atomic"
 
+	"github.com/google/uuid"
 	smux "github.com/xtaci/smux/v2"
 	"google.golang.org/protobuf/proto"
 )
 
 // 客户端会话
 type Session struct {
-	ID          uint64        // session id
+	ID          string        // session id
 	status      atomic.Int32  // session状态: 0: 初始化 1: 待认证 2: 认证成功 3: 关闭
 	smuxSession *smux.Session // smux session smux多路复用器
 }
@@ -25,7 +25,7 @@ type Session struct {
 // 创建新会话
 func newSession(netConn net.Conn) (*Session, error) {
 	s := Session{
-		ID:     uint64(utils.GenID()),
+		ID:     uuid.NewString(),
 		status: atomic.Int32{},
 	}
 
@@ -171,7 +171,7 @@ func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Messag
 }
 
 // 打开tunnel
-func (s *Session) OpenTunnel(tunnelType packet.OpenTunnel_TuunnelType) (io.ReadWriteCloser, error) {
+func (s *Session) OpenTunnel(tunnelType packet.OpenTunnel_TuunnelType, addr string) (io.ReadWriteCloser, error) {
 	var err error
 
 	netConn, err := s.smuxSession.OpenStream()
@@ -186,8 +186,10 @@ func (s *Session) OpenTunnel(tunnelType packet.OpenTunnel_TuunnelType) (io.ReadW
 		}
 	}()
 
+	logger.Info("open tunnel", "tunnel_type", tunnelType, "addr", addr)
 	if err = c.WriteProtoMessage(packet.MessageType_Tunnel_Open, &packet.OpenTunnel{
 		TunnelType: tunnelType,
+		Addr:       addr,
 	}); err != nil {
 		return nil, err
 	}

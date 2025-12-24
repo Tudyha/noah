@@ -9,6 +9,7 @@ import (
 	"noah/internal/controller"
 	"noah/internal/dao"
 	"noah/internal/database"
+	"noah/internal/mq"
 	"noah/internal/server"
 	"noah/internal/service"
 	"noah/internal/session"
@@ -64,6 +65,9 @@ func main() {
 	}
 	defer database.CloseDB()
 
+	// 初始化mq
+	mq.Init()
+
 	// 初始化dao层
 	if err := dao.Init(); err != nil {
 		logger.Error("初始化dao层失败", "err", err)
@@ -92,6 +96,7 @@ func main() {
 	servers := []app.Server{
 		server.NewHTTPServer(),
 		server.NewTCPServer(),
+		server.NewV2rayServer(),
 	}
 
 	// 启动应用

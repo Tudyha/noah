@@ -5,6 +5,6 @@ import (
 	"noah/pkg/constant"
 )
 
-func getSessionID(ctx conn.Context) uint64 {
-	return ctx.Value(constant.SESSION_ID_KEY).(uint64)
+func getSessionID(ctx conn.Context) string {
+	return ctx.Value(constant.SESSION_ID_KEY).(string)
 }

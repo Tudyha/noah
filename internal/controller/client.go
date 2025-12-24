@@ -149,7 +149,7 @@ func (h *ClientController) OpenPty(ctx *gin.Context) {
 		Fail(ctx, err)
 		return
 	}
-	src, err := session.GetSessionManager().OpenTunnel(client.SessionID, packet.OpenTunnel_PTY)
+	src, err := session.GetSessionManager().OpenTunnel(client.SessionID, packet.OpenTunnel_PTY, "")
 	if err != nil {
 		Fail(ctx, err)
 		return

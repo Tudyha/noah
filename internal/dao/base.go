@@ -67,7 +67,7 @@ type ClientDao interface {
 	GetByID(ctx context.Context, clientID uint64) (*model.Client, error)
 	SaveClientStat(ctx context.Context, stat *model.ClientStat) error
 	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) (any, error)
-	GetBySessionID(ctx context.Context, sessionID uint64) (*model.Client, error)
+	GetBySessionID(ctx context.Context, sessionID string) (*model.Client, error)
 }
 
 func Paginate(pageQuery request.PageQuery) func(db *gorm.DB) *gorm.DB {

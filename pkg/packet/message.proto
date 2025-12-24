@@ -84,8 +84,11 @@ message OpenTunnel {
   enum TuunnelType {
     UNKNOWN = 0;
     PTY = 1;
+    TCP = 2;
+    UDP = 3;
   }
   TuunnelType tunnel_type = 1;
+  string addr = 2;
 }
 
 message OpenTunnelAck {

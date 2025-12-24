@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+option go_package = "pkg/proto";
+
+message SimplifiedConfig {
+  uint32 user_level = 1;
+}

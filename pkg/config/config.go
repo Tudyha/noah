@@ -20,9 +20,10 @@ type Config struct {
 
 // ServerConfig 服务配置
 type ServerConfig struct {
-	Env  string     `mapstructure:"env"`
-	HTTP HTTPConfig `mapstructure:"http"`
-	TCP  TCPConfig  `mapstructure:"tcp"`
+	Env   string      `mapstructure:"env"`
+	HTTP  HTTPConfig  `mapstructure:"http"`
+	TCP   TCPConfig   `mapstructure:"tcp"`
+	V2ray V2rayConfig `mapstructure:"v2ray"`
 }
 
 // HTTPConfig HTTP服务配置
@@ -37,6 +38,11 @@ type TCPConfig struct {
 	Addr      string `mapstructure:"addr"`
 	Timeout   int    `mapstructure:"timeout"`
 	KeepAlive int    `mapstructure:"keep_alive"`
+}
+
+type V2rayConfig struct {
+	Addr    string `mapstructure:"addr"`
+	LogPath string `mapstructure:"log_path"`
 }
 
 // DatabaseConfig 数据库配置

@@ -27,6 +27,8 @@ type OpenTunnel_TuunnelType int32
 const (
 	OpenTunnel_UNKNOWN OpenTunnel_TuunnelType = 0
 	OpenTunnel_PTY     OpenTunnel_TuunnelType = 1
+	OpenTunnel_TCP     OpenTunnel_TuunnelType = 2
+	OpenTunnel_UDP     OpenTunnel_TuunnelType = 3
 )
 
 // Enum value maps for OpenTunnel_TuunnelType.
@@ -34,10 +36,14 @@ var (
 	OpenTunnel_TuunnelType_name = map[int32]string{
 		0: "UNKNOWN",
 		1: "PTY",
+		2: "TCP",
+		3: "UDP",
 	}
 	OpenTunnel_TuunnelType_value = map[string]int32{
 		"UNKNOWN": 0,
 		"PTY":     1,
+		"TCP":     2,
+		"UDP":     3,
 	}
 )
 
@@ -696,6 +702,7 @@ func (*Logout) Descriptor() ([]byte, []int) {
 type OpenTunnel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TunnelType    OpenTunnel_TuunnelType `protobuf:"varint,1,opt,name=tunnel_type,json=tunnelType,proto3,enum=packet.OpenTunnel_TuunnelType" json:"tunnel_type,omitempty"`
+	Addr          string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -735,6 +742,13 @@ func (x *OpenTunnel) GetTunnelType() OpenTunnel_TuunnelType {
 		return x.TunnelType
 	}
 	return OpenTunnel_UNKNOWN
+}
+
+func (x *OpenTunnel) GetAddr() string {
+	if x != nil {
+		return x.Addr
+	}
+	return ""
 }
 
 type OpenTunnelAck struct {
@@ -856,14 +870,17 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"inodesUsed\x12.\n" +
 	"\x13inodes_used_percent\x18\n" +
 	" \x01(\x01R\x11inodesUsedPercent\"\b\n" +
-	"\x06Logout\"r\n" +
+	"\x06Logout\"\x98\x01\n" +
 	"\n" +
 	"OpenTunnel\x12?\n" +
 	"\vtunnel_type\x18\x01 \x01(\x0e2\x1e.packet.OpenTunnel.TuunnelTypeR\n" +
-	"tunnelType\"#\n" +
+	"tunnelType\x12\x12\n" +
+	"\x04addr\x18\x02 \x01(\tR\x04addr\"5\n" +
 	"\vTuunnelType\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\a\n" +
-	"\x03PTY\x10\x01\"5\n" +
+	"\x03PTY\x10\x01\x12\a\n" +
+	"\x03TCP\x10\x02\x12\a\n" +
+	"\x03UDP\x10\x03\"5\n" +
 	"\rOpenTunnelAck\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x10\n" +
 	"\x03msg\x18\x02 \x01(\tR\x03msgB\x11Z\x0fnoah/pkg/packetb\x06proto3"

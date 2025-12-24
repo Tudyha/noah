@@ -8,6 +8,9 @@ server:
     addr: 127.0.0.1:9090 # TCP监听地址
     timeout: 5 # TCP连接超时时间（秒）
     keep_alive: 30 # TCP连接保持时间（秒）
+  v2ray:
+    addr: 192.168.0.7:8081
+    log_path: logs/v2ray.log
 
 database:
   type: sqlite # 数据库类型：mysql/sqlite

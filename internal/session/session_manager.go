@@ -15,8 +15,8 @@ import (
 
 type SessionManager interface {
 	NewSession(netConn net.Conn) (*Session, error)
-	SendProtoMessage(sessionID uint64, msgType packet.MessageType, msg proto.Message) error
-	OpenTunnel(sessionID uint64, tunnelType packet.OpenTunnel_TuunnelType) (io.ReadWriteCloser, error)
+	SendProtoMessage(sessionID string, msgType packet.MessageType, msg proto.Message) error
+	OpenTunnel(sessionID string, tunnelType packet.OpenTunnel_TuunnelType, addr string) (io.ReadWriteCloser, error)
 }
 
 var (
@@ -64,7 +64,7 @@ func (m *sessionManager) NewSession(netConn net.Conn) (*Session, error) {
 	return s, nil
 }
 
-func (m *sessionManager) SendProtoMessage(sessionID uint64, msgType packet.MessageType, msg proto.Message) error {
+func (m *sessionManager) SendProtoMessage(sessionID string, msgType packet.MessageType, msg proto.Message) error {
 	v, ok := m.sessions.Load(sessionID)
 	if !ok {
 		return errcode.ErrClientDisconnect
@@ -79,7 +79,7 @@ func (m *sessionManager) SendProtoMessage(sessionID uint64, msgType packet.Messa
 	return s.WriteProtoMessage(msgType, msg)
 }
 
-func (m *sessionManager) OpenTunnel(sessionID uint64, tunnelType packet.OpenTunnel_TuunnelType) (io.ReadWriteCloser, error) {
+func (m *sessionManager) OpenTunnel(sessionID string, tunnelType packet.OpenTunnel_TuunnelType, addr string) (io.ReadWriteCloser, error) {
 	v, ok := m.sessions.Load(sessionID)
 	if !ok {
 		return nil, errcode.ErrClientDisconnect
@@ -91,5 +91,5 @@ func (m *sessionManager) OpenTunnel(sessionID uint64, tunnelType packet.OpenTunn
 	if s.status.Load() != 2 {
 		return nil, errcode.ErrClientDisconnect
 	}
-	return s.OpenTunnel(tunnelType)
+	return s.OpenTunnel(tunnelType, addr)
 }

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"net"
 	"noah/pkg/conn"
 	"noah/pkg/packet"
 	"os"
@@ -41,6 +43,16 @@ func (p *TunnelHandler) Handle(ctx conn.Context) error {
 		if err != nil {
 			return err
 		}
+	case packet.OpenTunnel_TCP:
+		target, err = p.openTcp(msg.Addr)
+		if err != nil {
+			return err
+		}
+	case packet.OpenTunnel_UDP:
+		target, err = p.openUdp(msg.Addr)
+		if err != nil {
+			return err
+		}
 	default:
 		err = fmt.Errorf("unsupported tunnel type: %s", msg.TunnelType)
 		return err
@@ -73,6 +85,16 @@ func (p *TunnelHandler) Handle(ctx conn.Context) error {
 
 func (p *TunnelHandler) MessageType() packet.MessageType {
 	return packet.MessageType_Tunnel_Open
+}
+
+func (p *TunnelHandler) openTcp(addr string) (io.ReadWriteCloser, error) {
+	log.Println("open tcp:", addr)
+	return net.Dial("tcp", addr)
+}
+
+func (p *TunnelHandler) openUdp(addr string) (io.ReadWriteCloser, error) {
+	log.Println("open udp:", addr)
+	return net.Dial("udp", addr)
 }
 
 func (h *TunnelHandler) openPty() (io.ReadWriteCloser, error) {
