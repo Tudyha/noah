@@ -20,16 +20,12 @@ const (
 	// 业务消息 - 鉴权相关
 	MessageType_Login = iota + 1000
 	MessageType_LoginAck
-	MessageType_Logout
 
 	// 业务消息 - 多路复用相关
-	MessageType_Stream_Create = iota + 2000
-	MessageType_Stream_CreateAck
-	MessageType_Stream_Data
-	MessageType_Stream_Close
+	MessageType_Stream_Data = iota + 2000
 
 	// tunnel 控制消息
-	MessageType_Tunnel = iota + 3000
+	MessageType_Command = iota + 3000
 	MessageType_Tunnel_Open
 	MessageType_Tunnel_Open_Ack
 )

@@ -40,7 +40,7 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 	}()
 
 	var loginReq packet.Login
-	if err := ctx.ShouldBindProto(&loginReq); err != nil {
+	if err := ctx.Unmarshal(&loginReq); err != nil {
 		return err
 	}
 	if err := h.clientService.VerifySign(ctx, loginReq.AppId, loginReq.Sign); err != nil {

@@ -9,13 +9,11 @@ import (
 	"noah/pkg/logger"
 	"noah/pkg/packet"
 	"sync"
-
-	"google.golang.org/protobuf/proto"
 )
 
 type SessionManager interface {
 	NewSession(netConn net.Conn) (*Session, error)
-	SendProtoMessage(sessionID string, msgType packet.MessageType, msg proto.Message) error
+	SendCommand(sessionID string, cmd packet.Command_Cmd) error
 	OpenTunnel(sessionID string, tunnelType packet.OpenTunnel_TuunnelType, addr string) (io.ReadWriteCloser, error)
 }
 
@@ -64,7 +62,7 @@ func (m *sessionManager) NewSession(netConn net.Conn) (*Session, error) {
 	return s, nil
 }
 
-func (m *sessionManager) SendProtoMessage(sessionID string, msgType packet.MessageType, msg proto.Message) error {
+func (m *sessionManager) SendCommand(sessionID string, cmd packet.Command_Cmd) error {
 	v, ok := m.sessions.Load(sessionID)
 	if !ok {
 		return errcode.ErrClientDisconnect
@@ -76,7 +74,7 @@ func (m *sessionManager) SendProtoMessage(sessionID string, msgType packet.Messa
 	if s.status.Load() != 2 {
 		return errcode.ErrClientDisconnect
 	}
-	return s.WriteProtoMessage(msgType, msg)
+	return s.SendCommand(cmd)
 }
 
 func (m *sessionManager) OpenTunnel(sessionID string, tunnelType packet.OpenTunnel_TuunnelType, addr string) (io.ReadWriteCloser, error) {

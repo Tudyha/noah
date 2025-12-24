@@ -5,15 +5,13 @@ import (
 	"io"
 	"noah/pkg/packet"
 	"sync"
-
-	"google.golang.org/protobuf/proto"
 )
 
 type Context interface {
 	context.Context
-	GetConn() *Conn                           // 获取连接
-	ShouldBindProto(body proto.Message) error // 解析消息体
-	Release()                                 // 回收context
+	GetConn() *Conn           // 获取连接
+	Unmarshal(body any) error // 解析消息体
+	Release()                 // 回收context
 	WithValue(key any, value any)
 	IsHijacked() bool // 是否被劫持
 	Hijack() (io.ReadWriteCloser, error)
@@ -56,7 +54,7 @@ func (c *connContext) GetConn() *Conn {
 	return c.conn
 }
 
-func (c *connContext) ShouldBindProto(body proto.Message) error {
+func (c *connContext) Unmarshal(body any) error {
 	if c.request == nil {
 		return nil
 	}

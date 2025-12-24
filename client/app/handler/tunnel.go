@@ -32,7 +32,7 @@ func (p *TunnelHandler) Handle(ctx conn.Context) error {
 		}
 	}()
 	var msg packet.OpenTunnel
-	if err = ctx.ShouldBindProto(&msg); err != nil {
+	if err = ctx.Unmarshal(&msg); err != nil {
 		return err
 	}
 

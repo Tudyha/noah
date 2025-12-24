@@ -60,9 +60,9 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 	}
 
 	// Registry handlers
-	logoutHandler := handler.NewLogoutHandler()
+	cmdHandler := handler.NewCommandHandler()
 	tunnelHandler := handler.NewTunnelHandler()
-	c.messageHandlers[logoutHandler.MessageType()] = logoutHandler
+	c.messageHandlers[cmdHandler.MessageType()] = cmdHandler
 	c.messageHandlers[tunnelHandler.MessageType()] = tunnelHandler
 
 	return c

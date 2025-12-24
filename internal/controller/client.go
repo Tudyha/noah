@@ -99,7 +99,7 @@ func (h *ClientController) DeleteClient(ctx *gin.Context) {
 	}
 
 	// 通知客户端退出程序
-	if err := session.GetSessionManager().SendProtoMessage(client.SessionID, packet.MessageType_Logout, &packet.Logout{}); err != nil {
+	if err := session.GetSessionManager().SendCommand(client.SessionID, packet.Command_EXIT); err != nil {
 		logger.Info("client logout fail", "err", err)
 	}
 	Success(ctx, nil)

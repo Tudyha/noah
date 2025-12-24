@@ -23,7 +23,7 @@ func NewPingHandler() conn.MessageHandler {
 
 func (p *pingHandler) Handle(ctx conn.Context) error {
 	var ping packet.Ping
-	if err := ctx.ShouldBindProto(&ping); err != nil {
+	if err := ctx.Unmarshal(&ping); err != nil {
 		return err
 	}
 	logger.Info("receive ping msg", "data", ping.String())

@@ -74,11 +74,6 @@ message DiskUsageStat {
   double inodes_used_percent = 10;
 }
 
-// 登出
-message Logout {
-  
-}
-
 // 打开终端
 message OpenTunnel {
   enum TuunnelType {
@@ -94,4 +89,12 @@ message OpenTunnel {
 message OpenTunnelAck {
   int32 code = 1; // 响应码
   string msg = 2; // 响应信息
+}
+
+message Command {
+  enum Cmd {
+    UNKNOWN = 0;
+    EXIT = 1; // 退出程序
+  }
+  Cmd cmd = 1;
 }

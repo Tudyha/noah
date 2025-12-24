@@ -71,7 +71,53 @@ func (x OpenTunnel_TuunnelType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OpenTunnel_TuunnelType.Descriptor instead.
 func (OpenTunnel_TuunnelType) EnumDescriptor() ([]byte, []int) {
-	return file_pkg_packet_message_proto_rawDescGZIP(), []int{7, 0}
+	return file_pkg_packet_message_proto_rawDescGZIP(), []int{6, 0}
+}
+
+type Command_Cmd int32
+
+const (
+	Command_UNKNOWN Command_Cmd = 0
+	Command_EXIT    Command_Cmd = 1 // 退出程序
+)
+
+// Enum value maps for Command_Cmd.
+var (
+	Command_Cmd_name = map[int32]string{
+		0: "UNKNOWN",
+		1: "EXIT",
+	}
+	Command_Cmd_value = map[string]int32{
+		"UNKNOWN": 0,
+		"EXIT":    1,
+	}
+)
+
+func (x Command_Cmd) Enum() *Command_Cmd {
+	p := new(Command_Cmd)
+	*p = x
+	return p
+}
+
+func (x Command_Cmd) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Command_Cmd) Descriptor() protoreflect.EnumDescriptor {
+	return file_pkg_packet_message_proto_enumTypes[1].Descriptor()
+}
+
+func (Command_Cmd) Type() protoreflect.EnumType {
+	return &file_pkg_packet_message_proto_enumTypes[1]
+}
+
+func (x Command_Cmd) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Command_Cmd.Descriptor instead.
+func (Command_Cmd) EnumDescriptor() ([]byte, []int) {
+	return file_pkg_packet_message_proto_rawDescGZIP(), []int{8, 0}
 }
 
 type Message struct {
@@ -661,43 +707,6 @@ func (x *DiskUsageStat) GetInodesUsedPercent() float64 {
 	return 0
 }
 
-// 登出
-type Logout struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Logout) Reset() {
-	*x = Logout{}
-	mi := &file_pkg_packet_message_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Logout) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Logout) ProtoMessage() {}
-
-func (x *Logout) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_packet_message_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Logout.ProtoReflect.Descriptor instead.
-func (*Logout) Descriptor() ([]byte, []int) {
-	return file_pkg_packet_message_proto_rawDescGZIP(), []int{6}
-}
-
 // 打开终端
 type OpenTunnel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -709,7 +718,7 @@ type OpenTunnel struct {
 
 func (x *OpenTunnel) Reset() {
 	*x = OpenTunnel{}
-	mi := &file_pkg_packet_message_proto_msgTypes[7]
+	mi := &file_pkg_packet_message_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -721,7 +730,7 @@ func (x *OpenTunnel) String() string {
 func (*OpenTunnel) ProtoMessage() {}
 
 func (x *OpenTunnel) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_packet_message_proto_msgTypes[7]
+	mi := &file_pkg_packet_message_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -734,7 +743,7 @@ func (x *OpenTunnel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenTunnel.ProtoReflect.Descriptor instead.
 func (*OpenTunnel) Descriptor() ([]byte, []int) {
-	return file_pkg_packet_message_proto_rawDescGZIP(), []int{7}
+	return file_pkg_packet_message_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *OpenTunnel) GetTunnelType() OpenTunnel_TuunnelType {
@@ -761,7 +770,7 @@ type OpenTunnelAck struct {
 
 func (x *OpenTunnelAck) Reset() {
 	*x = OpenTunnelAck{}
-	mi := &file_pkg_packet_message_proto_msgTypes[8]
+	mi := &file_pkg_packet_message_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -773,7 +782,7 @@ func (x *OpenTunnelAck) String() string {
 func (*OpenTunnelAck) ProtoMessage() {}
 
 func (x *OpenTunnelAck) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_packet_message_proto_msgTypes[8]
+	mi := &file_pkg_packet_message_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -786,7 +795,7 @@ func (x *OpenTunnelAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenTunnelAck.ProtoReflect.Descriptor instead.
 func (*OpenTunnelAck) Descriptor() ([]byte, []int) {
-	return file_pkg_packet_message_proto_rawDescGZIP(), []int{8}
+	return file_pkg_packet_message_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *OpenTunnelAck) GetCode() int32 {
@@ -801,6 +810,50 @@ func (x *OpenTunnelAck) GetMsg() string {
 		return x.Msg
 	}
 	return ""
+}
+
+type Command struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cmd           Command_Cmd            `protobuf:"varint,1,opt,name=cmd,proto3,enum=packet.Command_Cmd" json:"cmd,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Command) Reset() {
+	*x = Command{}
+	mi := &file_pkg_packet_message_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Command) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command) ProtoMessage() {}
+
+func (x *Command) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_packet_message_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command.ProtoReflect.Descriptor instead.
+func (*Command) Descriptor() ([]byte, []int) {
+	return file_pkg_packet_message_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Command) GetCmd() Command_Cmd {
+	if x != nil {
+		return x.Cmd
+	}
+	return Command_UNKNOWN
 }
 
 var File_pkg_packet_message_proto protoreflect.FileDescriptor
@@ -869,8 +922,7 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"\vinodes_used\x18\t \x01(\x04R\n" +
 	"inodesUsed\x12.\n" +
 	"\x13inodes_used_percent\x18\n" +
-	" \x01(\x01R\x11inodesUsedPercent\"\b\n" +
-	"\x06Logout\"\x98\x01\n" +
+	" \x01(\x01R\x11inodesUsedPercent\"\x98\x01\n" +
 	"\n" +
 	"OpenTunnel\x12?\n" +
 	"\vtunnel_type\x18\x01 \x01(\x0e2\x1e.packet.OpenTunnel.TuunnelTypeR\n" +
@@ -883,7 +935,12 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"\x03UDP\x10\x03\"5\n" +
 	"\rOpenTunnelAck\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x10\n" +
-	"\x03msg\x18\x02 \x01(\tR\x03msgB\x11Z\x0fnoah/pkg/packetb\x06proto3"
+	"\x03msg\x18\x02 \x01(\tR\x03msg\"N\n" +
+	"\aCommand\x12%\n" +
+	"\x03cmd\x18\x01 \x01(\x0e2\x13.packet.Command.CmdR\x03cmd\"\x1c\n" +
+	"\x03Cmd\x12\v\n" +
+	"\aUNKNOWN\x10\x00\x12\b\n" +
+	"\x04EXIT\x10\x01B\x11Z\x0fnoah/pkg/packetb\x06proto3"
 
 var (
 	file_pkg_packet_message_proto_rawDescOnce sync.Once
@@ -897,31 +954,33 @@ func file_pkg_packet_message_proto_rawDescGZIP() []byte {
 	return file_pkg_packet_message_proto_rawDescData
 }
 
-var file_pkg_packet_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_pkg_packet_message_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_pkg_packet_message_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_pkg_packet_message_proto_goTypes = []any{
 	(OpenTunnel_TuunnelType)(0), // 0: packet.OpenTunnel.TuunnelType
-	(*Message)(nil),             // 1: packet.Message
-	(*Login)(nil),               // 2: packet.Login
-	(*ClientInfo)(nil),          // 3: packet.ClientInfo
-	(*LoginAck)(nil),            // 4: packet.LoginAck
-	(*Ping)(nil),                // 5: packet.Ping
-	(*DiskUsageStat)(nil),       // 6: packet.DiskUsageStat
-	(*Logout)(nil),              // 7: packet.Logout
+	(Command_Cmd)(0),            // 1: packet.Command.Cmd
+	(*Message)(nil),             // 2: packet.Message
+	(*Login)(nil),               // 3: packet.Login
+	(*ClientInfo)(nil),          // 4: packet.ClientInfo
+	(*LoginAck)(nil),            // 5: packet.LoginAck
+	(*Ping)(nil),                // 6: packet.Ping
+	(*DiskUsageStat)(nil),       // 7: packet.DiskUsageStat
 	(*OpenTunnel)(nil),          // 8: packet.OpenTunnel
 	(*OpenTunnelAck)(nil),       // 9: packet.OpenTunnelAck
-	(*anypb.Any)(nil),           // 10: google.protobuf.Any
+	(*Command)(nil),             // 10: packet.Command
+	(*anypb.Any)(nil),           // 11: google.protobuf.Any
 }
 var file_pkg_packet_message_proto_depIdxs = []int32{
-	10, // 0: packet.Message.body:type_name -> google.protobuf.Any
-	3,  // 1: packet.Login.client_info:type_name -> packet.ClientInfo
-	6,  // 2: packet.Ping.disk_usage:type_name -> packet.DiskUsageStat
+	11, // 0: packet.Message.body:type_name -> google.protobuf.Any
+	4,  // 1: packet.Login.client_info:type_name -> packet.ClientInfo
+	7,  // 2: packet.Ping.disk_usage:type_name -> packet.DiskUsageStat
 	0,  // 3: packet.OpenTunnel.tunnel_type:type_name -> packet.OpenTunnel.TuunnelType
-	4,  // [4:4] is the sub-list for method output_type
-	4,  // [4:4] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	1,  // 4: packet.Command.cmd:type_name -> packet.Command.Cmd
+	5,  // [5:5] is the sub-list for method output_type
+	5,  // [5:5] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_pkg_packet_message_proto_init() }
@@ -934,7 +993,7 @@ func file_pkg_packet_message_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_packet_message_proto_rawDesc), len(file_pkg_packet_message_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,

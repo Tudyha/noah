@@ -15,7 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	smux "github.com/xtaci/smux/v2"
-	"google.golang.org/protobuf/proto"
 )
 
 // Session Status Constants
@@ -186,7 +185,7 @@ func (s *Session) isReady() (*smux.Session, error) {
 }
 
 // 发送proto消息
-func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) error {
+func (s *Session) SendCommand(cmd packet.Command_Cmd) error {
 	// fixme: 临时方案，考虑增加专门用于发送消息的stream
 	smuxSession, err := s.isReady()
 	if err != nil {
@@ -201,7 +200,9 @@ func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Messag
 	c := conn.NewConn(netConn)
 	defer c.Close()
 
-	return c.WriteProtoMessage(msgType, msg)
+	return c.WriteProtoMessage(packet.MessageType_Command, &packet.Command{
+		Cmd: cmd,
+	})
 }
 
 // 打开tunnel
