@@ -1,6 +1,7 @@
 package session
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -8,73 +9,91 @@ import (
 	"noah/pkg/constant"
 	"noah/pkg/logger"
 	"noah/pkg/packet"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/google/uuid"
 	smux "github.com/xtaci/smux/v2"
 	"google.golang.org/protobuf/proto"
 )
 
+// Session Status Constants
+const (
+	StatusInit    int32 = 0
+	StatusPending int32 = 1 // Awaiting authentication
+	StatusReady   int32 = 2 // Authenticated and smux ready
+	StatusClosed  int32 = 3
+)
+
+var (
+	ErrSessionNotReady = errors.New("session not authenticated or ready")
+)
+
 // 客户端会话
 type Session struct {
 	ID          string        // session id
 	status      atomic.Int32  // session状态: 0: 初始化 1: 待认证 2: 认证成功 3: 关闭
-	smuxSession *smux.Session // smux session smux多路复用器
+	smuxSession *smux.Session // smux多路复用器
+
+	closeOnce sync.Once
 }
 
 // 创建新会话
 func newSession(netConn net.Conn) (*Session, error) {
-	s := Session{
-		ID:     uuid.NewString(),
-		status: atomic.Int32{},
+	s := &Session{
+		ID: uuid.NewString(),
 	}
 
 	// 设置session状态为待认证
-	s.status.Store(1)
+	s.status.Store(StatusPending)
 
 	// 检测认证
 	go s.checkAuth(netConn)
-	return &s, nil
+	return s, nil
 }
 
 // 鉴权
-func (s *Session) checkAuth(netConn net.Conn) error {
-	c := conn.NewConn(netConn)
+func (s *Session) checkAuth(netConn net.Conn) {
 	var err error
+	c := conn.NewConn(netConn)
+
 	defer func() {
-		if err != nil || s.status.Load() != 2 {
+		if err != nil || s.status.Load() != StatusReady {
 			logger.Error("session认证失败", "sessionID", s.ID, "err", err)
 			c.Close()
 			s.Close()
 		}
 	}()
 
-	// 读取鉴权包 TODO 增加超时
+	// 读取鉴权包 TODO 增加读取超时控制
+	c.SetReadDeadline(time.Now().Add(10 * time.Second))
 	p, err := c.ReadMessage()
 	if err != nil {
-		return err
+		return
 	}
+	c.SetDeadline(time.Time{})
 	if p.MessageType != packet.MessageType_Login {
 		err = fmt.Errorf("认证失败，消息类型错误: %d", p.MessageType)
-		return err
+		return
 	}
 	h := messageHandlers[p.MessageType]
 	if h == nil {
 		err = fmt.Errorf("认证失败，消息处理函数未注册: %d", p.MessageType)
-		return err
+		return
 	}
 	// 校验鉴权信息
 	msgContext := conn.NewConnContext(c, p)
 	msgContext.WithValue(constant.SESSION_ID_KEY, s.ID)
-	if err = h.Handle(msgContext); err != nil {
-		msgContext.Release()
-		return err
-	}
+	err = h.Handle(msgContext)
 	msgContext.Release()
+	if err != nil {
+		return
+	}
 
 	logger.Info("认证成功", "sessionID", s.ID)
 	if err = c.WriteProtoMessage(packet.MessageType_LoginAck, &packet.LoginAck{}); err != nil {
-		return err
+		return
 	}
 
 	// 移交net.Conn给smux前先释放当前持有
@@ -82,23 +101,21 @@ func (s *Session) checkAuth(netConn net.Conn) error {
 	c = nil
 
 	logger.Info("创建smux session", "sessionID", s.ID)
-	smuxSession, err := smux.Server(netConn, smux.DefaultConfig())
+	smuxConfig := smux.DefaultConfig()
+	smuxSession, err := smux.Server(netConn, smuxConfig)
 	if err != nil {
-		logger.Error("创建smux session失败", "err", err)
-		return err
+		return
 	}
 	s.smuxSession = smuxSession
 
 	// 设置session状态为已认证
-	s.status.Store(2)
+	s.status.Store(StatusReady)
 
 	go s.accept()
-	return err
 }
 
 // 接受新子流
 func (s *Session) accept() {
-	logger.Info("accept new stream", "sessionID", s.ID)
 	defer s.Close()
 	for {
 		c, err := s.smuxSession.AcceptStream()
@@ -106,12 +123,12 @@ func (s *Session) accept() {
 			logger.Error("接受子流失败", "sessionID", s.ID, "err", err)
 			return
 		}
-		go s.handleConn(c)
+		go s.handleStream(c)
 	}
 }
 
 // 处理子流
-func (s *Session) handleConn(netConn net.Conn) {
+func (s *Session) handleStream(netConn net.Conn) {
 	c := conn.NewConn(netConn)
 
 	for {
@@ -126,39 +143,56 @@ func (s *Session) handleConn(netConn net.Conn) {
 		ctx.WithValue(constant.SESSION_ID_KEY, s.ID)
 		h := messageHandlers[p.MessageType]
 		if h == nil {
+			logger.Warn("消息处理函数未注册", "messageType", p.MessageType)
 			ctx.Release()
-			logger.Error("消息处理函数未注册", "messageType", p.MessageType)
 			continue
 		}
 		if err = h.Handle(ctx); err != nil {
 			logger.Error("处理消息失败", "err", err)
 		}
 
-		if ctx.IsHijacked() {
-			logger.Info("底层连接已被劫持，不再处理消息", "sessionID", s.ID)
-			ctx.Release()
+		hijacked := ctx.IsHijacked()
+		ctx.Release()
+
+		if hijacked {
 			return
 		}
-		ctx.Release()
 	}
 }
 
 // 关闭会话
 func (s *Session) Close() error {
-	logger.Info("close session", "sessionID", s.ID)
-	if s.smuxSession != nil {
-		s.smuxSession.Close()
-	}
-	s.status.Store(3)
+	s.closeOnce.Do(func() {
+		logger.Info("close session", "sessionID", s.ID)
+		s.status.Store(StatusClosed)
 
-	localSessionManager.sessions.Delete(s.ID)
+		if s.smuxSession != nil {
+			s.smuxSession.Close()
+		}
+
+		localSessionManager.sessions.Delete(s.ID)
+	})
 	return nil
+}
+
+func (s *Session) isReady() (*smux.Session, error) {
+	if s.status.Load() != StatusReady {
+		return nil, ErrSessionNotReady
+	}
+	if s.smuxSession == nil {
+		return nil, ErrSessionNotReady
+	}
+	return s.smuxSession, nil
 }
 
 // 发送proto消息
 func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Message) error {
 	// fixme: 临时方案，考虑增加专门用于发送消息的stream
-	netConn, err := s.smuxSession.OpenStream()
+	smuxSession, err := s.isReady()
+	if err != nil {
+		return err
+	}
+	netConn, err := smuxSession.OpenStream()
 	if err != nil {
 		return err
 	}
@@ -174,7 +208,11 @@ func (s *Session) WriteProtoMessage(msgType packet.MessageType, msg proto.Messag
 func (s *Session) OpenTunnel(tunnelType packet.OpenTunnel_TuunnelType, addr string) (io.ReadWriteCloser, error) {
 	var err error
 
-	netConn, err := s.smuxSession.OpenStream()
+	smuxSession, err := s.isReady()
+	if err != nil {
+		return nil, err
+	}
+	netConn, err := smuxSession.OpenStream()
 	if err != nil {
 		return nil, err
 	}

@@ -28,6 +28,7 @@ func NewTCPServer() app.Server {
 }
 
 func (t *tcpServer) Start(ctx context.Context) error {
+	logger.Info("tcp server start", "addr", t.listenAddr)
 	listener, err := net.Listen("tcp", t.listenAddr)
 	if err != nil {
 		logger.Error("启动TCP服务失败", "err", err)

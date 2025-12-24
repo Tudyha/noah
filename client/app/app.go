@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"noah/client/app/handler"
@@ -10,6 +11,7 @@ import (
 	"noah/pkg/conn"
 	"noah/pkg/packet"
 	"noah/pkg/utils"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -21,34 +23,43 @@ type Client struct {
 
 	connected atomic.Bool
 
+	// Use RWMutex to protect session-related resources
+	mu         sync.RWMutex
 	session    *smux.Session
 	pingStream *smux.Stream
 
-	closeSignal chan struct{}
+	// Lifecycle control
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 
-	infoHandler *handler.InfoHandler
-
+	infoHandler     *handler.InfoHandler
 	messageHandlers map[packet.MessageType]conn.MessageHandler
 }
 
 func NewClient(cfg *config.ClientConfig) pkgApp.Server {
-	if cfg.ReconnectInterval == 0 {
-		cfg.ReconnectInterval = 10
+	// Set defaults
+	if cfg.ReconnectInterval <= 0 {
+		cfg.ReconnectInterval = 5
 	}
-	if cfg.DailTimeout == 0 {
+	if cfg.DailTimeout <= 0 {
 		cfg.DailTimeout = 10
 	}
-	if cfg.HeartbeatInterval == 0 {
+	if cfg.HeartbeatInterval <= 0 {
 		cfg.HeartbeatInterval = 30
 	}
-	c := &Client{
-		cfg:         cfg,
-		closeSignal: make(chan struct{}),
-		infoHandler: &handler.InfoHandler{},
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := &Client{
+		cfg:             cfg,
+		ctx:             ctx,
+		cancel:          cancel,
+		infoHandler:     &handler.InfoHandler{},
 		messageHandlers: make(map[packet.MessageType]conn.MessageHandler),
 	}
 
+	// Registry handlers
 	logoutHandler := handler.NewLogoutHandler()
 	tunnelHandler := handler.NewTunnelHandler()
 	c.messageHandlers[logoutHandler.MessageType()] = logoutHandler
@@ -58,100 +69,168 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 }
 
 func (c *Client) Start(ctx context.Context) error {
-	ticker := time.NewTicker(time.Duration(c.cfg.ReconnectInterval) * time.Second)
-	defer ticker.Stop()
+	log.Println("Starting client...")
+
+	// Initial connection attempt
+	go c.reconnectLoop()
+
+	// Wait for global context or local cancel
+	select {
+	case <-ctx.Done():
+		return c.Stop(ctx)
+	case <-c.ctx.Done():
+		return nil
+	}
+}
+
+func (c *Client) reconnectLoop() {
+	backoff := time.Duration(c.cfg.ReconnectInterval) * time.Second
+	maxBackoff := 60 * time.Second
 
 	for {
-		select {
-		case <-c.closeSignal:
-			// 接收到关闭信号，停止客户端
-			return nil
-		case <-ticker.C:
-			// 定时重连
-			if !c.connected.Load() {
-				if err := c.connect(); err != nil {
-					log.Println("连接失败:", err)
+		if !c.connected.Load() {
+			if err := c.connect(); err != nil {
+				log.Printf("Connection failed: %v, retrying in %v...", err, backoff)
+
+				// Exponential backoff
+				select {
+				case <-c.ctx.Done():
+					return
+				case <-time.After(backoff):
+					backoff *= 2
+					if backoff > maxBackoff {
+						backoff = maxBackoff
+					}
+					continue
 				}
 			}
+			// Reset backoff on success
+			backoff = time.Duration(c.cfg.ReconnectInterval) * time.Second
+		}
+
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-time.After(5 * time.Second): // Health check interval
 		}
 	}
 }
 
-// 连接到服务端
 func (c *Client) connect() error {
-	dail := net.Dialer{
+	dialer := net.Dialer{
 		Timeout: time.Duration(c.cfg.DailTimeout) * time.Second,
 	}
 
-	netConn, err := dail.Dial("tcp", c.cfg.ServerAddr)
+	netConn, err := dialer.DialContext(c.ctx, "tcp", c.cfg.ServerAddr)
 	if err != nil {
 		return err
 	}
 
-	c.connected.Store(true)
-
+	// Start auth and session promotion
 	go c.handleConn(netConn)
 	return nil
 }
 
-// 处理连接
 func (c *Client) handleConn(netConn net.Conn) {
-	conn := conn.NewConn(netConn)
+	co := conn.NewConn(netConn)
+
+	// Local cleanup logic
+	var sess *smux.Session
+	var ping *smux.Stream
+
 	defer func() {
-		c.connected.Store(false)
-		if conn != nil {
-			conn.Close()
+		if r := recover(); r != nil {
+			log.Printf("Recovered from panic in handleConn: %v", r)
 		}
-		if c.session != nil {
-			c.session.Close()
-		}
-		if c.pingStream != nil {
-			c.pingStream.Close()
+		if !c.connected.Load() {
+			if co != nil {
+				co.Close()
+			}
+			if sess != nil {
+				sess.Close()
+			}
+			netConn.Close()
 		}
 	}()
 
-	// 发送鉴权包
 	loginReq := &packet.Login{
 		AppId:    c.cfg.AppId,
 		Sign:     utils.Sign(c.cfg.AppId, c.cfg.AppSecret),
 		DeviceId: utils.GetMacAddress(),
 	}
 	loginReq.ClientInfo = c.infoHandler.GetInfo()
-	if err := conn.WriteProtoMessage(packet.MessageType_Login, loginReq); err != nil {
+
+	co.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	if err := co.WriteProtoMessage(packet.MessageType_Login, loginReq); err != nil {
 		return
 	}
 
-	// 读取鉴权包ack
-	p, err := conn.ReadMessage()
+	co.SetReadDeadline(time.Now().Add(10 * time.Second))
+	p, err := co.ReadMessage()
+	if err != nil || p.MessageType != packet.MessageType_LoginAck {
+		log.Printf("Auth failed: %v", err)
+		return
+	}
+	co.SetDeadline(time.Time{}) // Clear deadlines
+
+	log.Println("Auth passed, upgrading to smux")
+	co.Release()
+
+	// 2. SMUX Promotion
+	sess, err = smux.Client(netConn, smux.DefaultConfig())
 	if err != nil {
 		return
 	}
-	if p.MessageType != packet.MessageType_LoginAck {
-		return
-	}
 
-	log.Println("认证通过")
-
-	conn.Release()
-	conn = nil
-
-	log.Println("创建smux session")
-	c.session, err = smux.Client(netConn, smux.DefaultConfig())
+	// 3. Heartbeat setup
+	ping, err = sess.OpenStream()
 	if err != nil {
-		log.Println("创建smux session失败:", err)
+		sess.Close()
 		return
 	}
 
-	log.Println("smux session创建成功，创建ping stream")
-	if c.pingStream, err = c.session.OpenStream(); err != nil {
-		log.Println("创建ping stream失败:", err)
-	} else {
-		log.Println("开始定时发送心跳包")
-		go c.ping()
-	}
+	// 4. Critical Section: Update Client State
+	c.mu.Lock()
+	c.session = sess
+	c.pingStream = ping
+	c.mu.Unlock()
+
+	c.connected.Store(true)
+
+	// 5. Spin up workers
+	c.wg.Add(2)
+	go c.heartbeatWorker(ping)
+	go c.acceptStreamLoop(sess)
+}
+
+func (c *Client) heartbeatWorker(s *smux.Stream) {
+	defer c.wg.Done()
+	defer c.markDisconnected()
+
+	co := conn.NewConn(s)
+	ticker := time.NewTicker(time.Duration(c.cfg.HeartbeatInterval) * time.Second)
+	defer ticker.Stop()
 
 	for {
-		stream, err := c.session.AcceptStream()
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-ticker.C:
+			data := c.infoHandler.GetSystemStat()
+			if err := co.WriteProtoMessage(packet.MessageType_Ping, data); err != nil {
+				log.Printf("Heartbeat failed: %v", err)
+				return
+			}
+		}
+	}
+}
+
+func (c *Client) acceptStreamLoop(sess *smux.Session) {
+	defer c.wg.Done()
+	defer c.markDisconnected()
+
+	for {
+		stream, err := sess.AcceptStream()
 		if err != nil {
 			return
 		}
@@ -159,76 +238,73 @@ func (c *Client) handleConn(netConn net.Conn) {
 	}
 }
 
-// 处理stream
 func (c *Client) handleStream(netConn net.Conn) {
 	co := conn.NewConn(netConn)
+
 	for {
 		p, err := co.ReadMessage()
 		if err != nil {
 			co.Close()
 			return
 		}
-		// 创建上下文，用于传递数据
+
 		ctx := conn.NewConnContext(co, p)
 		h := c.messageHandlers[p.MessageType]
 		if h == nil {
-			log.Println("消息处理函数未注册", "messageType", p.MessageType)
+			log.Printf("Handler missing for type: %v", p.MessageType)
 			ctx.Release()
 			continue
 		}
-		if err = h.Handle(ctx); err != nil {
-			log.Println("处理消息失败", "err", err)
+
+		if err := h.Handle(ctx); err != nil {
+			log.Printf("Handle error: %v", err)
 		}
 
-		if ctx.IsHijacked() {
-			log.Println("stream底层连接已被劫持，不再处理消息")
-			ctx.Release()
+		hijacked := ctx.IsHijacked()
+		ctx.Release()
+		if hijacked {
 			return
 		}
-
-		ctx.Release()
 	}
 }
 
-func (c *Client) ping() {
-	if c.pingStream == nil {
-		return
-	}
-	conn := conn.NewConn(c.pingStream)
-	defer conn.Close()
-
-	ticker := time.NewTicker(time.Duration(c.cfg.HeartbeatInterval) * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-c.closeSignal:
-			log.Println("client close, stop ping")
-			return
-		case <-ticker.C:
-			if !c.connected.Load() {
-				log.Println("client not connected, ping fail")
-				continue
-			}
-			data := c.infoHandler.GetSystemStat()
-			if err := conn.WriteProtoMessage(packet.MessageType_Ping, data); err != nil {
-				log.Println("心跳包发送失败:", err)
-				return
-			}
-			log.Println("心跳包发送成功")
+func (c *Client) markDisconnected() {
+	if c.connected.Swap(false) {
+		log.Println("Client disconnected, cleaning up...")
+		c.mu.Lock()
+		if c.session != nil {
+			c.session.Close()
 		}
+		c.mu.Unlock()
 	}
 }
 
 func (c *Client) Stop(ctx context.Context) error {
-	log.Println("client stop...")
+	log.Println("Stopping client...")
+	c.cancel() // Signal all workers to stop
+
+	c.mu.Lock()
 	if c.session != nil {
 		c.session.Close()
 	}
-	close(c.closeSignal)
+	c.mu.Unlock()
+
+	// Wait for goroutines to finish (graceful)
+	done := make(chan struct{})
+	go func() {
+		c.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		log.Println("Client stopped gracefully")
+	case <-ctx.Done():
+		log.Println("Stop timed out, forcing exit")
+	}
 	return nil
 }
 
 func (c *Client) String() string {
-	return "client"
+	return fmt.Sprintf("NoahClient[%d]", c.cfg.AppId)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"noah/pkg/app"
 	"noah/pkg/constant"
+	"noah/pkg/logger"
 	"noah/pkg/proto"
 	"noah/pkg/utils"
 
@@ -13,6 +14,7 @@ import (
 
 	core "github.com/v2fly/v2ray-core/v5"
 	"github.com/v2fly/v2ray-core/v5/app/dispatcher"
+	"github.com/v2fly/v2ray-core/v5/app/log"
 	"github.com/v2fly/v2ray-core/v5/app/proxyman"
 	_ "github.com/v2fly/v2ray-core/v5/app/proxyman/inbound"
 	_ "github.com/v2fly/v2ray-core/v5/app/proxyman/outbound"
@@ -82,6 +84,7 @@ func (s *V2rayServer) subscribe() {
 }
 
 func (s *V2rayServer) Start(ctx context.Context) (err error) {
+	logger.Info("v2ray server start", "addr", s.addr)
 	go s.subscribe()
 
 	return s.start()
@@ -127,18 +130,18 @@ func (s *V2rayServer) initV2rayInstanceConfig() {
 	p, _ := utils.StringToUint64(port)
 	config := &core.Config{
 		App: []*anypb.Any{
-			// serial.ToTypedMessage(&log.Config{
-			// 	Access: &log.LogSpecification{
-			// 		Type:  log.LogType_File,
-			// 		Level: 1,
-			// 		Path:  s.logPath,
-			// 	},
-			// 	Error: &log.LogSpecification{
-			// 		Type:  log.LogType_File,
-			// 		Level: 1,
-			// 		Path:  s.logPath,
-			// 	},
-			// }),
+			serial.ToTypedMessage(&log.Config{
+				Access: &log.LogSpecification{
+					Type:  log.LogType_File,
+					Level: 1,
+					Path:  s.logPath,
+				},
+				Error: &log.LogSpecification{
+					Type:  log.LogType_File,
+					Level: 1,
+					Path:  s.logPath,
+				},
+			}),
 			serial.ToTypedMessage(&dispatcher.Config{}),
 			serial.ToTypedMessage(&proxyman.InboundConfig{}),
 			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
@@ -162,5 +165,4 @@ func (s *V2rayServer) initV2rayInstanceConfig() {
 		},
 	}
 	s.config = config
-
 }

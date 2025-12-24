@@ -5,6 +5,7 @@ import (
 	"net"
 	"noah/pkg/packet"
 	"sync"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -98,4 +99,16 @@ func (c *Conn) Release() {
 
 func (c *Conn) RemoteAddr() net.Addr {
 	return c.netConn.RemoteAddr()
+}
+
+func (c *Conn) SetReadDeadline(t time.Time) {
+	c.netConn.SetReadDeadline(t)
+}
+
+func (c *Conn) SetWriteDeadline(t time.Time) {
+	c.netConn.SetWriteDeadline(t)
+}
+
+func (c *Conn) SetDeadline(t time.Time) {
+	c.netConn.SetDeadline(t)
 }

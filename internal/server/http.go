@@ -45,7 +45,7 @@ func NewHTTPServer() app.Server {
 }
 
 func (h *httpServer) Start(ctx context.Context) error {
-	logger.Info("http server start: ", "addr", h.s.Addr)
+	logger.Info("http server start", "addr", h.s.Addr)
 	if err := h.s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Error("HTTP服务启动失败", "err", err)
 		return err
@@ -71,10 +71,4 @@ func registerMiddlewares(router *gin.Engine, authService service.AuthService) {
 
 	// 鉴权中间件
 	router.Use(middleware.Auth(authService))
-
-	// TODO: 注册其他中间件
-	// router.Use(middleware.Logger())
-	// router.Use(middleware.CORS())
-	// router.Use(middleware.RequestID())
-	// router.Use(middleware.RateLimit())
 }
