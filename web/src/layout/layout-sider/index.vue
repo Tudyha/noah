@@ -1,10 +1,10 @@
 <template>
-  <div class="menu p-4 w-56 h-full bg-base-100 flex flex-col border-r border-t border-base-300">
+  <div class="menu p-4 w-64 h-full bg-base-100 flex flex-col border-r border-base-200">
     <!-- Logo -->
     <Logo class="mb-8 px-4 lg:hidden" />
 
     <!-- 菜单项 -->
-    <SiderMenu />
+    <SiderMenu class="flex-1" />
 
     <!-- 底部固定区域 -->
     <WorkSpace />

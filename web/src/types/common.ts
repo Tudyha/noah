@@ -5,7 +5,7 @@ export type SearchItem = {
   type: 'input' | 'select' | 'date-range' | 'date'; // 组件类型
   placeholder?: string;
   options?: { value: string | number; label: string }[]; // select组件使用
-  // default?: string | number | Date | Date[]
+  default?: string | number | Date | Date[]
   width?: string;
 }
 

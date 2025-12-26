@@ -22,30 +22,26 @@ const handleReset = () => {
 </script>
 
 <template>
-  <div>
-    <div class="navbar mb-4 rounded-box border border-base-content/5 bg-base-100 p-6">
-      <div class="flex-1">
-        <span>{{ props.title }}</span>
-      </div>
-      <div class="flex-none">
-        <button class="btn btn-square btn-ghost">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-            class="inline-block h-5 w-5 stroke-current">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z">
-            </path>
-          </svg>
-        </button>
-      </div>
+  <div class="flex flex-col gap-4">
+    <!-- 标题栏 -->
+    <div class="flex items-center justify-between" v-if="props.title">
+      <h2 class="text-lg font-bold text-base-content">{{ props.title }}</h2>
+      <button class="btn btn-sm btn-ghost btn-square" title="刷新">
+        <Icon icon="mdi:refresh" class="w-5 h-5" />
+      </button>
     </div>
 
     <!-- 搜索栏 -->
     <Search v-if="searchItems" :items="searchItems" @search="handleSearch" @reset="handleReset" />
 
     <!-- 表格内容 -->
-    <TableContent :columns="columns" :data="data" :is-loading="isLoading" />
-
-    <!-- 分页器 -->
-    <Pagination v-if="total && total > 0" :current-page="currentPage" :page-size="pageSize" :total="total" />
+    <div class="bg-base-100 rounded-lg shadow-sm border border-base-200 overflow-hidden">
+      <TableContent :columns="columns" :data="data" :is-loading="isLoading" />
+      
+      <!-- 分页器 -->
+      <div class="border-t border-base-200">
+        <Pagination v-if="total && total > 0" :current-page="currentPage" :page-size="pageSize" :total="total" />
+      </div>
+    </div>
   </div>
 </template>

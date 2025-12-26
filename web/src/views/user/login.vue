@@ -1,70 +1,68 @@
 <template>
-  <div class="flex items-center justify-center h-full">
-    <div class="card bg-base-100 w-xl shadow-sm">
+  <div class="flex items-center justify-center h-full bg-base-200">
+    <div class="card bg-base-100 w-full max-w-md shadow-xl">
       <div class="card-body">
-        <div class="tabs tabs-lift">
-
-          <!-- tab -->
-          <label class="tab gap-2">
-            <input type="radio" name="loginByPhone" value="1" v-model="form.login_type"
-              :checked="form.login_type === 1" />
-            <Icon icon="material-symbols:perm-phone-msg" />
-            {{ t('login.loginByPhone') }}
-          </label>
-
-          <!-- form -->
-          <div class="tab-content bg-base-100 border-base-300 p-2">
-            <form class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
-              <fieldset class="fieldset">
-                <label class="label">{{ t('common.phone') }}</label>
-                <input v-model="form.username" type="text" class="input validator" :placeholder="t('common.phone')"
-                  required />
-                <p class="validator-hint hidden">{{ t('login.phoneValidator') }}</p>
-              </fieldset>
-
-              <fieldset class="fieldset">
-                <label class="label">{{ t('login.code') }}</label>
-                <div class="join">
-                  <input v-model="form.code" type="text" class="input validator w-40" :placeholder="t('login.code')"
-                    required />
-                  <button class="btn btn-primary join-item" @click="sendCode" :disabled="remaining != 0">{{
-                    remaining ||
-                    t('login.sendCode') }}</button>
-                </div>
-              </fieldset>
-              <button class="btn btn-primary mt-6" type="button" @click="login">{{ t('login.loginButton') }}</button>
-            </form>
-          </div>
-
-          <!-- tab -->
-          <label class="tab gap-2">
-            <input type="radio" name="loginByPassword" value="2" v-model="form.login_type"
-              :checked="form.login_type === 2" />
-            <Icon icon="carbon:password" />
-            {{ t('login.loginByPassword') }}
-          </label>
-          <!-- form -->
-          <div class="tab-content bg-base-100 border-base-300 p-2">
-            <form class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
-              <fieldset class="fieldset">
-                <label class="label">{{ t('common.username') }}</label>
-                <input v-model="form.username" type="text" class="input validator" :placeholder="t('common.username')"
-                  required />
-                <p class="validator-hint hidden">{{ t('login.usernameValidator') }}</p>
-              </fieldset>
-
-              <fieldset class="fieldset">
-                <label class="label">{{ t('common.password') }}</label>
-                <input v-model="form.password" type="password" class="input validator"
-                  :placeholder="t('common.password')" required />
-                <p class="validator-hint hidden">{{ t('login.passwordValidator') }}</p>
-              </fieldset>
-              <button class="btn btn-primary mt-6" type="button" @click="login">{{ t('login.loginButton') }}</button>
-            </form>
-          </div>
-
+        <div class="flex flex-col items-center mb-6">
+          <Logo class="w-12 h-12 mb-2" />
+          <h2 class="text-2xl font-bold">欢迎回来</h2>
+          <p class="text-base-content/60 text-sm">请登录您的账户以继续</p>
         </div>
-        <div class="card-actions justify-end">
+
+        <div class="tabs tabs-lift">
+          <!-- Phone Login Tab -->
+          <input type="radio" name="login_tabs" class="tab" :aria-label="t('login.loginByPhone')" 
+                 :checked="form.login_type === 1" @change="form.login_type = 1" />
+          <div class="tab-content bg-base-100 border-base-300 rounded-box p-6">
+            <form class="space-y-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">{{ t('common.phone') }}</span>
+                </label>
+                <input v-model="form.username" type="text" class="input input-bordered w-full" :placeholder="t('common.phone')" required />
+              </div>
+
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">{{ t('login.code') }}</span>
+                </label>
+                <div class="join w-full">
+                  <input v-model="form.code" type="text" class="input input-bordered join-item w-full" :placeholder="t('login.code')" required />
+                  <button class="btn btn-primary join-item" type="button" @click="sendCode" :disabled="remaining != 0">
+                    {{ remaining || t('login.sendCode') }}
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-primary w-full mt-4" type="button" @click="login" :disabled="loginLoading">
+                <span v-if="loginLoading" class="loading loading-spinner"></span>
+                {{ t('login.loginButton') }}
+              </button>
+            </form>
+          </div>
+
+          <!-- Password Login Tab -->
+          <input type="radio" name="login_tabs" class="tab" :aria-label="t('login.loginByPassword')" 
+                 :checked="form.login_type === 2" @change="form.login_type = 2" />
+          <div class="tab-content bg-base-100 border-base-300 rounded-box p-6">
+            <form class="space-y-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">{{ t('common.username') }}</span>
+                </label>
+                <input v-model="form.username" type="text" class="input input-bordered w-full" :placeholder="t('common.username')" required />
+              </div>
+
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">{{ t('common.password') }}</span>
+                </label>
+                <input v-model="form.password" type="password" class="input input-bordered w-full" :placeholder="t('common.password')" required />
+              </div>
+              <button class="btn btn-primary w-full mt-4" type="button" @click="login" :disabled="loginLoading">
+                <span v-if="loginLoading" class="loading loading-spinner"></span>
+                {{ t('login.loginButton') }}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

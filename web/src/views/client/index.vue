@@ -21,7 +21,8 @@ const searchItems: SearchItem[] = [
     type: "select",
     label: "在线状态",
     key: "status",
-    width: "w-20",
+    width: "w-32",
+    default: "1",
     options: [
       {
         value: "1",
@@ -48,15 +49,13 @@ const handleSearch = () => {
 </script>
 
 <template>
-  <div>
-    <div class="navbar border-b border-base-content/5">
-      <div class="flex-1">
-        <h1>主机列表</h1>
-      </div>
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-bold text-base-content">主机列表</h2>
       <button
-        class="btn btn-primary btn-sm btn-soft flex-shrink-0 transition-all duration-200 focus-visible:ring focus-visible:ring-primary/30"
+        class="btn btn-primary btn-sm flex-shrink-0 shadow-sm"
         onclick="bing_dialog.showModal()" aria-label="绑定主机">
-        <Icon icon="mdi:link" />绑定
+        <Icon icon="mdi:link" class="w-4 h-4" /> 绑定主机
       </button>
     </div>
 
@@ -74,7 +73,7 @@ const handleSearch = () => {
       </div>
     </dialog>
 
-    <div class="p-2">
+    <div>
       <Transition name="fade" mode="out-in">
         <template v-if="loading">
           <div class="grid place-items-center h-48">
@@ -88,19 +87,21 @@ const handleSearch = () => {
             <Client v-for="item in data?.list" :key="item.id" :item="item" @refresh="handleSearch" />
           </TransitionGroup>
 
-          <div v-else class="grid place-items-center h-48">
-            <Icon icon="mdi:server-off" class="w-16 h-16 text-base-content/30 mb-4" />
-            <span class="text-lg font-semibold text-base-content/70 mb-4">暂未发现已绑定的主机</span>
-            <button
-              class="btn btn-primary btn-md btn-soft transition-all duration-200 focus-visible:ring focus-visible:ring-primary/30"
-              onclick="bing_dialog.showModal()" aria-label="立即绑定主机">
-              <Icon icon="mdi:link" />立即绑定
-            </button>
+          <div v-else class="grid place-items-center h-96 bg-base-100 rounded-lg border border-base-200 border-dashed">
+            <div class="text-center">
+              <Icon icon="mdi:server-off" class="w-20 h-20 text-base-content/20 mx-auto mb-4" />
+              <h3 class="text-lg font-semibold text-base-content/70 mb-2">暂未发现已绑定的主机</h3>
+              <p class="text-sm text-base-content/50 mb-6">绑定主机后，您可以在此处查看和管理主机状态</p>
+              <button
+                class="btn btn-primary btn-md shadow-sm"
+                onclick="bing_dialog.showModal()" aria-label="立即绑定主机">
+                <Icon icon="mdi:link" /> 立即绑定
+              </button>
+            </div>
           </div>
         </template>
       </Transition>
     </div>
-
     <Pagination v-if="!loading" :total="data?.total || 0" @change="handlePageChange" />
   </div>
 </template>

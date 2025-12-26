@@ -5,12 +5,10 @@
       <!-- Drawer for mobile and fixed sidebar for desktop -->
       <div class="drawer lg:drawer-open flex-1">
         <input id="main-drawer" type="checkbox" class="drawer-toggle" />
-        <div class="drawer-content flex flex-col flex-1 overflow-y-auto">
+        <div class="drawer-content flex flex-col flex-1 overflow-y-auto bg-base-200/50">
           <!-- Main content area -->
-          <main class="p-4 flex-1 mx-auto w-full bg-base-200">
-            <div class="bg-base-100 shadow h-full overflow-y-auto">
-              <RouterView />
-            </div>
+          <main class="p-4 sm:p-6 flex-1 w-full max-w-[1920px] mx-auto">
+            <RouterView />
           </main>
         </div>
         <!-- Sidebar -->

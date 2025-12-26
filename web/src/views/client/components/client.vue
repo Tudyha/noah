@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { clientStatusMap, clientOsTypeIconMap, clientOsTypeColorMap } from '@/map'
+import { clientStatusMap, clientOsTypeIconMap } from '@/map'
 import type { ClientResponse } from '@/types'
 import { formatBytes, formatDateTime, formatUptime } from '@/utils'
 import { deleteClient as deleteClientApi} from '@/api/client'
@@ -58,16 +58,31 @@ const deleteClient = () => {
   deleteClientApi(props.item.id)
   emit('refresh')
 }
+
+const handleAction = (type: string) => {
+  // 关闭 dropdown
+  const elem = document.activeElement as HTMLElement
+  if (elem) {
+    elem.blur()
+  }
+
+  if (type === 'delete') {
+    deleteClient()
+  } else if (type === 'upgrade') {
+    console.log('Upgrade client', props.item.id)
+  }
+}
 </script>
 
 <template>
-  <div class="card relative overflow-hidden bg-gradient-to-br from-base-100 via-base-100 to-base-200/50 shadow-sm hover:shadow-xl transition-all duration-300 border border-base-200 group hover:-translate-y-1">
-    <!-- 装饰性背景光斑 -->
-    <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500 pointer-events-none"></div>
-    <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-secondary/10 rounded-full blur-3xl group-hover:bg-secondary/20 transition-colors duration-500 pointer-events-none"></div>
-    
-    <!-- 装饰性顶部光条 -->
-    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/80 via-secondary/80 to-accent/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+  <div class="card relative bg-linear-to-br from-base-100 via-base-100 to-base-200/50 shadow-sm hover:shadow-xl transition-all duration-300 border border-base-200 group hover:-translate-y-1">
+    <!-- 装饰性背景光斑容器（独立裁剪） -->
+    <div class="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+      <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500"></div>
+      <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-secondary/10 rounded-full blur-3xl group-hover:bg-secondary/20 transition-colors duration-500"></div>
+      <!-- 装饰性顶部光条 -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary/80 via-secondary/80 to-accent/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    </div>
 
     <div class="card-body p-3 sm:p-4 relative z-10">
       <!-- 头部信息 -->
@@ -77,7 +92,7 @@ const deleteClient = () => {
           <div class="w-10 h-10 rounded-lg bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center text-primary transition-all duration-300 group-hover:scale-110">
             <Icon :icon="clientOsTypeIconMap[item.os_type]" class="w-6 h-6" />
           </div>
-          
+
           <div class="flex flex-col">
             <h2 class="font-bold text-base leading-tight truncate max-w-[140px]" :title="item.hostname">
               {{ item.hostname }}
@@ -94,7 +109,7 @@ const deleteClient = () => {
         </div>
 
         <!-- 状态标签 -->
-        <div class="badge border-0 gap-1 py-2 px-2 shadow-sm min-h-0 h-auto" 
+        <div class="badge border-0 gap-1 py-2 px-2 shadow-sm min-h-0 h-auto"
              :class="item.status === 1 ? 'badge-success/10 text-success' : 'badge-error/10 text-error'">
           <span class="relative flex h-1.5 w-1.5">
             <span v-if="item.status === 1" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
@@ -106,7 +121,7 @@ const deleteClient = () => {
 
       <!-- 核心指标 Grid -->
       <div class="grid grid-cols-3 gap-2 my-1">
-        <div v-for="(stat, index) in statInfo" :key="index" 
+        <div v-for="(stat, index) in statInfo" :key="index"
              class="flex flex-col items-center justify-center p-2 rounded-lg bg-base-200/30 hover:bg-base-200/60 transition-colors duration-200">
           <Icon :icon="stat.Icon" :class="['w-4 h-4 mb-0.5', stat.color]" />
           <span class="text-xs font-bold text-base-content">{{ stat.value }}</span>
@@ -129,7 +144,7 @@ const deleteClient = () => {
     </div>
 
     <!-- 底部操作栏 -->
-    <div class="p-3 pt-0 mt-auto flex gap-2">
+    <div class="p-3 pt-0 mt-auto flex gap-2 relative z-20">
       <router-link
         :to="{ name: 'ClientConsole', params: { id: item.id } }"
         class="btn btn-primary btn-sm flex-1 gap-2 font-normal shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-200"
@@ -138,19 +153,19 @@ const deleteClient = () => {
         控制台
       </router-link>
 
-      <div class="dropdown dropdown-end dropdown-top">
+      <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-square btn-sm btn-ghost hover:bg-base-200 transition-colors">
           <Icon icon="mdi:dots-vertical" class="w-5 h-5 text-base-content/60" />
         </div>
-        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-32 border border-base-200">
+        <ul tabindex="0" class="dropdown-content z-50 menu p-2 shadow-xl bg-base-100 rounded-xl w-32 border border-base-200 mt-1">
           <li>
-            <button class="text-xs font-medium hover:text-warning hover:bg-warning/10 active:bg-warning/20">
+            <button type="button" class="text-xs font-medium hover:text-warning hover:bg-warning/10 active:bg-warning/20" @click="handleAction('upgrade')">
               <Icon icon="mdi:arrow-up-bold-hexagon-outline" class="w-4 h-4" />
               升级
             </button>
           </li>
           <li>
-            <button class="text-xs font-medium text-error hover:bg-error/10 active:bg-error/20" @click="deleteClient">
+            <button type="button" class="text-xs font-medium text-error hover:bg-error/10 active:bg-error/20" @click="handleAction('delete')">
               <Icon icon="mdi:trash-can-outline" class="w-4 h-4" />
               解绑
             </button>

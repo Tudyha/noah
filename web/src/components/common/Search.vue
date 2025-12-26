@@ -15,20 +15,21 @@ const handleSearch = () => {
 </script>
 
 <template>
-  <div class="border-b border-base-content/5 p-2">
-    <div class="grid grid-cols-4 auto-rows-min gap-x-4 gap-y-2" style="grid-auto-flow: dense;">
-      <div v-if="items && items.length > 0" v-for="item in props.items" :key="item.key" class="flex items-center gap-1">
-        <div class="w-20">
-          <span>{{ item.label }}</span>
-        </div>
+  <div class="bg-base-100 p-4 rounded-lg mb-4 shadow-sm border border-base-200">
+    <div class="flex flex-wrap items-end gap-4">
+      <div v-if="items && items.length > 0" v-for="item in props.items" :key="item.key"
+           class="form-control" :class="item.width ? item.width : 'w-full sm:w-64'">
+        <label class="label py-1 px-0">
+          <span class="label-text font-medium">{{ item.label }}</span>
+        </label>
 
-        <div :class="item.width ? item.width : 'w-full'">
+        <div class="w-full">
           <!-- 输入框 -->
           <input v-if="item.type === 'input'" type="text" :placeholder="item.placeholder || `请输入${item.label}`"
-            class="input input-bordered input-sm" v-model="searchForm[item.key]" />
+            class="input input-bordered input-sm w-full" v-model="searchForm[item.key]" />
 
           <!-- 下拉选择 -->
-          <select v-else-if="item.type === 'select'" class="select select-bordered select-sm"
+          <select v-else-if="item.type === 'select'" class="select select-bordered select-sm w-full"
             v-model="searchForm[item.key]">
             <option v-for="option in item.options" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -36,12 +37,13 @@ const handleSearch = () => {
           </select>
         </div>
       </div>
-      <div class="flex items-center gap-1">
-        <button class="btn btn-sm btn-soft btn-primary btn-square" @click="handleSearch">
-          <Icon icon="mdi:search" class="w-6 h-6" />
+
+      <div class="flex items-center gap-2 pb-0.5">
+        <button class="btn btn-sm btn-primary shadow-sm" @click="handleSearch">
+          <Icon icon="mdi:search" class="w-4 h-4" /> 搜索
         </button>
-        <button class="btn btn-sm btn-soft btn-warning btn-square">
-          <Icon icon="mdi:refresh" class="w-6 h-6" />
+        <button class="btn btn-sm btn-ghost border border-base-300 shadow-sm" @click="handleSearch">
+          <Icon icon="mdi:refresh" class="w-4 h-4" /> 重置
         </button>
       </div>
     </div>
