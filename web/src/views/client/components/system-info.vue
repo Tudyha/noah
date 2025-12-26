@@ -1,96 +1,75 @@
-<template>
-  <div class="space-y-4">
-    <div class="space-x-2">
-      <input type="datetime-local" class="input w-40" v-model="filter.start"/>
-      -
-      <input type="datetime-local" class="input w-40" v-model="filter.end"/>
-      <button class="btn btn-primary" @click="refresh">查询</button>
-      <button class="btn btn-primary" @click="refresh">刷新</button>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div>
-        <Line v-if="!loading" :data="cpuData" :options="options" />
-      </div>
-      <div>
-        <Line v-if="!loading" :data="memoryData" :options="options" />
-      </div>
-    </div>
-  </div>
-</template>
-
-<script lang="ts" setup>
-import Line from '@/components/chart/line.vue'
-import { getClientSystemInfo } from '@/api/client'
-import type { ClientSystemInfoResponse } from '@/types'
-import { formatBytesToGB } from '@/utils'
+<script setup lang="ts">
+import { useRequest } from 'vue-hooks-plus';
+import { getClientDetail } from '@/api/client';
+import { clientStatusMap, clientOsTypeIconMap } from '@/map';
+const router = useRouter();
 
 const props = defineProps<{
   id: string
 }>()
 
-const filter = ref({
-  start: '2025-12-19T11:00',
-  end: '2025-12-19T11:55'
-})
-
-const data = ref<ClientSystemInfoResponse[]>([])
-const loading = ref(false)
-const labels = computed(() => {
-  return data.value.map(item => new Date(item.created_at).toLocaleTimeString())
-})
-const cpuData = computed(() => {
-  return {
-    labels: labels.value,
-    datasets: [
-      {
-        label: 'CPU使用率(%)',
-        data: data.value.map(item => item.cpu_percent),
-        fill: false,
-        tension: 0.1,
-        borderColor: 'rgb(75, 192, 192)',
-      }
-    ]
-  }
-})
-
-const memoryData = computed(() => {
-  return {
-    labels: labels.value,
-    datasets: [
-      {
-        label: '内存使用率(%)',
-        data: data.value.map(item => item.mem_used_percent),
-        fill: false,
-        tension: 0.1,
-        borderColor: 'rgb(75, 192, 192)',
-      },
-      {
-        label: '内存使用量(GB)',
-        data: data.value.map(item => formatBytesToGB(item.mem_used)),
-        fill: false,
-        tension: 0.1,
-        borderColor: 'rgb(255, 99, 132)',
-      }
-    ]
-  }
-})
-
-const options = {
-  responsive: true,
-}
-
-const refresh = async () => {
-  loading.value = true
-  const res = await getClientSystemInfo(Number(props.id))
-  data.value = res
-  loading.value = false
-}
-
-onMounted(async () => {
-  refresh()
-})
-
-defineExpose({
-  refresh
-})
+const { data: client } = useRequest(() => getClientDetail(props.id));
 </script>
+
+<template>
+  <div class="bg-base-100 border-b border-base-200 px-4 py-2 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <button class="btn btn-ghost btn-sm btn-square" @click="router.back()" title="返回列表">
+        <Icon icon="mdi:arrow-left" class="w-5 h-5" />
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm font-bold truncate max-w-[120px] sm:max-w-xs">
+              {{ client?.hostname || '加载中...' }}
+            </h1>
+            <div v-if="client" class="badge badge-xs font-normal"
+              :class="client.status === 1 ? 'badge-success text-white' : 'badge-error text-white'">
+              {{ clientStatusMap[client.status] }}
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] text-base-content/50">
+            <span class="flex items-center gap-0.5">
+              <Icon icon="mdi:ip-outline" class="w-2.5 h-2.5" />
+              {{ client?.remote_ip }}
+            </span>
+            <span class="hidden sm:inline opacity-50">•</span>
+            <span class="hidden sm:flex items-center gap-0.5">
+              <Icon :icon="client ? clientOsTypeIconMap[client.os_type] : ''" class="w-2.5 h-2.5" />
+              {{ client?.os_name }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 详细信息气泡 -->
+    <div class="dropdown dropdown-end">
+      <label tabindex="0" class="btn btn-ghost btn-xs gap-1 opacity-70 hover:opacity-100">
+        <Icon icon="mdi:information-outline" class="w-4 h-4" />
+        <span class="hidden sm:inline">详情</span>
+      </label>
+      <div tabindex="0"
+        class="dropdown-content z-[30] card card-compact w-64 p-2 shadow-xl bg-base-100 border border-base-200 mt-2">
+        <div class="card-body">
+          <h3 class="font-bold text-xs mb-2 border-b border-base-200 pb-1">主机详情</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="opacity-50">用户名</span>
+              <span class="font-medium">{{ client?.username }}</span>
+            </div>
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="opacity-50">内核版本</span>
+              <span class="font-medium">{{ client?.kernel_version }}</span>
+            </div>
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="opacity-50">内网 IP</span>
+              <span class="font-medium">{{ client?.local_ip }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

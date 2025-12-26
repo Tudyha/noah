@@ -56,6 +56,22 @@ func (h *ClientController) GetClientPage(ctx *gin.Context) {
 	Success(ctx, res)
 }
 
+func (h *ClientController) GetClient(ctx *gin.Context) {
+	var req request.ClientQueryRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		FailWithMsg(ctx, errcode.ErrInvalidParams, err.Error())
+		return
+	}
+	client, err := h.clientService.GetByID(ctx, GetClientID(ctx))
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+	var res response.ClientResponse
+	copier.Copy(&res, client)
+	Success(ctx, res)
+}
+
 func (h *ClientController) GetClientBind(ctx *gin.Context) {
 	appID := GetAppID(ctx)
 	if appID == 0 {

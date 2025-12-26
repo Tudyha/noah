@@ -1,5 +1,5 @@
 <template>
-  <div ref="terminalEl" />
+  <div ref="terminalEl" class="h-full bg-black rounded-b-box" />
 </template>
 
 <script setup lang="ts">

@@ -14,6 +14,10 @@ export async function deleteClient(id: number): Promise<void> {
   return http.delete(`/v1/client/${id}`);
 }
 
+export async function getClientDetail(id: string): Promise<ClientResponse> {
+  return http.get(`/v1/client/${id}`);
+}
+
 export async function getClientSystemInfo(id: number): Promise<ClientSystemInfoResponse[]> {
   return http.get(`/v1/client/${id}/stat`);
 }
