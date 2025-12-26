@@ -14,7 +14,7 @@ const searchItems: SearchItem[] = [
   {
     type: "input",
     label: "IP地址",
-    key: "username",
+    key: "ip",
     placeholder: "请输入IP地址"
   },
   {
@@ -22,6 +22,7 @@ const searchItems: SearchItem[] = [
     label: "在线状态",
     key: "status",
     width: "w-32",
+    placeholder: "请选择状态",
     default: "1",
     options: [
       {
@@ -54,7 +55,7 @@ const handleSearch = () => {
       <h2 class="text-2xl font-bold text-base-content">主机列表</h2>
       <button
         class="btn btn-primary btn-sm flex-shrink-0 shadow-sm"
-        onclick="bing_dialog.showModal()" aria-label="绑定主机">
+        onclick="bind_dialog.showModal()" aria-label="绑定主机">
         <Icon icon="mdi:link" class="w-4 h-4" /> 绑定主机
       </button>
     </div>
@@ -62,7 +63,7 @@ const handleSearch = () => {
     <Search :items="searchItems" @search="handleSearch" />
 
     <!-- 绑定模态框 -->
-    <dialog id="bing_dialog" class="modal">
+    <dialog id="bind_dialog" class="modal">
       <div class="modal-box">
         <Bind />
         <div class="modal-action">
@@ -94,7 +95,7 @@ const handleSearch = () => {
               <p class="text-sm text-base-content/50 mb-6">绑定主机后，您可以在此处查看和管理主机状态</p>
               <button
                 class="btn btn-primary btn-md shadow-sm"
-                onclick="bing_dialog.showModal()" aria-label="立即绑定主机">
+                onclick="bind_dialog.showModal()" aria-label="立即绑定主机">
                 <Icon icon="mdi:link" /> 立即绑定
               </button>
             </div>
