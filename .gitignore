@@ -7,3 +7,5 @@ web/dist
 web/package-lock.json
 
 .roo
+
+.DS_Store
