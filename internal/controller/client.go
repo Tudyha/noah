@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"noah/internal/service"
 	"noah/internal/session"
@@ -14,6 +16,8 @@ import (
 	"noah/pkg/request"
 	"noah/pkg/response"
 	"noah/pkg/utils"
+	"os"
+	"strings"
 	"time"
 
 	myio "noah/pkg/io"
@@ -195,4 +199,51 @@ func (h *ClientController) OpenPty(ctx *gin.Context) {
 		go io.Copy(tg, src)
 		io.Copy(src, tg)
 	}()
+}
+
+func (h *ClientController) GenerateV2raySubscribeLink(ctx *gin.Context) {
+	var req request.ClientGenerateV2raySubscribeRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		Fail(ctx, errcode.ErrInvalidParams)
+		return
+	}
+	clients, err := h.clientService.GetByIDs(ctx, req.Ids)
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+
+	cfg := config.Get()
+	links := []string{}
+
+	host, port, _ := net.SplitHostPort(cfg.Server.V2ray.Addr)
+
+	for _, client := range clients {
+		addr := fmt.Sprintf(`{"add":"%s","id":"%s","net":"tcp","port":"%s","ps":"%s","scy":"auto","type":"none","v":"2"}`,
+			host, client.SessionID, port, cfg.Server.V2ray.Addr)
+		links = append(links, "vmess://"+base64.StdEncoding.EncodeToString([]byte(addr)))
+	}
+
+	content := strings.Join(links, "\n")
+
+	filename := fmt.Sprintf("v2ray-sub-%s.txt", utils.MD5(content))
+	res := fmt.Sprintf("http://%s/file/%s", cfg.Server.HTTP.Addr, filename)
+	if utils.FileExists("./temp/" + filename) {
+		Success(ctx, res)
+		return
+	}
+
+	file, err := os.Create("./temp/" + filename)
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+	defer file.Close()
+	_, err = file.WriteString(content)
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+
+	Success(ctx, res)
 }

@@ -5,6 +5,7 @@ import axios, {
 } from "axios";
 import router from "@/router";
 import { useUserStore } from "@/stores/auth";
+import { useUIStore } from "@/stores/ui";
 import type { BaseResponse } from "@/types";
 
 const defaultConfig: AxiosRequestConfig = {
@@ -51,17 +52,23 @@ class HttpService {
       (response: AxiosResponse<BaseResponse<unknown>>) => {
         const res = response.data;
         if (res.code !== 0) {
+          const uiStore = useUIStore();
           if (res.code == 401) {
             // 登录过期
             const userStore = useUserStore();
             userStore.logout();
             router.push("/login");
           }
-          return Promise.reject(res.msg || "Error");
+          const errorMsg = res.msg || "Error";
+          uiStore.showToast(errorMsg, "error");
+          return Promise.reject(errorMsg);
         }
         return res.data as any;
       },
       (error) => {
+        const uiStore = useUIStore();
+        const errorMsg = error.response?.data?.msg || error.message || "Network Error";
+        uiStore.showToast(errorMsg, "error");
         return Promise.reject(error);
       }
     );

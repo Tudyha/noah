@@ -99,3 +99,7 @@ func (c *clientService) GetClientStat(ctx context.Context, clientID uint64, star
 func (c *clientService) GetByID(ctx context.Context, clientID uint64) (*model.Client, error) {
 	return c.clientDao.GetByID(ctx, clientID)
 }
+
+func (c *clientService) GetByIDs(ctx context.Context, clientIDs []uint64) ([]*model.Client, error) {
+	return c.clientDao.GetByIDs(ctx, clientIDs)
+}

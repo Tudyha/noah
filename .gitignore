@@ -9,3 +9,5 @@ web/package-lock.json
 .roo
 
 .DS_Store
+
+temp/*

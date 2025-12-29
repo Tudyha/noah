@@ -9,6 +9,7 @@ type User struct {
 
 	Username          string    `gorm:"column:username;type:varchar(64);uniqueIndex;not null;comment:用户名"`
 	Phone             string    `gorm:"column:phone;type:varchar(64);uniqueIndex;not null;comment:手机号"`
+	Email             string    `gorm:"column:email;type:varchar(64);uniqueIndex;comment:邮箱"`
 	Password          string    `gorm:"column:password;type:varchar(255);comment:密码"`
 	Nickname          string    `gorm:"column:nickname;type:varchar(64);comment:昵称"`
 	Avatar            string    `gorm:"column:avatar;type:varchar(255);comment:头像"`

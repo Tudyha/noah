@@ -17,6 +17,7 @@ import (
 	"noah/pkg/errcode"
 	"noah/pkg/request"
 	"noah/pkg/response"
+	"regexp"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -48,6 +49,9 @@ func (s *authService) Login(ctx context.Context, req request.LoginRequest) (resp
 	switch req.LoginType {
 	case enum.LoginTypeCode:
 		user, err = s.loginByCode(ctx, req.Username, req.Code)
+		if err != nil {
+			return res, err
+		}
 	case enum.LoginTypePassword:
 		user, err = s.loginByPassword(ctx, req.Username, req.Password)
 		if err != nil {
@@ -68,9 +72,19 @@ func (s *authService) Login(ctx context.Context, req request.LoginRequest) (resp
 }
 
 // loginByPassword 密码登录
-func (s *authService) loginByPassword(ctx context.Context, username, password string) (*model.User, error) {
-	// 查找用户
-	user, err := s.userDao.FindByUsername(ctx, username)
+func (s *authService) loginByPassword(ctx context.Context, identifier, password string) (*model.User, error) {
+	var user *model.User
+	var err error
+
+	// 尝试根据不同标识符查找用户
+	if isEmail(identifier) {
+		user, err = s.userDao.FindByEmail(ctx, identifier)
+	} else if isPhone(identifier) {
+		user, err = s.userDao.FindByPhone(ctx, identifier)
+	} else {
+		user, err = s.userDao.FindByUsername(ctx, identifier)
+	}
+
 	if err != nil {
 		return nil, errcode.ErrLoginFailed
 	}
@@ -86,6 +100,14 @@ func (s *authService) loginByPassword(ctx context.Context, username, password st
 		return nil, errcode.ErrLoginFailed
 	}
 	return user, nil
+}
+
+func isEmail(s string) bool {
+	return regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`).MatchString(s)
+}
+
+func isPhone(s string) bool {
+	return regexp.MustCompile(`^1[3-9]\d{9}$`).MatchString(s)
 }
 
 // loginByCode 验证码登录
@@ -110,6 +132,62 @@ func (s *authService) loginByCode(ctx context.Context, phone, code string) (*mod
 		return nil, err
 	}
 	return user, nil
+}
+
+// Register 注册
+func (s *authService) Register(ctx context.Context, req request.RegisterRequest) error {
+	// 1. 验证码校验
+	if err := s.smsService.VerifyCode(ctx, enum.SmsCodeTypeEmail, req.Email, req.Code); err != nil {
+		return errcode.ErrVerifyCode
+	}
+
+	// 2. 检查用户是否已存在
+	_, err := s.userDao.FindByEmail(ctx, req.Email)
+	if err == nil {
+		return errcode.ErrUserExists
+	}
+	_, err = s.userDao.FindByUsername(ctx, req.Username)
+	if err == nil {
+		return errcode.ErrUserExists
+	}
+
+	// 3. 密码加密
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return errcode.ErrInternalServer
+	}
+
+	// 4. 创建用户
+	user := &model.User{
+		Username: req.Username,
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		Status:   1,
+		Avatar:   constant.DefaultAvatar,
+	}
+
+	return s.userService.Create(ctx, user)
+}
+
+// SendCode 发送验证码
+func (s *authService) SendCode(ctx context.Context, req request.SendCodeRequest) error {
+	// 这里可以增加一些业务逻辑，比如：
+	// 如果是注册验证码，检查用户是否已存在
+	if req.Type == enum.SmsCodeTypeRegister || req.Type == enum.SmsCodeTypeEmail {
+		var exists bool
+		if isEmail(req.Target) {
+			_, err := s.userDao.FindByEmail(ctx, req.Target)
+			exists = err == nil
+		} else {
+			_, err := s.userDao.FindByPhone(ctx, req.Target)
+			exists = err == nil
+		}
+		if exists {
+			return errcode.ErrUserExists
+		}
+	}
+
+	return s.smsService.SendCode(ctx, req.Type, req.Target)
 }
 
 // checkUserStatus 检查用户状态

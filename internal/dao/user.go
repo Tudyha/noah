@@ -44,3 +44,23 @@ func (d *userDao) FindByUsername(ctx context.Context, username string) (*model.U
 	}
 	return &user, nil
 }
+
+// FindByPhone 根据手机号查找用户
+func (d *userDao) FindByPhone(ctx context.Context, phone string) (*model.User, error) {
+	var user model.User
+	err := d.db.Where("phone = ?", phone).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// FindByEmail 根据邮箱查找用户
+func (d *userDao) FindByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user model.User
+	err := d.db.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

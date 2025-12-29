@@ -21,3 +21,7 @@ export async function getClientDetail(id: string): Promise<ClientResponse> {
 export async function getClientSystemInfo(id: number): Promise<ClientSystemInfoResponse[]> {
   return http.get(`/v1/client/${id}/stat`);
 }
+
+export async function getV2raySubscribe(ids: number[]): Promise<string> {
+  return http.post(`/v1/client/v2ray/sub`, {ids: ids});
+}

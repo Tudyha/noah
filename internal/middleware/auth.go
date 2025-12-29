@@ -9,13 +9,12 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/samber/lo"
 )
 
 func Auth(authService service.AuthService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		uri := ctx.Request.RequestURI
-		if lo.Contains(constant.White_Api_List, uri) {
+		if isWhiteList(uri) {
 			ctx.Next()
 			return
 		}
@@ -56,4 +55,15 @@ func getToken(ctx *gin.Context) string {
 		return ""
 	}
 	return parts[1]
+}
+
+func isWhiteList(path string) bool {
+	for _, whitePath := range constant.White_Api_List {
+		// 完全匹配或前缀匹配
+		if whitePath == path || strings.HasSuffix(whitePath, "/*") &&
+			strings.HasPrefix(path, strings.TrimSuffix(whitePath, "/*")) {
+			return true
+		}
+	}
+	return false
 }

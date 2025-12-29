@@ -27,7 +27,6 @@ const router = createRouter({
 // Injection Progress
 router.beforeEach((to, _, next) => {
   NProgress.start(); // 开启进度条
-  console.log("to", to);
   const requireAuth = to.meta.requireAuth ?? true;
   const userStore = useUserStore();
   if (to.name === "Login") {

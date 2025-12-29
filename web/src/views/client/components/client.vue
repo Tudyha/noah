@@ -6,9 +6,10 @@ import { deleteClient as deleteClientApi} from '@/api/client'
 
 const props = defineProps<{
   item: ClientResponse;
+  selected?: boolean;
 }>()
 
-const emit = defineEmits(['refresh']);
+const emit = defineEmits(['refresh', 'toggle-select']);
 
 const rowInfo = computed(() => [
   {
@@ -75,7 +76,15 @@ const handleAction = (type: string) => {
 </script>
 
 <template>
-  <div class="card relative bg-linear-to-br from-base-100 via-base-100 to-base-200/50 shadow-sm hover:shadow-xl transition-all duration-300 border border-base-200 group hover:-translate-y-1">
+  <div class="card relative bg-linear-to-br from-base-100 via-base-100 to-base-200/50 shadow-sm hover:shadow-xl transition-all duration-300 border border-base-200 group hover:-translate-y-1"
+    :class="{ 'ring-2 ring-primary border-transparent': selected }">
+    <!-- 多选复选框 -->
+    <div class="absolute top-2 left-2 z-[30] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+      :class="{ 'opacity-100': selected }">
+      <input type="checkbox" class="checkbox checkbox-success checkbox-sm bg-base-100/50 backdrop-blur-sm"
+        :checked="selected" @change="emit('toggle-select')" @click.stop />
+    </div>
+
     <!-- 装饰性背景光斑容器（独立裁剪） -->
     <div class="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
       <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500"></div>
@@ -144,7 +153,7 @@ const handleAction = (type: string) => {
     </div>
 
     <!-- 底部操作栏 -->
-    <div class="p-3 pt-0 mt-auto flex gap-2 relative z-20">
+    <div class="p-3 pt-0 mt-auto flex gap-2 relative">
       <router-link
         :to="{ name: 'ClientConsole', params: { id: item.id } }"
         class="btn btn-primary btn-sm flex-1 gap-2 font-normal shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-200"

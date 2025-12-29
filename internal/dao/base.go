@@ -47,6 +47,8 @@ type UserDao interface {
 	Update(ctx context.Context, user *model.User) error
 	FindByID(ctx context.Context, id uint64) (*model.User, error)
 	FindByUsername(ctx context.Context, username string) (*model.User, error)
+	FindByPhone(ctx context.Context, phone string) (*model.User, error)
+	FindByEmail(ctx context.Context, email string) (*model.User, error)
 }
 
 type WorkSpaceDao interface {
@@ -68,6 +70,7 @@ type ClientDao interface {
 	SaveClientStat(ctx context.Context, stat *model.ClientStat) error
 	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) (any, error)
 	GetBySessionID(ctx context.Context, sessionID string) (*model.Client, error)
+	GetByIDs(ctx context.Context, clientIDs []uint64) ([]*model.Client, error)
 }
 
 func Paginate(pageQuery request.PageQuery) func(db *gorm.DB) *gorm.DB {

@@ -13,4 +13,5 @@ func RegisterClientRoutes(router *gin.RouterGroup, clientController *controller.
 	router.GET("/:client_id/stat", clientController.GetClientStat)
 	router.GET("/:client_id/pty", clientController.OpenPty)
 	router.GET("/:client_id", clientController.GetClient)
+	router.POST("/v2ray/sub", clientController.GenerateV2raySubscribeLink)
 }

@@ -27,4 +27,6 @@ var (
 	ErrUserNotFound       = &AppError{Code: USER_ERROR + 1, Msg: "用户未找到"}
 	ErrUserDisabled       = &AppError{Code: USER_ERROR + 2, Msg: "用户已被禁用"}
 	ErrUserNotSetPassword = &AppError{Code: USER_ERROR + 3, Msg: "用户未设置密码"}
+	ErrUserExists         = &AppError{Code: USER_ERROR + 4, Msg: "用户已存在"}
+	ErrVerifyCode         = &AppError{Code: USER_ERROR + 5, Msg: "验证码错误"}
 )

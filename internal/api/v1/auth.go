@@ -9,4 +9,6 @@ import (
 // RegisterAuthRoutes 注册认证相关路由
 func RegisterAuthRoutes(router *gin.RouterGroup, authController *controller.AuthController) {
 	router.POST("/login", authController.Login)
+	router.POST("/register", authController.Register)
+	router.POST("/send_code", authController.SendCode)
 }

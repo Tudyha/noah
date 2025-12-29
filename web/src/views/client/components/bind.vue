@@ -2,22 +2,14 @@
 import { getClientBind } from '@/api/client'
 import type { ClientBindResponse } from '@/types'
 import { clientOsTypeIconMap } from '@/map'
-import { useClipboard } from '@vueuse/core'
 
 const data = ref<ClientBindResponse>()
-const { copy, copied } = useClipboard()
 
 onMounted(() => {
     getClientBind().then(res => {
         data.value = res
     })
 })
-
-const handleCopy = (text?: string) => {
-    if (text) {
-        copy(text)
-    }
-}
 
 </script>
 
@@ -67,14 +59,7 @@ const handleCopy = (text?: string) => {
                         <Icon :icon="clientOsTypeIconMap[2]" class="w-5 h-5 text-base-content" />
                         macOS 绑定命令
                     </span>
-                    <button
-                        class="btn btn-xs gap-1 transition-all duration-200"
-                        :class="copied ? 'btn-success text-white' : 'btn-ghost hover:bg-base-200'"
-                        @click="handleCopy(data?.mac_bind)"
-                    >
-                        <Icon :icon="copied ? 'mdi:check' : 'mdi:content-copy'" class="w-3.5 h-3.5" />
-                        {{ copied ? '已复制' : '复制' }}
-                    </button>
+                    <CopyButton class="btn-xs" :text="data?.mac_bind" />
                 </div>
                 <div class="mockup-code">
                     <pre class="overflow-x-auto"><code class="text-xs">{{ data?.mac_bind }}</code></pre>

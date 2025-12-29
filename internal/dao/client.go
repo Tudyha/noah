@@ -57,6 +57,11 @@ func (c *clientDao) GetByID(ctx context.Context, clientID uint64) (*model.Client
 	return &client, c.db.WithContext(ctx).First(&client, clientID).Error
 }
 
+func (c *clientDao) GetByIDs(ctx context.Context, clientIDs []uint64) ([]*model.Client, error) {
+	var clients []*model.Client
+	return clients, c.db.WithContext(ctx).Model(&model.Client{}).Where("id in ?", clientIDs).Find(&clients).Error
+}
+
 func (c *clientDao) SaveClientStat(ctx context.Context, stat *model.ClientStat) error {
 	return c.db.WithContext(ctx).Model(&model.ClientStat{}).Save(stat).Error
 }

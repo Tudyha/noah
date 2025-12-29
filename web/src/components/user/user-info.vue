@@ -12,15 +12,17 @@
         </div>
       </div>
       <div tabindex="-1">
-        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-28">
+        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-35">
           <li>
-            <RouterLink :to="{ name: 'Dashboard' }">进入工作台</RouterLink>
+            <button @click="router.push({name: 'Dashboard'})">
+              <Icon icon="mdi:view-dashboard" />
+              进入工作台
+            </button>
           </li>
           <li>
-            <a href="#">Settings</a>
-          </li>
-          <li>
-            <a href="#">Logout</a>
+            <button @click="logout">
+              <Icon icon="mdi:logout"  />
+              退出登录</button>
           </li>
         </ul>
       </div>
@@ -34,6 +36,11 @@ const userStore = useUserStore()
 const router = useRouter()
 
 const login = () => {
+  router.push({ name: "Login" })
+}
+
+const logout = () => {
+  userStore.logout()
   router.push({ name: "Login" })
 }
 </script>

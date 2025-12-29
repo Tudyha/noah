@@ -30,6 +30,8 @@ type UserService interface {
 // AuthService 认证服务接口
 type AuthService interface {
 	Login(ctx context.Context, req request.LoginRequest) (response.LoginResponse, error)
+	Register(ctx context.Context, req request.RegisterRequest) error
+	SendCode(ctx context.Context, req request.SendCodeRequest) error
 	Logout(ctx context.Context, token string) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 	ValidateToken(ctx context.Context, token string) (uint64, error)
@@ -53,6 +55,7 @@ type ClientService interface {
 	SaveClientStat(ctx context.Context, sessionID string, stat *model.ClientStat) error
 	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) ([]*response.ClientStatResponse, error)
 	GetByID(ctx context.Context, clientID uint64) (*model.Client, error)
+	GetByIDs(ctx context.Context, clientIDs []uint64) ([]*model.Client, error)
 }
 
 func Init() error {

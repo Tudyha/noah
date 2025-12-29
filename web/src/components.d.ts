@@ -14,6 +14,7 @@ declare module 'vue' {
     Cal: typeof import('./components/common/Calendar.vue')['default']
     Calendar: typeof import('./components/common/Calendar.vue')['default']
     CommonTable: typeof import('./components/common/Table.vue')['default']
+    CopyButton: typeof import('./components/common/CopyButton.vue')['default']
     Line: typeof import('./components/chart/line.vue')['default']
     Locales: typeof import('./components/locales/index.vue')['default']
     Logo: typeof import('./components/logo/index.vue')['default']
@@ -26,6 +27,7 @@ declare module 'vue' {
     TableContent: typeof import('./components/common/TableContent.vue')['default']
     Terminal: typeof import('./components/terminal/index.vue')['default']
     Theme: typeof import('./components/theme/index.vue')['default']
+    Toast: typeof import('./components/common/Toast.vue')['default']
     UserInfo: typeof import('./components/user/user-info.vue')['default']
   }
 }

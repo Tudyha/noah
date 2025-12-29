@@ -36,6 +36,53 @@ func (h *AuthController) Login(ctx *gin.Context) {
 	res, err := h.authService.Login(ctx, req)
 	if err != nil {
 		Fail(ctx, err)
+		return
 	}
 	Success(ctx, res)
+}
+
+// Register 用户注册
+// @Summary 用户注册
+// @Description 支持邮箱注册
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param registerRequest body request.RegisterRequest true "注册请求"
+// @Success 200 {object} response.Response "成功响应"
+// @Router /auth/register [post]
+func (h *AuthController) Register(ctx *gin.Context) {
+	var req request.RegisterRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		FailWithMsg(ctx, errcode.ErrInvalidParams, err.Error())
+		return
+	}
+	err := h.authService.Register(ctx, req)
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+	Success(ctx, nil)
+}
+
+// SendCode 发送验证码
+// @Summary 发送验证码
+// @Description 支持手机号、邮箱发送验证码
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param sendCodeRequest body request.SendCodeRequest true "发送验证码请求"
+// @Success 200 {object} response.Response "成功响应"
+// @Router /auth/send_code [post]
+func (h *AuthController) SendCode(ctx *gin.Context) {
+	var req request.SendCodeRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		FailWithMsg(ctx, errcode.ErrInvalidParams, err.Error())
+		return
+	}
+	err := h.authService.SendCode(ctx, req)
+	if err != nil {
+		Fail(ctx, err)
+		return
+	}
+	Success(ctx, nil)
 }
