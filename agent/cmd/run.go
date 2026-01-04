@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	clientapp "noah/client/app"
+	agentapp "noah/agent/app"
 
 	"noah/pkg/app"
 	"noah/pkg/config"
@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	programName = "noah-cli"
+	programName = "noah-agent"
 	pidFile     = ".pid"
 	logFile     = ".log"
 	cntxt       = &daemon.Context{
@@ -29,6 +29,9 @@ var (
 
 	daemonFlag   bool
 	configBase64 string
+
+	version     = 1        // 版本号
+	versionName = "v1.0.0" // 版本名称
 )
 
 var runCmd = &cobra.Command{
@@ -50,7 +53,7 @@ func init() {
 }
 
 func run() {
-	var cfg config.ClientConfig
+	var cfg config.AgentConfig
 	b, err := base64.StdEncoding.DecodeString(configBase64)
 	if err != nil {
 		panic(err)
@@ -58,7 +61,8 @@ func run() {
 	if err := json.Unmarshal(b, &cfg); err != nil {
 		panic(err)
 	}
-	cli := clientapp.NewClient(&cfg)
+	cfg.Version = uint32(version)
+	cli := agentapp.NewAgent(&cfg)
 
 	a := app.NewApp(cli)
 	a.Run()

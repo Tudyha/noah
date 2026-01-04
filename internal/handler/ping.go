@@ -12,12 +12,12 @@ import (
 )
 
 type pingHandler struct {
-	clientService service.ClientService
+	agentService service.AgentService
 }
 
 func NewPingHandler() conn.MessageHandler {
 	return &pingHandler{
-		clientService: service.GetClientService(),
+		agentService: service.GetAgentService(),
 	}
 }
 
@@ -27,11 +27,11 @@ func (p *pingHandler) Handle(ctx conn.Context) error {
 		return err
 	}
 	logger.Info("receive ping msg", "data", ping.String())
-	var clientStat model.ClientStat
-	copier.CopyWithOption(&clientStat, &ping, copier.Option{IgnoreEmpty: true, DeepCopy: true})
+	var agentStat model.AgentMetric
+	copier.CopyWithOption(&agentStat, &ping, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 	du, _ := json.Marshal(ping.DiskUsage)
-	clientStat.DiskUsage = string(du)
-	p.clientService.SaveClientStat(ctx, getSessionID(ctx), &clientStat)
+	agentStat.DiskUsage = string(du)
+	p.agentService.SaveAgentMetric(ctx, getSessionID(ctx), &agentStat)
 	return nil
 }
 

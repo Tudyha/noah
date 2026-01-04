@@ -19,19 +19,19 @@ import (
 	"github.com/jinzhu/copier"
 )
 
-type loginHandler struct {
-	clientService service.ClientService
-	pub           *gochannel.GoChannel
+type authHandler struct {
+	agentService service.AgentService
+	pub          *gochannel.GoChannel
 }
 
-func NewLoginHandler() conn.MessageHandler {
-	return &loginHandler{
-		clientService: service.GetClientService(),
-		pub:           mq.GetPubSub(),
+func NewAuthHandler() conn.MessageHandler {
+	return &authHandler{
+		agentService: service.GetAgentService(),
+		pub:          mq.GetPubSub(),
 	}
 }
 
-func (h *loginHandler) Handle(ctx conn.Context) (err error) {
+func (h *authHandler) Handle(ctx conn.Context) (err error) {
 	defer func() {
 		if err != nil {
 			logger.Info("login fail, close conn", "err", err)
@@ -39,42 +39,42 @@ func (h *loginHandler) Handle(ctx conn.Context) (err error) {
 		}
 	}()
 
-	var loginReq packet.Login
+	var loginReq packet.Auth
 	if err := ctx.Unmarshal(&loginReq); err != nil {
 		return err
 	}
-	if err := h.clientService.VerifySign(ctx, loginReq.AppId, loginReq.Sign); err != nil {
+	if err := h.agentService.VerifySign(ctx, loginReq.AppId, loginReq.Sign); err != nil {
 		logger.Info("校验签名失败，断开连接", "appID", loginReq.AppId, "sign", loginReq.Sign)
 		return err
 	}
 
-	var client model.Client
+	var agent model.Agent
 
-	if err := copier.Copy(&client, loginReq.ClientInfo); err != nil {
+	if err := copier.Copy(&agent, loginReq.AgentInfo); err != nil {
 		logger.Info("复制数据失败", "err", err)
 		return err
 	}
-	client.DeviceID = loginReq.DeviceId
-	client.AppID = loginReq.AppId
-	client.OsType = enum.ClientOsNameToOsTypeMap[client.OsName]
+	agent.DeviceID = loginReq.DeviceId
+	agent.AppID = loginReq.AppId
+	agent.OsType = enum.AgentOsNameToOsTypeMap[agent.OsName]
 
 	remoteAddr := ctx.GetConn().RemoteAddr()
 	remoteIP, port, _ := net.SplitHostPort(remoteAddr.String())
-	client.RemoteIP = remoteIP
-	client.Port = port
-	client.RemoteIpCountry = ip.GetIPCountry(client.RemoteIP)
-	client.SessionID = getSessionID(ctx)
+	agent.RemoteIP = remoteIP
+	agent.Port = port
+	agent.RemoteIpCountry = ip.GetIPCountry(agent.RemoteIP)
+	agent.SessionID = getSessionID(ctx)
 
-	if err := h.clientService.Connect(ctx, &client); err != nil {
+	if err := h.agentService.Connect(ctx, &agent); err != nil {
 		logger.Info("创建客户端失败", "err", err)
 		return err
 	}
 
-	h.pub.Publish(constant.MQ_TOPIC_CLIENT_ONLINE, message.NewMessage(watermill.NewUUID(), message.Payload(client.SessionID)))
+	h.pub.Publish(constant.MQ_TOPIC_CLIENT_ONLINE, message.NewMessage(watermill.NewUUID(), message.Payload(agent.SessionID)))
 
 	return nil
 }
 
-func (h *loginHandler) MessageType() packet.MessageType {
+func (h *authHandler) MessageType() packet.MessageType {
 	return packet.MessageType_Login
 }

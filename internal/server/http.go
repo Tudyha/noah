@@ -47,7 +47,6 @@ func NewHTTPServer() app.Server {
 func (h *httpServer) Start(ctx context.Context) error {
 	logger.Info("http server start", "addr", h.s.Addr)
 	if err := h.s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error("HTTP服务启动失败", "err", err)
 		return err
 	}
 	return nil

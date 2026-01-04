@@ -35,9 +35,9 @@ func Init() error {
 
 	// 注册消息处理器
 	messageHandlers = make(map[packet.MessageType]conn.MessageHandler)
-	registerHandler := handler.NewLoginHandler()
+	authHandler := handler.NewAuthHandler()
 	pingHandler := handler.NewPingHandler()
-	messageHandlers[registerHandler.MessageType()] = registerHandler
+	messageHandlers[authHandler.MessageType()] = authHandler
 	messageHandlers[pingHandler.MessageType()] = pingHandler
 
 	sessionManagerInstance = sm

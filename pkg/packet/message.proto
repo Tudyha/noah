@@ -12,15 +12,15 @@ message Message {
 }
 
 // 用于客户端建立连接后的身份验证
-message Login {
+message Auth {
   string device_id = 1; // 客户端唯一标识符
   uint64 app_id = 2; // 应用ID
   string sign = 3; // 签名
   
-  ClientInfo client_info = 4; // 客户端信息
+  AgentInfo agent_info = 4; // 客户端信息
 }
 
-message ClientInfo {
+message AgentInfo {
   string hostname = 1; // 主机名
   string username = 2; // 用户名
   string gid = 3; // 组ID
@@ -42,8 +42,8 @@ message ClientInfo {
   uint64 disk_total = 19; // 磁盘总量
 }
 
-// 登录响应
-message LoginAck {
+// 身份验证响应
+message AuthAck {
   int32 code = 1; // 响应码
   string msg = 2; // 响应信息
 }
@@ -56,12 +56,12 @@ message Ping {
   double mem_used_percent = 4;
   uint64 mem_available = 5;
   double cpu_percent = 6;
-  repeated DiskUsageStat disk_usage = 7;
+  repeated DiskUsage disk_usage = 7;
   double net_bytes_sent = 8;
   double net_bytes_recv = 9;
 }
 
-message DiskUsageStat {
+message DiskUsage {
   string path = 1;
   string fstype = 2;
   uint64 total = 3;

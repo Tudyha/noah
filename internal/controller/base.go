@@ -15,16 +15,16 @@ import (
 var (
 	once sync.Once
 
-	authController   *AuthController
-	userController   *UserController
-	clientController *ClientController
+	authController  *AuthController
+	userController  *UserController
+	agentController *AgentController
 )
 
 func Init() error {
 	once.Do(func() {
 		authController = newAuthController()
 		userController = newUserController()
-		clientController = newClientController()
+		agentController = newAgentController()
 	})
 	return nil
 }
@@ -37,8 +37,8 @@ func GetUserController() *UserController {
 	return userController
 }
 
-func GetClientController() *ClientController {
-	return clientController
+func GetAgentController() *AgentController {
+	return agentController
 }
 
 func Success(ctx *gin.Context, data any) {
@@ -90,14 +90,14 @@ func GetAppID(ctx *gin.Context) uint64 {
 	return id
 }
 
-func GetClientID(ctx *gin.Context) uint64 {
-	v, ok := ctx.Params.Get("client_id")
+func GetAgentID(ctx *gin.Context) uint64 {
+	v, ok := ctx.Params.Get("agent_id")
 	if !ok {
 		return 0
 	}
-	clientID, err := utils.StringToUint64(v)
+	agentID, err := utils.StringToUint64(v)
 	if err != nil {
 		return 0
 	}
-	return clientID
+	return agentID
 }

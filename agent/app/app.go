@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"noah/client/app/handler"
+	"noah/agent/app/handler"
 	pkgApp "noah/pkg/app"
 	"noah/pkg/config"
 	"noah/pkg/conn"
@@ -18,8 +18,8 @@ import (
 	"github.com/xtaci/smux/v2"
 )
 
-type Client struct {
-	cfg *config.ClientConfig
+type Agent struct {
+	cfg *config.AgentConfig
 
 	connected atomic.Bool
 
@@ -37,7 +37,7 @@ type Client struct {
 	messageHandlers map[packet.MessageType]conn.MessageHandler
 }
 
-func NewClient(cfg *config.ClientConfig) pkgApp.Server {
+func NewAgent(cfg *config.AgentConfig) pkgApp.Server {
 	// Set defaults
 	if cfg.ReconnectInterval <= 0 {
 		cfg.ReconnectInterval = 5
@@ -51,7 +51,7 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	c := &Client{
+	c := &Agent{
 		cfg:             cfg,
 		ctx:             ctx,
 		cancel:          cancel,
@@ -68,7 +68,7 @@ func NewClient(cfg *config.ClientConfig) pkgApp.Server {
 	return c
 }
 
-func (c *Client) Start(ctx context.Context) error {
+func (c *Agent) Start(ctx context.Context) error {
 	log.Println("Starting client...")
 
 	// Initial connection attempt
@@ -83,7 +83,7 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 }
 
-func (c *Client) reconnectLoop() {
+func (c *Agent) reconnectLoop() {
 	backoff := time.Duration(c.cfg.ReconnectInterval) * time.Second
 	maxBackoff := 60 * time.Second
 
@@ -116,7 +116,7 @@ func (c *Client) reconnectLoop() {
 	}
 }
 
-func (c *Client) connect() error {
+func (c *Agent) connect() error {
 	dialer := net.Dialer{
 		Timeout: time.Duration(c.cfg.DailTimeout) * time.Second,
 	}
@@ -131,7 +131,7 @@ func (c *Client) connect() error {
 	return nil
 }
 
-func (c *Client) handleConn(netConn net.Conn) {
+func (c *Agent) handleConn(netConn net.Conn) {
 	co := conn.NewConn(netConn)
 
 	// Local cleanup logic
@@ -153,12 +153,12 @@ func (c *Client) handleConn(netConn net.Conn) {
 		}
 	}()
 
-	loginReq := &packet.Login{
+	loginReq := &packet.Auth{
 		AppId:    c.cfg.AppId,
 		Sign:     utils.Sign(c.cfg.AppId, c.cfg.AppSecret),
 		DeviceId: utils.GetMacAddress(),
 	}
-	loginReq.ClientInfo = c.infoHandler.GetInfo()
+	loginReq.AgentInfo = c.infoHandler.GetInfo()
 
 	co.SetWriteDeadline(time.Now().Add(5 * time.Second))
 	if err := co.WriteProtoMessage(packet.MessageType_Login, loginReq); err != nil {
@@ -189,7 +189,7 @@ func (c *Client) handleConn(netConn net.Conn) {
 		return
 	}
 
-	// 4. Critical Section: Update Client State
+	// 4. Critical Section: Update Agent State
 	c.mu.Lock()
 	c.session = sess
 	c.pingStream = ping
@@ -203,7 +203,7 @@ func (c *Client) handleConn(netConn net.Conn) {
 	go c.acceptStreamLoop(sess)
 }
 
-func (c *Client) heartbeatWorker(s *smux.Stream) {
+func (c *Agent) heartbeatWorker(s *smux.Stream) {
 	defer c.wg.Done()
 	defer c.markDisconnected()
 
@@ -225,7 +225,7 @@ func (c *Client) heartbeatWorker(s *smux.Stream) {
 	}
 }
 
-func (c *Client) acceptStreamLoop(sess *smux.Session) {
+func (c *Agent) acceptStreamLoop(sess *smux.Session) {
 	defer c.wg.Done()
 	defer c.markDisconnected()
 
@@ -238,7 +238,7 @@ func (c *Client) acceptStreamLoop(sess *smux.Session) {
 	}
 }
 
-func (c *Client) handleStream(netConn net.Conn) {
+func (c *Agent) handleStream(netConn net.Conn) {
 	co := conn.NewConn(netConn)
 
 	for {
@@ -268,9 +268,9 @@ func (c *Client) handleStream(netConn net.Conn) {
 	}
 }
 
-func (c *Client) markDisconnected() {
+func (c *Agent) markDisconnected() {
 	if c.connected.Swap(false) {
-		log.Println("Client disconnected, cleaning up...")
+		log.Println("Agent disconnected, cleaning up...")
 		c.mu.Lock()
 		if c.session != nil {
 			c.session.Close()
@@ -279,7 +279,7 @@ func (c *Client) markDisconnected() {
 	}
 }
 
-func (c *Client) Stop(ctx context.Context) error {
+func (c *Agent) Stop(ctx context.Context) error {
 	log.Println("Stopping client...")
 	c.cancel() // Signal all workers to stop
 
@@ -298,13 +298,13 @@ func (c *Client) Stop(ctx context.Context) error {
 
 	select {
 	case <-done:
-		log.Println("Client stopped gracefully")
+		log.Println("Agent stopped gracefully")
 	case <-ctx.Done():
 		log.Println("Stop timed out, forcing exit")
 	}
 	return nil
 }
 
-func (c *Client) String() string {
-	return fmt.Sprintf("NoahClient[%d]", c.cfg.AppId)
+func (c *Agent) String() string {
+	return fmt.Sprintf("NoahAgent[%d]", c.cfg.AppId)
 }

@@ -28,8 +28,8 @@ var (
 type InfoHandler struct {
 }
 
-func (h *InfoHandler) GetInfo() *packet.ClientInfo {
-	info := &packet.ClientInfo{}
+func (h *InfoHandler) GetInfo() *packet.AgentInfo {
+	info := &packet.AgentInfo{}
 	err := h.getBasicInfo(info)
 	if err != nil {
 		log.Println("获取基本信息失败:", err)
@@ -62,7 +62,7 @@ func (h *InfoHandler) GetInfo() *packet.ClientInfo {
 	return info
 }
 
-func (h *InfoHandler) getBasicInfo(info *packet.ClientInfo) (err error) {
+func (h *InfoHandler) getBasicInfo(info *packet.AgentInfo) (err error) {
 	// 获取主机名
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -87,7 +87,7 @@ func (h *InfoHandler) getBasicInfo(info *packet.ClientInfo) (err error) {
 	return
 }
 
-func (h *InfoHandler) getHostInfo(info *packet.ClientInfo) (err error) {
+func (h *InfoHandler) getHostInfo(info *packet.AgentInfo) (err error) {
 	hostInfo, err := host.Info()
 	if err != nil {
 		return
@@ -111,7 +111,7 @@ func (h *InfoHandler) getHostInfo(info *packet.ClientInfo) (err error) {
 	return
 }
 
-func (h *InfoHandler) getCPUInfo(info *packet.ClientInfo) (err error) {
+func (h *InfoHandler) getCPUInfo(info *packet.AgentInfo) (err error) {
 	// CPU数量
 	info.CpuNum = int32(runtime.NumCPU())
 
@@ -132,7 +132,7 @@ func (h *InfoHandler) getCPUInfo(info *packet.ClientInfo) (err error) {
 	return
 }
 
-func (h *InfoHandler) getMemoryInfo(info *packet.ClientInfo) (err error) {
+func (h *InfoHandler) getMemoryInfo(info *packet.AgentInfo) (err error) {
 	memInfo, err := mem.VirtualMemory()
 	if err != nil {
 		return
@@ -142,7 +142,7 @@ func (h *InfoHandler) getMemoryInfo(info *packet.ClientInfo) (err error) {
 	return
 }
 
-func (h *InfoHandler) getDiskInfo(info *packet.ClientInfo) (err error) {
+func (h *InfoHandler) getDiskInfo(info *packet.AgentInfo) (err error) {
 	// 获取所有分区
 	partitions, err := getDiskUsage()
 	if err != nil {

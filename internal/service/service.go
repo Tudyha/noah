@@ -14,11 +14,11 @@ import (
 var (
 	once sync.Once
 
-	userServiceInstance   UserService
-	authServiceInstance   AuthService
-	smsServiceInstance    SmsService
-	clientServiceInstance ClientService
-	workServiceInstance   WorkService
+	userServiceInstance  UserService
+	authServiceInstance  AuthService
+	smsServiceInstance   SmsService
+	agentServiceInstance AgentService
+	workServiceInstance  WorkService
 )
 
 // UserService 用户服务接口
@@ -46,16 +46,16 @@ type WorkService interface {
 	GetAppByAppID(ctx context.Context, appID uint64) (*model.WorkSpaceApp, error)
 }
 
-type ClientService interface {
+type AgentService interface {
 	VerifySign(ctx context.Context, appID uint64, sign string) error
-	Connect(ctx context.Context, client *model.Client) error
-	GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) (*response.Page[response.ClientResponse], error)
-	Disconnect(ctx context.Context, clientID uint64) error
-	Delete(ctx context.Context, clientID uint64) (*model.Client, error)
-	SaveClientStat(ctx context.Context, sessionID string, stat *model.ClientStat) error
-	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) ([]*response.ClientStatResponse, error)
-	GetByID(ctx context.Context, clientID uint64) (*model.Client, error)
-	GetByIDs(ctx context.Context, clientIDs []uint64) ([]*model.Client, error)
+	Connect(ctx context.Context, agent *model.Agent) error
+	GetPage(ctx context.Context, appID uint64, query request.AgentQueryRequest) (*response.Page[response.AgentResponse], error)
+	Disconnect(ctx context.Context, agentID uint64) error
+	Delete(ctx context.Context, agentID uint64) (*model.Agent, error)
+	SaveAgentMetric(ctx context.Context, sessionID string, agentMetric *model.AgentMetric) error
+	GetAgentMetric(ctx context.Context, agentID uint64, start time.Time, end time.Time) ([]*response.AgentMetricResponse, error)
+	GetByID(ctx context.Context, agentID uint64) (*model.Agent, error)
+	GetByIDs(ctx context.Context, agentIDs []uint64) ([]*model.Agent, error)
 }
 
 func Init() error {
@@ -64,7 +64,7 @@ func Init() error {
 		smsServiceInstance = newSmsService()
 		userServiceInstance = newUserService(dao.GetUserDao(), dao.GetWorkSpaceDao())
 		authServiceInstance = newAuthService(dao.GetUserDao(), smsServiceInstance, userServiceInstance)
-		clientServiceInstance = newClientService()
+		agentServiceInstance = newAgentService()
 		workServiceInstance = newWorkService()
 	})
 	return nil
@@ -78,8 +78,8 @@ func GetAuthService() AuthService {
 	return authServiceInstance
 }
 
-func GetClientService() ClientService {
-	return clientServiceInstance
+func GetAgentService() AgentService {
+	return agentServiceInstance
 }
 
 func GetWorkService() WorkService {

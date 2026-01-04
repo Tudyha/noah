@@ -17,7 +17,7 @@ var (
 
 	userDaoInstance      UserDao
 	workSpaceDaoInstance WorkSpaceDao
-	clientDaoInstance    ClientDao
+	agentDaoInstance     AgentDao
 )
 
 func Init() error {
@@ -25,7 +25,7 @@ func Init() error {
 	once.Do(func() {
 		userDaoInstance = newUserDao(db)
 		workSpaceDaoInstance = newWorkSpaceDao(db)
-		clientDaoInstance = newClientDao(db)
+		agentDaoInstance = newAgentDao(db)
 	})
 	return nil
 }
@@ -38,8 +38,8 @@ func GetWorkSpaceDao() WorkSpaceDao {
 	return workSpaceDaoInstance
 }
 
-func GetClientDao() ClientDao {
-	return clientDaoInstance
+func GetAgentDao() AgentDao {
+	return agentDaoInstance
 }
 
 type UserDao interface {
@@ -60,17 +60,17 @@ type WorkSpaceDao interface {
 	GetAppByAppID(ctx context.Context, appID uint64) (*model.WorkSpaceApp, error)
 }
 
-type ClientDao interface {
-	Create(ctx context.Context, client *model.Client) error
-	GetByDeviceID(ctx context.Context, deviceID string) (*model.Client, error)
-	GetPage(ctx context.Context, appID uint64, query request.ClientQueryRequest) ([]*model.Client, int64, error)
-	UpdateStatus(ctx context.Context, clientID uint64, status enum.ClientStatus) error
-	Delete(ctx context.Context, clientID uint64) error
-	GetByID(ctx context.Context, clientID uint64) (*model.Client, error)
-	SaveClientStat(ctx context.Context, stat *model.ClientStat) error
-	GetClientStat(ctx context.Context, clientID uint64, start time.Time, end time.Time) (any, error)
-	GetBySessionID(ctx context.Context, sessionID string) (*model.Client, error)
-	GetByIDs(ctx context.Context, clientIDs []uint64) ([]*model.Client, error)
+type AgentDao interface {
+	Create(ctx context.Context, Agent *model.Agent) error
+	GetByDeviceID(ctx context.Context, deviceID string) (*model.Agent, error)
+	GetPage(ctx context.Context, appID uint64, query request.AgentQueryRequest) ([]*model.Agent, int64, error)
+	UpdateStatus(ctx context.Context, AgentID uint64, status enum.AgentStatus) error
+	Delete(ctx context.Context, AgentID uint64) error
+	GetByID(ctx context.Context, AgentID uint64) (*model.Agent, error)
+	SaveAgentMetric(ctx context.Context, agentMetric *model.AgentMetric) error
+	GetAgentMetric(ctx context.Context, AgentID uint64, start time.Time, end time.Time) (any, error)
+	GetBySessionID(ctx context.Context, sessionID string) (*model.Agent, error)
+	GetByIDs(ctx context.Context, AgentIDs []uint64) ([]*model.Agent, error)
 }
 
 func Paginate(pageQuery request.PageQuery) func(db *gorm.DB) *gorm.DB {

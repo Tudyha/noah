@@ -7,7 +7,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "noah-cli",
+	Use:   "noah-agent",
 	Short: "A simple command-line tool",
 }
 

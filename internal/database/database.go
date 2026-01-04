@@ -59,7 +59,7 @@ func Init(cfg *config.DatabaseConfig) error {
 		sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
 		sqlDB.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
 
-		db.AutoMigrate(&model.User{}, &model.WorkSpace{}, &model.WorkSpaceUser{}, &model.WorkSpaceApp{}, &model.Client{}, &model.ClientStat{})
+		db.AutoMigrate(&model.User{}, &model.WorkSpace{}, &model.WorkSpaceUser{}, &model.WorkSpaceApp{}, &model.Agent{}, &model.AgentMetric{})
 	})
 
 	return err

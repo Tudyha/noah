@@ -3,25 +3,25 @@ import type { PageResponse, ClientResponse, ClientBindResponse, ClientSystemInfo
 
 
 export async function getClientPage(): Promise<PageResponse<ClientResponse>> {
-  return http.get("/v1/client/page");
+  return http.get("/v1/agent/page");
 }
 
 export async function getClientBind(): Promise<ClientBindResponse> {
-  return http.get("/v1/client/bind");
+  return http.get("/v1/agent/bind");
 }
 
 export async function deleteClient(id: number): Promise<void> {
-  return http.delete(`/v1/client/${id}`);
+  return http.delete(`/v1/agent/${id}`);
 }
 
 export async function getClientDetail(id: string): Promise<ClientResponse> {
-  return http.get(`/v1/client/${id}`);
+  return http.get(`/v1/agent/${id}`);
 }
 
 export async function getClientSystemInfo(id: number): Promise<ClientSystemInfoResponse[]> {
-  return http.get(`/v1/client/${id}/stat`);
+  return http.get(`/v1/agent/${id}/metric`);
 }
 
 export async function getV2raySubscribe(ids: number[]): Promise<string> {
-  return http.post(`/v1/client/v2ray/sub`, {ids: ids});
+  return http.post(`/v1/agent/v2ray/sub`, {ids: ids});
 }

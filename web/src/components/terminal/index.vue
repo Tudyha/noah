@@ -62,7 +62,7 @@ const initXterm = () => {
   const u = useUserStore();
 
   // 建立 WebSocket 连接
-  const wsUrl = `${VITE_WS_API_BASE_URL}/client/${props.id}/pty?Authorization=${u.token}`;
+  const wsUrl = `${VITE_WS_API_BASE_URL}/agent/${props.id}/pty?Authorization=${u.token}`;
 
   webSocket = new WebSocket(wsUrl);
 

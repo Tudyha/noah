@@ -173,30 +173,30 @@ func (x *Message) GetBody() *anypb.Any {
 }
 
 // 用于客户端建立连接后的身份验证
-type Login struct {
+type Auth struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`       // 客户端唯一标识符
-	AppId         uint64                 `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`               // 应用ID
-	Sign          string                 `protobuf:"bytes,3,opt,name=sign,proto3" json:"sign,omitempty"`                               // 签名
-	ClientInfo    *ClientInfo            `protobuf:"bytes,4,opt,name=client_info,json=clientInfo,proto3" json:"client_info,omitempty"` // 客户端信息
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`    // 客户端唯一标识符
+	AppId         uint64                 `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`            // 应用ID
+	Sign          string                 `protobuf:"bytes,3,opt,name=sign,proto3" json:"sign,omitempty"`                            // 签名
+	AgentInfo     *AgentInfo             `protobuf:"bytes,4,opt,name=agent_info,json=agentInfo,proto3" json:"agent_info,omitempty"` // 客户端信息
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Login) Reset() {
-	*x = Login{}
+func (x *Auth) Reset() {
+	*x = Auth{}
 	mi := &file_pkg_packet_message_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Login) String() string {
+func (x *Auth) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Login) ProtoMessage() {}
+func (*Auth) ProtoMessage() {}
 
-func (x *Login) ProtoReflect() protoreflect.Message {
+func (x *Auth) ProtoReflect() protoreflect.Message {
 	mi := &file_pkg_packet_message_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -208,40 +208,40 @@ func (x *Login) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Login.ProtoReflect.Descriptor instead.
-func (*Login) Descriptor() ([]byte, []int) {
+// Deprecated: Use Auth.ProtoReflect.Descriptor instead.
+func (*Auth) Descriptor() ([]byte, []int) {
 	return file_pkg_packet_message_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Login) GetDeviceId() string {
+func (x *Auth) GetDeviceId() string {
 	if x != nil {
 		return x.DeviceId
 	}
 	return ""
 }
 
-func (x *Login) GetAppId() uint64 {
+func (x *Auth) GetAppId() uint64 {
 	if x != nil {
 		return x.AppId
 	}
 	return 0
 }
 
-func (x *Login) GetSign() string {
+func (x *Auth) GetSign() string {
 	if x != nil {
 		return x.Sign
 	}
 	return ""
 }
 
-func (x *Login) GetClientInfo() *ClientInfo {
+func (x *Auth) GetAgentInfo() *AgentInfo {
 	if x != nil {
-		return x.ClientInfo
+		return x.AgentInfo
 	}
 	return nil
 }
 
-type ClientInfo struct {
+type AgentInfo struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Hostname        string                 `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`                                       // 主机名
 	Username        string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`                                       // 用户名
@@ -266,20 +266,20 @@ type ClientInfo struct {
 	sizeCache       protoimpl.SizeCache
 }
 
-func (x *ClientInfo) Reset() {
-	*x = ClientInfo{}
+func (x *AgentInfo) Reset() {
+	*x = AgentInfo{}
 	mi := &file_pkg_packet_message_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ClientInfo) String() string {
+func (x *AgentInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ClientInfo) ProtoMessage() {}
+func (*AgentInfo) ProtoMessage() {}
 
-func (x *ClientInfo) ProtoReflect() protoreflect.Message {
+func (x *AgentInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_pkg_packet_message_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -291,146 +291,146 @@ func (x *ClientInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ClientInfo.ProtoReflect.Descriptor instead.
-func (*ClientInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use AgentInfo.ProtoReflect.Descriptor instead.
+func (*AgentInfo) Descriptor() ([]byte, []int) {
 	return file_pkg_packet_message_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ClientInfo) GetHostname() string {
+func (x *AgentInfo) GetHostname() string {
 	if x != nil {
 		return x.Hostname
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetUsername() string {
+func (x *AgentInfo) GetUsername() string {
 	if x != nil {
 		return x.Username
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetGid() string {
+func (x *AgentInfo) GetGid() string {
 	if x != nil {
 		return x.Gid
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetUid() string {
+func (x *AgentInfo) GetUid() string {
 	if x != nil {
 		return x.Uid
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetOsName() string {
+func (x *AgentInfo) GetOsName() string {
 	if x != nil {
 		return x.OsName
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetOsArch() string {
+func (x *AgentInfo) GetOsArch() string {
 	if x != nil {
 		return x.OsArch
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetUptime() uint64 {
+func (x *AgentInfo) GetUptime() uint64 {
 	if x != nil {
 		return x.Uptime
 	}
 	return 0
 }
 
-func (x *ClientInfo) GetBootTime() uint64 {
+func (x *AgentInfo) GetBootTime() uint64 {
 	if x != nil {
 		return x.BootTime
 	}
 	return 0
 }
 
-func (x *ClientInfo) GetOs() string {
+func (x *AgentInfo) GetOs() string {
 	if x != nil {
 		return x.Os
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetPlatform() string {
+func (x *AgentInfo) GetPlatform() string {
 	if x != nil {
 		return x.Platform
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetPlatformFamily() string {
+func (x *AgentInfo) GetPlatformFamily() string {
 	if x != nil {
 		return x.PlatformFamily
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetPlatformVersion() string {
+func (x *AgentInfo) GetPlatformVersion() string {
 	if x != nil {
 		return x.PlatformVersion
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetKernelVersion() string {
+func (x *AgentInfo) GetKernelVersion() string {
 	if x != nil {
 		return x.KernelVersion
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetKernelArch() string {
+func (x *AgentInfo) GetKernelArch() string {
 	if x != nil {
 		return x.KernelArch
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetHostId() string {
+func (x *AgentInfo) GetHostId() string {
 	if x != nil {
 		return x.HostId
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetCpuNum() int32 {
+func (x *AgentInfo) GetCpuNum() int32 {
 	if x != nil {
 		return x.CpuNum
 	}
 	return 0
 }
 
-func (x *ClientInfo) GetCpuInfo() string {
+func (x *AgentInfo) GetCpuInfo() string {
 	if x != nil {
 		return x.CpuInfo
 	}
 	return ""
 }
 
-func (x *ClientInfo) GetMemTotal() uint64 {
+func (x *AgentInfo) GetMemTotal() uint64 {
 	if x != nil {
 		return x.MemTotal
 	}
 	return 0
 }
 
-func (x *ClientInfo) GetDiskTotal() uint64 {
+func (x *AgentInfo) GetDiskTotal() uint64 {
 	if x != nil {
 		return x.DiskTotal
 	}
 	return 0
 }
 
-// 登录响应
-type LoginAck struct {
+// 身份验证响应
+type AuthAck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"` // 响应码
 	Msg           string                 `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`    // 响应信息
@@ -438,20 +438,20 @@ type LoginAck struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LoginAck) Reset() {
-	*x = LoginAck{}
+func (x *AuthAck) Reset() {
+	*x = AuthAck{}
 	mi := &file_pkg_packet_message_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LoginAck) String() string {
+func (x *AuthAck) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LoginAck) ProtoMessage() {}
+func (*AuthAck) ProtoMessage() {}
 
-func (x *LoginAck) ProtoReflect() protoreflect.Message {
+func (x *AuthAck) ProtoReflect() protoreflect.Message {
 	mi := &file_pkg_packet_message_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -463,19 +463,19 @@ func (x *LoginAck) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LoginAck.ProtoReflect.Descriptor instead.
-func (*LoginAck) Descriptor() ([]byte, []int) {
+// Deprecated: Use AuthAck.ProtoReflect.Descriptor instead.
+func (*AuthAck) Descriptor() ([]byte, []int) {
 	return file_pkg_packet_message_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *LoginAck) GetCode() int32 {
+func (x *AuthAck) GetCode() int32 {
 	if x != nil {
 		return x.Code
 	}
 	return 0
 }
 
-func (x *LoginAck) GetMsg() string {
+func (x *AuthAck) GetMsg() string {
 	if x != nil {
 		return x.Msg
 	}
@@ -491,7 +491,7 @@ type Ping struct {
 	MemUsedPercent float64                `protobuf:"fixed64,4,opt,name=mem_used_percent,json=memUsedPercent,proto3" json:"mem_used_percent,omitempty"`
 	MemAvailable   uint64                 `protobuf:"varint,5,opt,name=mem_available,json=memAvailable,proto3" json:"mem_available,omitempty"`
 	CpuPercent     float64                `protobuf:"fixed64,6,opt,name=cpu_percent,json=cpuPercent,proto3" json:"cpu_percent,omitempty"`
-	DiskUsage      []*DiskUsageStat       `protobuf:"bytes,7,rep,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
+	DiskUsage      []*DiskUsage           `protobuf:"bytes,7,rep,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
 	NetBytesSent   float64                `protobuf:"fixed64,8,opt,name=net_bytes_sent,json=netBytesSent,proto3" json:"net_bytes_sent,omitempty"`
 	NetBytesRecv   float64                `protobuf:"fixed64,9,opt,name=net_bytes_recv,json=netBytesRecv,proto3" json:"net_bytes_recv,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -570,7 +570,7 @@ func (x *Ping) GetCpuPercent() float64 {
 	return 0
 }
 
-func (x *Ping) GetDiskUsage() []*DiskUsageStat {
+func (x *Ping) GetDiskUsage() []*DiskUsage {
 	if x != nil {
 		return x.DiskUsage
 	}
@@ -591,7 +591,7 @@ func (x *Ping) GetNetBytesRecv() float64 {
 	return 0
 }
 
-type DiskUsageStat struct {
+type DiskUsage struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Path              string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	Fstype            string                 `protobuf:"bytes,2,opt,name=fstype,proto3" json:"fstype,omitempty"`
@@ -607,20 +607,20 @@ type DiskUsageStat struct {
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *DiskUsageStat) Reset() {
-	*x = DiskUsageStat{}
+func (x *DiskUsage) Reset() {
+	*x = DiskUsage{}
 	mi := &file_pkg_packet_message_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DiskUsageStat) String() string {
+func (x *DiskUsage) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DiskUsageStat) ProtoMessage() {}
+func (*DiskUsage) ProtoMessage() {}
 
-func (x *DiskUsageStat) ProtoReflect() protoreflect.Message {
+func (x *DiskUsage) ProtoReflect() protoreflect.Message {
 	mi := &file_pkg_packet_message_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -632,75 +632,75 @@ func (x *DiskUsageStat) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DiskUsageStat.ProtoReflect.Descriptor instead.
-func (*DiskUsageStat) Descriptor() ([]byte, []int) {
+// Deprecated: Use DiskUsage.ProtoReflect.Descriptor instead.
+func (*DiskUsage) Descriptor() ([]byte, []int) {
 	return file_pkg_packet_message_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *DiskUsageStat) GetPath() string {
+func (x *DiskUsage) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
 	return ""
 }
 
-func (x *DiskUsageStat) GetFstype() string {
+func (x *DiskUsage) GetFstype() string {
 	if x != nil {
 		return x.Fstype
 	}
 	return ""
 }
 
-func (x *DiskUsageStat) GetTotal() uint64 {
+func (x *DiskUsage) GetTotal() uint64 {
 	if x != nil {
 		return x.Total
 	}
 	return 0
 }
 
-func (x *DiskUsageStat) GetFree() uint64 {
+func (x *DiskUsage) GetFree() uint64 {
 	if x != nil {
 		return x.Free
 	}
 	return 0
 }
 
-func (x *DiskUsageStat) GetUsed() uint64 {
+func (x *DiskUsage) GetUsed() uint64 {
 	if x != nil {
 		return x.Used
 	}
 	return 0
 }
 
-func (x *DiskUsageStat) GetUsedPercent() float64 {
+func (x *DiskUsage) GetUsedPercent() float64 {
 	if x != nil {
 		return x.UsedPercent
 	}
 	return 0
 }
 
-func (x *DiskUsageStat) GetInodesTotal() uint64 {
+func (x *DiskUsage) GetInodesTotal() uint64 {
 	if x != nil {
 		return x.InodesTotal
 	}
 	return 0
 }
 
-func (x *DiskUsageStat) GetInodesFree() uint64 {
+func (x *DiskUsage) GetInodesFree() uint64 {
 	if x != nil {
 		return x.InodesFree
 	}
 	return 0
 }
 
-func (x *DiskUsageStat) GetInodesUsed() uint64 {
+func (x *DiskUsage) GetInodesUsed() uint64 {
 	if x != nil {
 		return x.InodesUsed
 	}
 	return 0
 }
 
-func (x *DiskUsageStat) GetInodesUsedPercent() float64 {
+func (x *DiskUsage) GetInodesUsedPercent() float64 {
 	if x != nil {
 		return x.InodesUsedPercent
 	}
@@ -863,15 +863,14 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"\x18pkg/packet/message.proto\x12\x06packet\x1a\x19google/protobuf/any.proto\"J\n" +
 	"\aMessage\x12\x15\n" +
 	"\x06msg_id\x18\x01 \x01(\tR\x05msgId\x12(\n" +
-	"\x04body\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\x84\x01\n" +
-	"\x05Login\x12\x1b\n" +
+	"\x04body\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\x80\x01\n" +
+	"\x04Auth\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x15\n" +
 	"\x06app_id\x18\x02 \x01(\x04R\x05appId\x12\x12\n" +
-	"\x04sign\x18\x03 \x01(\tR\x04sign\x123\n" +
-	"\vclient_info\x18\x04 \x01(\v2\x12.packet.ClientInfoR\n" +
-	"clientInfo\"\xa0\x04\n" +
+	"\x04sign\x18\x03 \x01(\tR\x04sign\x120\n" +
 	"\n" +
-	"ClientInfo\x12\x1a\n" +
+	"agent_info\x18\x04 \x01(\v2\x11.packet.AgentInfoR\tagentInfo\"\x9f\x04\n" +
+	"\tAgentInfo\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x10\n" +
 	"\x03gid\x18\x03 \x01(\tR\x03gid\x12\x10\n" +
@@ -893,10 +892,10 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"\bcpu_info\x18\x11 \x01(\tR\acpuInfo\x12\x1b\n" +
 	"\tmem_total\x18\x12 \x01(\x04R\bmemTotal\x12\x1d\n" +
 	"\n" +
-	"disk_total\x18\x13 \x01(\x04R\tdiskTotal\"0\n" +
-	"\bLoginAck\x12\x12\n" +
+	"disk_total\x18\x13 \x01(\x04R\tdiskTotal\"/\n" +
+	"\aAuthAck\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x10\n" +
-	"\x03msg\x18\x02 \x01(\tR\x03msg\"\xcc\x02\n" +
+	"\x03msg\x18\x02 \x01(\tR\x03msg\"\xc8\x02\n" +
 	"\x04Ping\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12\x19\n" +
 	"\bmem_free\x18\x02 \x01(\x04R\amemFree\x12\x19\n" +
@@ -904,12 +903,12 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"\x10mem_used_percent\x18\x04 \x01(\x01R\x0ememUsedPercent\x12#\n" +
 	"\rmem_available\x18\x05 \x01(\x04R\fmemAvailable\x12\x1f\n" +
 	"\vcpu_percent\x18\x06 \x01(\x01R\n" +
-	"cpuPercent\x124\n" +
+	"cpuPercent\x120\n" +
 	"\n" +
-	"disk_usage\x18\a \x03(\v2\x15.packet.DiskUsageStatR\tdiskUsage\x12$\n" +
+	"disk_usage\x18\a \x03(\v2\x11.packet.DiskUsageR\tdiskUsage\x12$\n" +
 	"\x0enet_bytes_sent\x18\b \x01(\x01R\fnetBytesSent\x12$\n" +
-	"\x0enet_bytes_recv\x18\t \x01(\x01R\fnetBytesRecv\"\xb1\x02\n" +
-	"\rDiskUsageStat\x12\x12\n" +
+	"\x0enet_bytes_recv\x18\t \x01(\x01R\fnetBytesRecv\"\xad\x02\n" +
+	"\tDiskUsage\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x16\n" +
 	"\x06fstype\x18\x02 \x01(\tR\x06fstype\x12\x14\n" +
 	"\x05total\x18\x03 \x01(\x04R\x05total\x12\x12\n" +
@@ -960,11 +959,11 @@ var file_pkg_packet_message_proto_goTypes = []any{
 	(OpenTunnel_TuunnelType)(0), // 0: packet.OpenTunnel.TuunnelType
 	(Command_Cmd)(0),            // 1: packet.Command.Cmd
 	(*Message)(nil),             // 2: packet.Message
-	(*Login)(nil),               // 3: packet.Login
-	(*ClientInfo)(nil),          // 4: packet.ClientInfo
-	(*LoginAck)(nil),            // 5: packet.LoginAck
+	(*Auth)(nil),                // 3: packet.Auth
+	(*AgentInfo)(nil),           // 4: packet.AgentInfo
+	(*AuthAck)(nil),             // 5: packet.AuthAck
 	(*Ping)(nil),                // 6: packet.Ping
-	(*DiskUsageStat)(nil),       // 7: packet.DiskUsageStat
+	(*DiskUsage)(nil),           // 7: packet.DiskUsage
 	(*OpenTunnel)(nil),          // 8: packet.OpenTunnel
 	(*OpenTunnelAck)(nil),       // 9: packet.OpenTunnelAck
 	(*Command)(nil),             // 10: packet.Command
@@ -972,8 +971,8 @@ var file_pkg_packet_message_proto_goTypes = []any{
 }
 var file_pkg_packet_message_proto_depIdxs = []int32{
 	11, // 0: packet.Message.body:type_name -> google.protobuf.Any
-	4,  // 1: packet.Login.client_info:type_name -> packet.ClientInfo
-	7,  // 2: packet.Ping.disk_usage:type_name -> packet.DiskUsageStat
+	4,  // 1: packet.Auth.agent_info:type_name -> packet.AgentInfo
+	7,  // 2: packet.Ping.disk_usage:type_name -> packet.DiskUsage
 	0,  // 3: packet.OpenTunnel.tunnel_type:type_name -> packet.OpenTunnel.TuunnelType
 	1,  // 4: packet.Command.cmd:type_name -> packet.Command.Cmd
 	5,  // [5:5] is the sub-list for method output_type

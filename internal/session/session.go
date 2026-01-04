@@ -91,7 +91,7 @@ func (s *Session) checkAuth(netConn net.Conn) {
 	}
 
 	logger.Info("认证成功", "sessionID", s.ID)
-	if err = c.WriteProtoMessage(packet.MessageType_LoginAck, &packet.LoginAck{}); err != nil {
+	if err = c.WriteProtoMessage(packet.MessageType_LoginAck, &packet.AuthAck{}); err != nil {
 		return
 	}
 

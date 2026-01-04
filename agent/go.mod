@@ -1,4 +1,4 @@
-module noah/client
+module noah/agent
 
 go 1.25.5
 
