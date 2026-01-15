@@ -53,7 +53,7 @@ type AgentMetric struct {
 	AgentID uint64 `gorm:"column:agent_id;not null"`
 
 	// cpu数据
-	CpuUsage float64 `gorm:"column:cpu_usage"`
+	CpuPercent float64 `gorm:"column:cpu_percent"`
 
 	// 内存数据
 	MemAvailable   uint64  `gorm:"column:mem_available"`

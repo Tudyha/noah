@@ -1,5 +1,5 @@
 <template>
-  <div class="menu p-4 w-64 h-full bg-base-100 flex flex-col border-r border-base-200">
+  <div class="menu p-4 w-54 h-full bg-base-100 flex flex-col border-r border-base-200">
     <!-- Logo -->
     <Logo class="mb-8 px-4 lg:hidden" />
 

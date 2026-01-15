@@ -56,5 +56,11 @@ func RegisterRoutes(router *gin.Engine) {
 		{
 			v1.RegisterFileRoutes(fileGroup)
 		}
+
+		// 后台统计数据
+		dashboardGroup := v1Group.Group("dashboard")
+		{
+			v1.RegisterDashboardRoutes(dashboardGroup)
+		}
 	}
 }

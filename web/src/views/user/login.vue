@@ -60,14 +60,17 @@ const sendCode = async () => {
         <div class="tabs tabs-lift">
           <!-- Phone Login Tab -->
           <input type="radio" name="login_tabs" class="tab" :aria-label="t('login.loginByPhone')"
-                 :checked="form.login_type === 1" @change="form.login_type = 1" />
+            :checked="form.login_type === 1" @change="form.login_type = 1" />
           <div class="tab-content bg-base-100 border-base-300 rounded-box p-6">
             <form class="space-y-4">
               <div class="form-control">
                 <label class="label">
                   <span class="label-text">{{ t('common.phone') }}</span>
                 </label>
-                <input v-model="form.username" type="text" class="input input-bordered w-full" :placeholder="t('common.phone')" required />
+                <input v-model="form.username" type="tel" class="input validator tabular-nums input-bordered w-full"
+                  :placeholder="t('common.phone')" required pattern="[0-9]*" minlength="11" maxlength="11"
+                  title="Must be 10 digits" />
+                <p class="validator-hint hidden">Must be 11 digits</p>
               </div>
 
               <div class="form-control">
@@ -75,7 +78,8 @@ const sendCode = async () => {
                   <span class="label-text">{{ t('login.code') }}</span>
                 </label>
                 <div class="join w-full">
-                  <input v-model="form.code" type="text" class="input input-bordered join-item w-full" :placeholder="t('login.code')" required />
+                  <input v-model="form.code" type="text" class="input input-bordered join-item w-full"
+                    :placeholder="t('login.code')" required />
                   <button class="btn btn-primary join-item" type="button" @click="sendCode" :disabled="remaining != 0">
                     {{ remaining || t('login.sendCode') }}
                   </button>
@@ -90,21 +94,23 @@ const sendCode = async () => {
 
           <!-- Password Login Tab -->
           <input type="radio" name="login_tabs" class="tab" :aria-label="t('login.loginByPassword')"
-                 :checked="form.login_type === 2" @change="form.login_type = 2" />
+            :checked="form.login_type === 2" @change="form.login_type = 2" />
           <div class="tab-content bg-base-100 border-base-300 rounded-box p-6">
             <form class="space-y-4">
               <div class="form-control">
                 <label class="label">
                   <span class="label-text">{{ t('common.username') }}</span>
                 </label>
-                <input v-model="form.username" type="text" class="input input-bordered w-full" :placeholder="t('common.username')" required />
+                <input v-model="form.username" type="text" class="input input-bordered w-full"
+                  :placeholder="t('common.username')" required />
               </div>
 
               <div class="form-control">
                 <label class="label">
                   <span class="label-text">{{ t('common.password') }}</span>
                 </label>
-                <input v-model="form.password" type="password" class="input input-bordered w-full" :placeholder="t('common.password')" required />
+                <input v-model="form.password" type="password" class="input input-bordered w-full"
+                  :placeholder="t('common.password')" required />
               </div>
               <button class="btn btn-primary w-full mt-4" type="button" @click="login" :disabled="loginLoading">
                 <span v-if="loginLoading" class="loading loading-spinner"></span>

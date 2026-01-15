@@ -1,30 +1,30 @@
 const dashboard = [
   {
-    path: "/client",
-    name: "Client",
-    redirect: "/client/list",
+    path: "/agent",
+    name: "Agent",
+    redirect: "/agent/list",
     meta: {
-      title: "Client",
+      title: "Agent",
       requiresAuth: true,
       hideSidebar: false,
     },
     children: [
       {
         path: "list",
-        name: "ClientList",
-        component: () => import("@/views/client/index.vue"),
+        name: "AgentList",
+        component: () => import("@/views/agent/index.vue"),
         meta: {
-          title: "Client List",
+          title: "Agent List",
           requiresAuth: true,
           hideSidebar: false,
         },
       },
       {
         path: "console/:id",
-        name: "ClientConsole",
-        component: () => import("@/views/client/console.vue"),
+        name: "AgentConsole",
+        component: () => import("@/views/agent/console.vue"),
         meta: {
-          title: "Client Console",
+          title: "Agent Console",
           requiresAuth: true,
           hideSidebar: false,
         },

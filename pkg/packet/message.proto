@@ -16,8 +16,9 @@ message Auth {
   string device_id = 1; // 客户端唯一标识符
   uint64 app_id = 2; // 应用ID
   string sign = 3; // 签名
+  int32 version = 4; // 客户端版本
   
-  AgentInfo agent_info = 4; // 客户端信息
+  AgentInfo agent_info = 5; // 客户端信息
 }
 
 message AgentInfo {

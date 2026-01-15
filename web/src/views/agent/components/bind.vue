@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { getClientBind } from '@/api/client'
-import type { ClientBindResponse } from '@/types'
+import { getAgentBind } from '@/api/agent'
+import type { AgentBindResponse } from '@/types'
 import { clientOsTypeIconMap } from '@/map'
 
-const data = ref<ClientBindResponse>()
+const data = ref<AgentBindResponse>()
 
 onMounted(() => {
-    getClientBind().then(res => {
+    getAgentBind().then(res => {
         data.value = res
     })
 })

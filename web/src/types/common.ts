@@ -37,4 +37,6 @@ export type TableProps = {
 
 export type PaginationProps = {
   total: number;
+  currentPage: number;
+  pageSize: number;
 }

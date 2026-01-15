@@ -1,17 +1,15 @@
 <script lang="ts" setup>
-import { useRequest } from 'vue-hooks-plus'
-import { getClientPage, getV2raySubscribe } from "@/api/client";
+import { getAgentPage, getV2raySubscribe } from "@/api/agent";
+import { usePageList } from "@/composables/usePageList";
 import Bind from './components/bind.vue'
-import Client from './components/client.vue'
+import Agent from './components/agent.vue'
 import type { SearchItem } from '@/types'
-
-const { copy, copied } = useClipboard()
 
 const searchItems: SearchItem[] = [
   {
     type: "input",
     label: "主机名称",
-    key: "username",
+    key: "hostname",
   },
   {
     type: "input",
@@ -39,7 +37,16 @@ const searchItems: SearchItem[] = [
   }
 ]
 
-const { data, loading, run } = useRequest(getClientPage)
+const defaultFilters = searchItems.reduce<Record<string, any>>((acc, item) => {
+  if (item.default !== undefined) {
+    acc[item.key] = item.default
+  }
+  return acc
+}, {})
+
+const { data, loading, currentPage, pageSize, search, changePage } = usePageList(getAgentPage, {
+  defaultFilters
+})
 
 // 多选逻辑
 const selectedIds = ref<number[]>([])
@@ -69,18 +76,19 @@ const clearSelection = () => {
   selectedIds.value = []
 }
 
-const handlePageChange = ({ page, pageSize }: { page: number, pageSize: number }) => {
-  console.log(page, pageSize)
+const handlePageChange = ({ page, pageSize }: { page: number; pageSize: number }) => {
+  changePage(page, pageSize)
 }
 
-const handleSearch = () => {
-  run()
+const handleSearch = (form: Record<string, any>) => {
+  search(form)
 }
 
+const v2rayModalRef = ref<HTMLDialogElement | null>(null)
 const v2rayLink = ref<string>("")
 const handleV2raySubscribe = async () => {
   v2rayLink.value = await getV2raySubscribe(selectedIds.value)
-  v2ray_modal.showModal()
+  v2rayModalRef.value?.showModal()
 }
 
 </script>
@@ -130,7 +138,7 @@ const handleV2raySubscribe = async () => {
         <template v-else>
           <TransitionGroup v-if="data && data.list.length > 0" name="list-fade" tag="div"
             class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-            <Client v-for="item in data?.list" :key="item.id" :item="item" :selected="selectedIds.includes(item.id)"
+            <Agent v-for="item in data?.list" :key="item.id" :item="item" :selected="selectedIds.includes(item.id)"
               @toggle-select="toggleSelect(item.id)" @refresh="handleSearch" />
           </TransitionGroup>
 
@@ -147,7 +155,13 @@ const handleV2raySubscribe = async () => {
         </template>
       </Transition>
     </div>
-    <Pagination v-if="!loading" :total="data?.total || 0" @change="handlePageChange" />
+    <Pagination
+      v-if="!loading"
+      :total="data?.total || 0"
+      :current-page="currentPage"
+      :page-size="pageSize"
+      @change="handlePageChange"
+    />
 
     <!-- 批量操作工具栏 -->
     <Transition name="slide-up">
@@ -180,7 +194,7 @@ const handleV2raySubscribe = async () => {
       </div>
     </Transition>
 
-    <dialog id="v2ray_modal" class="modal">
+    <dialog id="v2ray_modal" ref="v2rayModalRef" class="modal">
       <div class="modal-box">
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>

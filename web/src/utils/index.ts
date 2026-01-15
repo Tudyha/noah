@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 export function formatDate(input: string) {
   const d = new Date(input)
   const y = d.getFullYear()
@@ -33,19 +35,6 @@ export function formatUptime(totalSeconds: number) {
   return parts.join(' ');
 };
 
-export function formatDateTime(date: Date) {
-  try {
-    if (date.getFullYear() <= 1) return 'N/A';
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-  } catch (e) {
-    return 'Invalid Date';
-  }
+export function formatDateTime(timestamp: number) {
+  return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss');
 };

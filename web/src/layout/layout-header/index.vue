@@ -7,17 +7,28 @@
       </label>
       <Logo class="hidden lg:block ml-2" />
     </div>
-    <div class="flex-none flex items-center gap-2 pr-4">
+    <div class="flex-none flex items-center gap-2">
       <Theme />
       <Locales />
       <div class="divider divider-horizontal mx-0"></div>
+      <button
+        v-if="userStore.isLogined"
+        class="btn btn-ghost btn-sm gap-2 normal-case"
+        @click="router.push({name: 'Dashboard'})"
+      >
+        <Icon icon="mdi:view-dashboard" class="text-lg" />
+        <span>工作台</span>
+      </button>
       <UserInfo />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useUserStore } from "@/stores/auth"
 
 const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
 </script>

@@ -57,6 +57,7 @@ func (h *authHandler) Handle(ctx conn.Context) (err error) {
 	agent.DeviceID = loginReq.DeviceId
 	agent.AppID = loginReq.AppId
 	agent.OsType = enum.AgentOsNameToOsTypeMap[agent.OsName]
+	agent.Version = uint32(loginReq.Version)
 
 	remoteAddr := ctx.GetConn().RemoteAddr()
 	remoteIP, port, _ := net.SplitHostPort(remoteAddr.String())

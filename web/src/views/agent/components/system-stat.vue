@@ -47,8 +47,8 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import Line from '@/components/chart/line.vue'
-import { getClientSystemInfo } from '@/api/client'
-import type { ClientSystemInfoResponse } from '@/types'
+import { getAgentSystemInfo } from '@/api/agent'
+import type { AgentSystemInfoResponse } from '@/types'
 import { formatBytesToGB } from '@/utils'
 
 const props = defineProps<{
@@ -65,7 +65,7 @@ const filter = ref({
   end: endOfToday
 })
 
-const data = ref<ClientSystemInfoResponse[]>([])
+const data = ref<AgentSystemInfoResponse[]>([])
 const loading = ref(false)
 
 const labels = computed(() => {
@@ -156,8 +156,9 @@ const refresh = async () => {
   if (loading.value) return
   loading.value = true
   try {
-    const res = await getClientSystemInfo(Number(props.id))
+    const res = await getAgentSystemInfo(Number(props.id))
     data.value = res
+    console.log(data.value)
   } finally {
     loading.value = false
   }

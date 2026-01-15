@@ -73,6 +73,7 @@ func (h *AgentController) GetAgent(ctx *gin.Context) {
 	}
 	var res response.AgentResponse
 	copier.Copy(&res, agent)
+	res.VersionName = "v1.0.0"
 	Success(ctx, res)
 }
 

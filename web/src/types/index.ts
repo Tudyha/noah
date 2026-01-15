@@ -1,6 +1,7 @@
 export * from "./user";
 export * from "./common";
-export * from "./client";
+export * from "./agent";
+export * from "./dashboard";
 
 export type BaseResponse<T> = {
   code: number;

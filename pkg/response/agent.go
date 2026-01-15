@@ -13,6 +13,7 @@ type AgentResponse struct {
 	CreatedAt      *time.Time       `json:"created_at"`
 	UpdatedAt      *time.Time       `json:"updated_at"`
 	Version        uint32           `json:"version"`
+	VersionName    string           `json:"version_name"`
 
 	DeviceID        string           `json:"device_id"`
 	OsType          enum.AgentOsType `json:"os_type"`
@@ -51,20 +52,20 @@ type AgentMetricResponse struct {
 	CreatedAt *time.Time `json:"created_at"`
 
 	// cpu数据
-	CpuUsage float64 `gorm:"column:cpu_usage"`
+	CpuPercent float64 `json:"cpu_percent"`
 
 	// 内存数据
-	MemAvailable   uint64  `gorm:"column:mem_available"`
-	MemUsed        uint64  `gorm:"column:mem_used"`
-	MemUsedPercent float64 `gorm:"column:mem_used_percent"`
-	MemFree        uint64  `gorm:"column:mem_free"`
+	MemAvailable   uint64  `json:"mem_available"`
+	MemUsed        uint64  `json:"mem_used"`
+	MemUsedPercent float64 `json:"mem_used_percent"`
+	MemFree        uint64  `json:"mem_free"`
 
 	// 磁盘数据
-	DiskUsage []DiskUsage `gorm:"column:disk_usage"`
+	DiskUsage []DiskUsage `json:"disk_usage"`
 
 	// 网络数据
-	NetBytesSent float64 `gorm:"column:bytesSent"`
-	NetBytesRecv float64 `gorm:"column:bytesRecv"`
+	NetBytesSent float64 `json:"bytesSent"`
+	NetBytesRecv float64 `json:"bytesRecv"`
 }
 
 type DiskUsage struct {

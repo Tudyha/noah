@@ -71,6 +71,7 @@ type AgentDao interface {
 	GetAgentMetric(ctx context.Context, AgentID uint64, start time.Time, end time.Time) (any, error)
 	GetBySessionID(ctx context.Context, sessionID string) (*model.Agent, error)
 	GetByIDs(ctx context.Context, AgentIDs []uint64) ([]*model.Agent, error)
+	CountByAppID(ctx context.Context, appID uint64) (online int64, offline int64, err error)
 }
 
 func Paginate(pageQuery request.PageQuery) func(db *gorm.DB) *gorm.DB {

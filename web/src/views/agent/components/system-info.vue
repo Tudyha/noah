@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRequest } from 'vue-hooks-plus';
-import { getClientDetail } from '@/api/client';
+import { getAgentDetail } from '@/api/agent';
 import { clientStatusMap, clientOsTypeIconMap } from '@/map';
 const router = useRouter();
 
@@ -8,7 +8,7 @@ const props = defineProps<{
   id: string
 }>()
 
-const { data: client } = useRequest(() => getClientDetail(props.id));
+const { data: client } = useRequest(() => getAgentDetail(props.id));
 </script>
 
 <template>
@@ -64,8 +64,8 @@ const { data: client } = useRequest(() => getClientDetail(props.id));
               <span class="font-medium">{{ client?.kernel_version }}</span>
             </div>
             <div class="flex justify-between items-center text-[11px]">
-              <span class="opacity-50">内网 IP</span>
-              <span class="font-medium">{{ client?.local_ip }}</span>
+              <span class="opacity-50">主机程序版本</span>
+              <span class="font-medium">{{ client?.version_name }}</span>
             </div>
           </div>
         </div>

@@ -58,6 +58,9 @@ func (c *agentService) GetPage(ctx context.Context, appID uint64, query request.
 	}
 	var list []response.AgentResponse
 	copier.Copy(&list, agents)
+	for index := range list {
+		list[index].VersionName = "v1.0.0"
+	}
 	return &response.Page[response.AgentResponse]{
 		Total: total,
 		List:  list,
@@ -102,4 +105,9 @@ func (c *agentService) GetByID(ctx context.Context, agentID uint64) (*model.Agen
 
 func (c *agentService) GetByIDs(ctx context.Context, agentIDs []uint64) ([]*model.Agent, error) {
 	return c.agentDao.GetByIDs(ctx, agentIDs)
+}
+
+func (c *agentService) CountByAppID(ctx context.Context, appID uint64) (online int64, offline int64, err error) {
+	return c.agentDao.CountByAppID(ctx, appID)
+
 }

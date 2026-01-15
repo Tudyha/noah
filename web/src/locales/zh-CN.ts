@@ -23,4 +23,12 @@ export default {
     sendCode: "发送验证码",
     passwordValidator: "密码长度为6到30个字符",
   },
+  home: {
+    hero: {
+      title: "欢迎使用",
+      subtitle: "请选择要使用的功能",
+      learnMore: "了解更多",
+      cta: "开始使用",
+    },
+  },
 };

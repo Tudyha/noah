@@ -14,12 +14,6 @@
       <div tabindex="-1">
         <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-35">
           <li>
-            <button @click="router.push({name: 'Dashboard'})">
-              <Icon icon="mdi:view-dashboard" />
-              进入工作台
-            </button>
-          </li>
-          <li>
             <button @click="logout">
               <Icon icon="mdi:logout"  />
               退出登录</button>

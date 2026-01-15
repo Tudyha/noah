@@ -81,3 +81,12 @@ func (c *agentDao) GetBySessionID(ctx context.Context, sessionID string) (*model
 	var model model.Agent
 	return &model, c.db.WithContext(ctx).Model(&model).Where("session_id = ?", sessionID).First(&model).Error
 }
+
+func (c *agentDao) CountByAppID(ctx context.Context, appID uint64) (online int64, offline int64, err error) {
+	err = c.db.WithContext(ctx).Model(&model.Agent{}).Where("app_id = ? AND status = ?", appID, enum.AgentStatusOnline).Count(&online).Error
+	if err != nil {
+		return
+	}
+	err = c.db.WithContext(ctx).Model(&model.Agent{}).Where("app_id = ? AND status = ?", appID, enum.AgentStatusOffline).Count(&offline).Error
+	return
+}

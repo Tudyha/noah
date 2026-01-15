@@ -1,11 +1,13 @@
-export type ClientBindResponse = {
-    mac_bind: string;
+export type AgentBindResponse = {
+  mac_bind: string;
 }
 
-export type ClientResponse = {
+export type AgentResponse = {
   id: number;
   app_id: number;
   device_id: string;
+  version: number;
+  version_name: string;
   os_type: 1 | 2 | 3; // 1: windows, 2: mac, 3: linux
   hostname: string;
   username: string;
@@ -32,12 +34,12 @@ export type ClientResponse = {
   disk_total: number;
   conn_id: number;
   status: 1 | 2; // 1: online, 2: offline
-  last_online_time: Date;
+  last_online_time: number;
   created_at: Date;
   updated_at: Date;
 }
 
-export type ClientSystemInfoResponse = {
+export type AgentSystemInfoResponse = {
   mem_available: number;
   mem_used: number;
   mem_used_percent: number;

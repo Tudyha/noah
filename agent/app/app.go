@@ -153,10 +153,12 @@ func (c *Agent) handleConn(netConn net.Conn) {
 		}
 	}()
 
+	log.Println("agent version: ", c.cfg.Version)
 	loginReq := &packet.Auth{
 		AppId:    c.cfg.AppId,
 		Sign:     utils.Sign(c.cfg.AppId, c.cfg.AppSecret),
 		DeviceId: utils.GetMacAddress(),
+		Version:  int32(c.cfg.Version),
 	}
 	loginReq.AgentInfo = c.infoHandler.GetInfo()
 

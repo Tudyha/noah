@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { clientStatusMap, clientOsTypeIconMap } from '@/map'
-import type { ClientResponse } from '@/types'
-import { formatBytes, formatDateTime, formatUptime } from '@/utils'
-import { deleteClient as deleteClientApi} from '@/api/client'
+import { clientStatusMap, clientOsTypeIconMap } from '@/map';
+import type { AgentResponse } from '@/types';
+import { formatBytes, formatDateTime, formatUptime } from '@/utils';
+import { deleteAgent as deleteAgentApi} from '@/api/agent';
 
 const props = defineProps<{
-  item: ClientResponse;
+  item: AgentResponse;
   selected?: boolean;
 }>()
 
@@ -20,7 +20,7 @@ const rowInfo = computed(() => [
   {
     Icon: "mdi:ip-outline",
     label: "IP地址",
-    value: `${props.item.remote_ip}:${props.item.port}`
+    value: props.item.remote_ip_country ? `${props.item.remote_ip} (${props.item.remote_ip_country})` : props.item.remote_ip
   },
   {
     Icon: "mdi:clock-outline",
@@ -56,7 +56,7 @@ const statInfo = computed(() => [
 ]);
 
 const deleteClient = () => {
-  deleteClientApi(props.item.id)
+  deleteAgentApi(props.item.id)
   emit('refresh')
 }
 
@@ -155,7 +155,7 @@ const handleAction = (type: string) => {
     <!-- 底部操作栏 -->
     <div class="p-3 pt-0 mt-auto flex gap-2 relative">
       <router-link
-        :to="{ name: 'ClientConsole', params: { id: item.id } }"
+        :to="{ name: 'AgentConsole', params: { id: item.id } }"
         class="btn btn-primary btn-sm flex-1 gap-2 font-normal shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-200"
       >
         <Icon icon="mdi:console" class="w-4 h-4" />

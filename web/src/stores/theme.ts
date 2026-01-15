@@ -10,9 +10,14 @@ export const useThemeStore = defineStore(
       document.documentElement.setAttribute("data-theme", theme);
     }
 
+    const initTheme = () => {
+      setTheme(currentTheme.value)
+    }
+
     return {
       currentTheme,
       setTheme,
+      initTheme,
     };
   },
   {

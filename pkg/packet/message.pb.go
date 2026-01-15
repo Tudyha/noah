@@ -178,7 +178,8 @@ type Auth struct {
 	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`    // 客户端唯一标识符
 	AppId         uint64                 `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`            // 应用ID
 	Sign          string                 `protobuf:"bytes,3,opt,name=sign,proto3" json:"sign,omitempty"`                            // 签名
-	AgentInfo     *AgentInfo             `protobuf:"bytes,4,opt,name=agent_info,json=agentInfo,proto3" json:"agent_info,omitempty"` // 客户端信息
+	Version       int32                  `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`                     // 客户端版本
+	AgentInfo     *AgentInfo             `protobuf:"bytes,5,opt,name=agent_info,json=agentInfo,proto3" json:"agent_info,omitempty"` // 客户端信息
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -232,6 +233,13 @@ func (x *Auth) GetSign() string {
 		return x.Sign
 	}
 	return ""
+}
+
+func (x *Auth) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 func (x *Auth) GetAgentInfo() *AgentInfo {
@@ -863,13 +871,14 @@ const file_pkg_packet_message_proto_rawDesc = "" +
 	"\x18pkg/packet/message.proto\x12\x06packet\x1a\x19google/protobuf/any.proto\"J\n" +
 	"\aMessage\x12\x15\n" +
 	"\x06msg_id\x18\x01 \x01(\tR\x05msgId\x12(\n" +
-	"\x04body\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\x80\x01\n" +
+	"\x04body\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\x9a\x01\n" +
 	"\x04Auth\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x15\n" +
 	"\x06app_id\x18\x02 \x01(\x04R\x05appId\x12\x12\n" +
-	"\x04sign\x18\x03 \x01(\tR\x04sign\x120\n" +
+	"\x04sign\x18\x03 \x01(\tR\x04sign\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\x05R\aversion\x120\n" +
 	"\n" +
-	"agent_info\x18\x04 \x01(\v2\x11.packet.AgentInfoR\tagentInfo\"\x9f\x04\n" +
+	"agent_info\x18\x05 \x01(\v2\x11.packet.AgentInfoR\tagentInfo\"\x9f\x04\n" +
 	"\tAgentInfo\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x10\n" +

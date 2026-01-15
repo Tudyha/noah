@@ -56,6 +56,7 @@ type AgentService interface {
 	GetAgentMetric(ctx context.Context, agentID uint64, start time.Time, end time.Time) ([]*response.AgentMetricResponse, error)
 	GetByID(ctx context.Context, agentID uint64) (*model.Agent, error)
 	GetByIDs(ctx context.Context, agentIDs []uint64) ([]*model.Agent, error)
+	CountByAppID(ctx context.Context, appID uint64) (online int64, offline int64, err error)
 }
 
 func Init() error {
